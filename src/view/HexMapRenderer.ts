@@ -303,14 +303,15 @@ export class HexMapRenderer {
    * Redimensionne le canvas pour qu'il s'adapte à la fenêtre.
    */
   resize(): void {
-    // Ajuster la taille du canvas en tenant compte du header et footer
-    // Le canvas doit prendre tout l'espace disponible dans main
+    // Ajuster la taille du canvas en tenant compte du header, footer et panneau de ressources
     const header = document.querySelector('header');
     const footer = document.querySelector('footer');
+    const resourcesPanel = document.getElementById('resources-panel');
     const headerHeight = header ? header.offsetHeight : 0;
     const footerHeight = footer ? footer.offsetHeight : 0;
+    const resourcesPanelWidth = resourcesPanel ? resourcesPanel.offsetWidth + 32 : 0; // +32 pour le gap et padding
     
-    this.canvas.width = window.innerWidth;
+    this.canvas.width = window.innerWidth - resourcesPanelWidth;
     this.canvas.height = window.innerHeight - headerHeight - footerHeight;
   }
 

@@ -154,6 +154,17 @@ export class PlayerResources {
   }
 
   /**
+   * Réinitialise toutes les ressources à 0.
+   */
+  clear(): void {
+    this.resources.set(ResourceType.Wood, 0);
+    this.resources.set(ResourceType.Brick, 0);
+    this.resources.set(ResourceType.Wheat, 0);
+    this.resources.set(ResourceType.Sheep, 0);
+    this.resources.set(ResourceType.Ore, 0);
+  }
+
+  /**
    * Vérifie si une ressource est récoltable.
    * @param resource - Le type de ressource
    * @returns true si la ressource peut être récoltée (Wood, Brick, Wheat, Sheep, Ore)

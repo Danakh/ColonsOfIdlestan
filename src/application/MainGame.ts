@@ -51,8 +51,7 @@ export class MainGame {
     this.gameMap = this.mapGenerator.generate(config);
     
     // Réinitialiser l'inventaire du joueur à chaque nouvelle partie
-    // (On pourrait vouloir garder l'inventaire selon les règles du jeu)
-    // Pour l'instant, on le réinitialise
+    this.playerResources.clear();
   }
 
   /**

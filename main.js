@@ -1030,11 +1030,155 @@ var CivilizationId = class _CivilizationId {
   }
 };
 
+// src/model/game/PlayerResources.ts
+var PlayerResources = class {
+  /**
+   * Crée un inventaire vide.
+   */
+  constructor() {
+    this.resources = /* @__PURE__ */ new Map();
+    this.resources.set("Wood" /* Wood */, 0);
+    this.resources.set("Brick" /* Brick */, 0);
+    this.resources.set("Wheat" /* Wheat */, 0);
+    this.resources.set("Sheep" /* Sheep */, 0);
+    this.resources.set("Ore" /* Ore */, 0);
+  }
+  /**
+   * Ajoute une quantité de ressource à l'inventaire.
+   * @param resource - Le type de ressource
+   * @param amount - La quantité à ajouter (doit être positive)
+   * @throws Error si la ressource n'est pas récoltable
+   * @throws Error si la quantité est négative
+   */
+  addResource(resource, amount) {
+    if (!this.isHarvestable(resource)) {
+      throw new Error(`La ressource ${resource} n'est pas r\xE9coltable.`);
+    }
+    if (amount < 0) {
+      throw new Error("La quantit\xE9 \xE0 ajouter doit \xEAtre positive.");
+    }
+    const current = this.resources.get(resource) || 0;
+    this.resources.set(resource, current + amount);
+  }
+  /**
+   * Retire une quantité de ressource de l'inventaire.
+   * @param resource - Le type de ressource
+   * @param amount - La quantité à retirer (doit être positive)
+   * @throws Error si la ressource n'est pas récoltable
+   * @throws Error si la quantité est négative
+   * @throws Error si l'inventaire n'a pas assez de ressources
+   */
+  removeResource(resource, amount) {
+    if (!this.isHarvestable(resource)) {
+      throw new Error(`La ressource ${resource} n'est pas r\xE9coltable.`);
+    }
+    if (amount < 0) {
+      throw new Error("La quantit\xE9 \xE0 retirer doit \xEAtre positive.");
+    }
+    const current = this.resources.get(resource) || 0;
+    if (current < amount) {
+      throw new Error(
+        `Pas assez de ${resource}. Disponible: ${current}, requis: ${amount}.`
+      );
+    }
+    this.resources.set(resource, current - amount);
+  }
+  /**
+   * Retourne la quantité d'une ressource dans l'inventaire.
+   * @param resource - Le type de ressource
+   * @returns La quantité disponible (0 si la ressource n'est pas récoltable)
+   */
+  getResource(resource) {
+    if (!this.isHarvestable(resource)) {
+      return 0;
+    }
+    return this.resources.get(resource) || 0;
+  }
+  /**
+   * Vérifie si le joueur a assez d'une ressource donnée.
+   * @param resource - Le type de ressource
+   * @param amount - La quantité requise
+   * @returns true si l'inventaire contient au moins la quantité requise
+   */
+  hasEnough(resource, amount) {
+    if (!this.isHarvestable(resource)) {
+      return false;
+    }
+    return this.getResource(resource) >= amount;
+  }
+  /**
+   * Vérifie si le joueur peut se permettre un coût donné.
+   * Un coût est un objet avec des ressources et leurs quantités requises.
+   * @param cost - Un objet Map ou Record avec les ressources et quantités requises
+   * @returns true si toutes les ressources requises sont disponibles en quantité suffisante
+   */
+  canAfford(cost) {
+    const costMap = cost instanceof Map ? cost : new Map(
+      Object.entries(cost).map(([key, value]) => [
+        key,
+        value
+      ])
+    );
+    for (const [resource, requiredAmount] of costMap.entries()) {
+      if (!this.hasEnough(resource, requiredAmount)) {
+        return false;
+      }
+    }
+    return true;
+  }
+  /**
+   * Retire les ressources correspondant à un coût de l'inventaire.
+   * @param cost - Un objet Map ou Record avec les ressources et quantités requises
+   * @throws Error si le joueur ne peut pas se permettre le coût
+   */
+  payCost(cost) {
+    if (!this.canAfford(cost)) {
+      throw new Error("Le joueur ne peut pas se permettre ce co\xFBt.");
+    }
+    const costMap = cost instanceof Map ? cost : new Map(
+      Object.entries(cost).map(([key, value]) => [
+        key,
+        value
+      ])
+    );
+    for (const [resource, amount] of costMap.entries()) {
+      this.removeResource(resource, amount);
+    }
+  }
+  /**
+   * Retourne toutes les ressources de l'inventaire.
+   * @returns Un Map avec toutes les ressources et leurs quantités
+   */
+  getAllResources() {
+    return new Map(this.resources);
+  }
+  /**
+   * Réinitialise toutes les ressources à 0.
+   */
+  clear() {
+    this.resources.set("Wood" /* Wood */, 0);
+    this.resources.set("Brick" /* Brick */, 0);
+    this.resources.set("Wheat" /* Wheat */, 0);
+    this.resources.set("Sheep" /* Sheep */, 0);
+    this.resources.set("Ore" /* Ore */, 0);
+  }
+  /**
+   * Vérifie si une ressource est récoltable.
+   * @param resource - Le type de ressource
+   * @returns true si la ressource peut être récoltée (Wood, Brick, Wheat, Sheep, Ore)
+   */
+  isHarvestable(resource) {
+    return resource === "Wood" /* Wood */ || resource === "Brick" /* Brick */ || resource === "Wheat" /* Wheat */ || resource === "Sheep" /* Sheep */ || resource === "Ore" /* Ore */;
+  }
+};
+
 // src/application/MainGame.ts
 var MainGame = class {
   constructor() {
     this.gameMap = null;
     this.mapGenerator = new MapGenerator();
+    this.playerResources = new PlayerResources();
+    this.playerCivilizationId = CivilizationId.create("player1");
   }
   /**
    * Initialise une nouvelle partie en générant une carte.
@@ -1057,6 +1201,7 @@ var MainGame = class {
       seed: actualSeed
     };
     this.gameMap = this.mapGenerator.generate(config);
+    this.playerResources.clear();
   }
   /**
    * Retourne la carte de jeu actuelle.
@@ -1064,6 +1209,20 @@ var MainGame = class {
    */
   getGameMap() {
     return this.gameMap;
+  }
+  /**
+   * Retourne l'inventaire du joueur.
+   * @returns L'inventaire du joueur
+   */
+  getPlayerResources() {
+    return this.playerResources;
+  }
+  /**
+   * Retourne l'identifiant de la civilisation du joueur.
+   * @returns L'identifiant de la civilisation
+   */
+  getPlayerCivilizationId() {
+    return this.playerCivilizationId;
   }
   /**
    * Génère une nouvelle carte avec un nouveau seed.
@@ -1093,6 +1252,8 @@ var HEX_TYPE_COLORS = {
 var HexMapRenderer = class {
   constructor(canvas) {
     this.showCoordinates = false;
+    this.currentConfig = null;
+    this.currentGameMap = null;
     this.canvas = canvas;
     const context = canvas.getContext("2d");
     if (!context) {
@@ -1141,6 +1302,8 @@ var HexMapRenderer = class {
       offsetX,
       offsetY
     };
+    this.currentConfig = config;
+    this.currentGameMap = gameMap;
     for (const hex of visibleHexes) {
       this.drawHex(hex, gameMap, config);
     }
@@ -1277,10 +1440,184 @@ var HexMapRenderer = class {
   resize() {
     const header = document.querySelector("header");
     const footer = document.querySelector("footer");
+    const resourcesPanel = document.getElementById("resources-panel");
     const headerHeight = header ? header.offsetHeight : 0;
     const footerHeight = footer ? footer.offsetHeight : 0;
-    this.canvas.width = window.innerWidth;
+    const resourcesPanelWidth = resourcesPanel ? resourcesPanel.offsetWidth + 32 : 0;
+    this.canvas.width = window.innerWidth - resourcesPanelWidth;
     this.canvas.height = window.innerHeight - headerHeight - footerHeight;
+  }
+  /**
+   * Convertit les coordonnées pixel (x, y) en coordonnées hexagonales (q, r).
+   * @param pixelX - Coordonnée X du pixel
+   * @param pixelY - Coordonnée Y du pixel
+   * @returns Les coordonnées hexagonales correspondantes, ou null si hors carte
+   */
+  pixelToHexCoord(pixelX, pixelY) {
+    if (!this.currentConfig || !this.currentGameMap) {
+      return null;
+    }
+    const { hexSize, offsetX, offsetY } = this.currentConfig;
+    const grid = this.currentGameMap.getGrid();
+    const x = pixelX - offsetX;
+    const y = pixelY - offsetY;
+    const q = (Math.sqrt(3) / 3 * x - 1 / 3 * y) / hexSize;
+    const r = 2 / 3 * y / hexSize;
+    const hexQ = Math.round(q);
+    const hexR = Math.round(r);
+    const candidates = [
+      new HexCoord(hexQ, hexR),
+      new HexCoord(hexQ + 1, hexR),
+      new HexCoord(hexQ, hexR + 1),
+      new HexCoord(hexQ - 1, hexR),
+      new HexCoord(hexQ, hexR - 1),
+      new HexCoord(hexQ + 1, hexR - 1),
+      new HexCoord(hexQ - 1, hexR + 1)
+    ];
+    let closestHex = null;
+    let minDistance = Infinity;
+    for (const candidate of candidates) {
+      if (!grid.hasHex(candidate)) {
+        continue;
+      }
+      const hexX = offsetX + Math.sqrt(3) * (candidate.q + candidate.r / 2) * hexSize;
+      const hexY = offsetY + 3 / 2 * candidate.r * hexSize;
+      const dx = pixelX - hexX;
+      const dy = pixelY - hexY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      if (distance < hexSize * 0.9 && distance < minDistance) {
+        minDistance = distance;
+        closestHex = candidate;
+      }
+    }
+    return closestHex;
+  }
+  /**
+   * Définit le callback à appeler lorsqu'un hexagone est cliqué.
+   * @param callback - Fonction appelée avec les coordonnées hexagonales du clic
+   */
+  setOnHexClick(callback) {
+    this.canvas.addEventListener("click", (event) => {
+      const rect = this.canvas.getBoundingClientRect();
+      const pixelX = event.clientX - rect.left;
+      const pixelY = event.clientY - rect.top;
+      const hexCoord = this.pixelToHexCoord(pixelX, pixelY);
+      if (hexCoord) {
+        callback(hexCoord);
+      }
+    });
+  }
+};
+
+// src/model/game/ResourceHarvest.ts
+var ResourceHarvest = class {
+  /**
+   * Convertit un HexType en ResourceType si c'est une ressource récoltable.
+   * @param hexType - Le type d'hexagone
+   * @returns Le ResourceType correspondant, ou null si non récoltable
+   */
+  static hexTypeToResourceType(hexType) {
+    switch (hexType) {
+      case "Wood" /* Wood */:
+        return "Wood" /* Wood */;
+      case "Brick" /* Brick */:
+        return "Brick" /* Brick */;
+      case "Wheat" /* Wheat */:
+        return "Wheat" /* Wheat */;
+      case "Sheep" /* Sheep */:
+        return "Sheep" /* Sheep */;
+      case "Ore" /* Ore */:
+        return "Ore" /* Ore */;
+      default:
+        return null;
+    }
+  }
+  /**
+   * Calcule le gain de ressource pour un hexagone donné.
+   * Le gain de base est de 1 par hexagone, mais peut être modifié par des bonus futurs.
+   * @param hexType - Le type d'hexagone
+   * @returns La quantité de ressource gagnée (0 si non récoltable)
+   */
+  static calculateGain(hexType) {
+    return this.hexTypeToResourceType(hexType) !== null ? 1 : 0;
+  }
+  /**
+   * Vérifie si un hexagone est adjacent à une ville du joueur.
+   * Un hexagone est adjacent à une ville si la ville est sur un vertex qui contient cet hexagone.
+   * @param hexCoord - La coordonnée de l'hexagone
+   * @param gameMap - La carte de jeu
+   * @param civId - L'identifiant de la civilisation du joueur
+   * @returns true si l'hexagone est adjacent à au moins une ville du joueur
+   */
+  static isAdjacentToPlayerCity(hexCoord, gameMap, civId) {
+    const grid = gameMap.getGrid();
+    const vertices = grid.getVerticesForHex(hexCoord);
+    for (const vertex of vertices) {
+      if (gameMap.hasCity(vertex)) {
+        const owner = gameMap.getCityOwner(vertex);
+        if (owner && owner.equals(civId)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+  /**
+   * Vérifie si un hexagone peut être récolté par le joueur.
+   * @param hexCoord - La coordonnée de l'hexagone
+   * @param gameMap - La carte de jeu
+   * @param civId - L'identifiant de la civilisation du joueur
+   * @returns true si l'hexagone est récoltable
+   */
+  static canHarvest(hexCoord, gameMap, civId) {
+    const grid = gameMap.getGrid();
+    if (!grid.hasHex(hexCoord)) {
+      return false;
+    }
+    if (!gameMap.isHexVisible(hexCoord)) {
+      return false;
+    }
+    if (!this.isAdjacentToPlayerCity(hexCoord, gameMap, civId)) {
+      return false;
+    }
+    const hexType = gameMap.getHexType(hexCoord);
+    if (!hexType) {
+      return false;
+    }
+    return this.hexTypeToResourceType(hexType) !== null;
+  }
+  /**
+   * Récolte les ressources d'un hexagone et les ajoute à l'inventaire du joueur.
+   * @param hexCoord - La coordonnée de l'hexagone à récolter
+   * @param gameMap - La carte de jeu
+   * @param civId - L'identifiant de la civilisation du joueur
+   * @param playerResources - L'inventaire du joueur
+   * @returns La quantité de ressource récoltée (0 si la récolte a échoué)
+   * @throws Error si l'hexagone ne peut pas être récolté
+   */
+  static harvest(hexCoord, gameMap, civId, playerResources) {
+    if (!this.canHarvest(hexCoord, gameMap, civId)) {
+      throw new Error(
+        `L'hexagone \xE0 ${hexCoord.toString()} ne peut pas \xEAtre r\xE9colt\xE9.`
+      );
+    }
+    const hexType = gameMap.getHexType(hexCoord);
+    if (!hexType) {
+      throw new Error(
+        `Aucun type d'hexagone trouv\xE9 sur l'hexagone \xE0 ${hexCoord.toString()}.`
+      );
+    }
+    const resourceType = this.hexTypeToResourceType(hexType);
+    if (!resourceType) {
+      throw new Error(
+        `L'hexagone \xE0 ${hexCoord.toString()} ne contient pas de ressource r\xE9coltable.`
+      );
+    }
+    const gain = this.calculateGain(hexType);
+    if (gain > 0) {
+      playerResources.addResource(resourceType, gain);
+    }
+    return gain;
   }
 };
 
@@ -1288,11 +1625,15 @@ var HexMapRenderer = class {
 function main() {
   const canvas = document.getElementById("map-canvas");
   const regenerateBtn = document.getElementById("regenerate-btn");
+  const resourcesList = document.getElementById("resources-list");
   if (!canvas) {
     throw new Error("Canvas introuvable");
   }
   if (!regenerateBtn) {
     throw new Error("Bouton de r\xE9g\xE9n\xE9ration introuvable");
+  }
+  if (!resourcesList) {
+    throw new Error("Panneau de ressources introuvable");
   }
   const game = new MainGame();
   const renderer = new HexMapRenderer(canvas);
@@ -1304,16 +1645,80 @@ function main() {
       renderer.render(gameMap2);
     }
   });
+  function updateResourcesDisplay() {
+    if (!resourcesList) return;
+    const playerResources = game.getPlayerResources();
+    const resourceNames = {
+      ["Wood" /* Wood */]: "Bois",
+      ["Brick" /* Brick */]: "Brique",
+      ["Wheat" /* Wheat */]: "Bl\xE9",
+      ["Sheep" /* Sheep */]: "Mouton",
+      ["Ore" /* Ore */]: "Minerai"
+    };
+    const resourceColors = {
+      ["Wood" /* Wood */]: "#8B4513",
+      ["Brick" /* Brick */]: "#CD5C5C",
+      ["Wheat" /* Wheat */]: "#FFD700",
+      ["Sheep" /* Sheep */]: "#90EE90",
+      ["Ore" /* Ore */]: "#708090"
+    };
+    const resourceOrder = [
+      "Wood" /* Wood */,
+      "Brick" /* Brick */,
+      "Wheat" /* Wheat */,
+      "Sheep" /* Sheep */,
+      "Ore" /* Ore */
+    ];
+    resourcesList.innerHTML = "";
+    for (const resourceType of resourceOrder) {
+      const count = playerResources.getResource(resourceType);
+      const item = document.createElement("div");
+      item.className = "resource-item";
+      item.style.borderLeftColor = resourceColors[resourceType];
+      const color = document.createElement("div");
+      color.className = "resource-color";
+      color.style.backgroundColor = resourceColors[resourceType];
+      const name = document.createElement("span");
+      name.className = "resource-name";
+      name.textContent = resourceNames[resourceType];
+      const countEl = document.createElement("span");
+      countEl.className = "resource-count";
+      countEl.textContent = count.toString();
+      item.appendChild(color);
+      item.appendChild(name);
+      item.appendChild(countEl);
+      resourcesList.appendChild(item);
+    }
+  }
   game.initialize();
   const gameMap = game.getGameMap();
   if (gameMap) {
     renderer.render(gameMap);
   }
+  updateResourcesDisplay();
+  renderer.setOnHexClick((hexCoord) => {
+    const currentGameMap = game.getGameMap();
+    if (!currentGameMap) {
+      return;
+    }
+    const civId = game.getPlayerCivilizationId();
+    const playerResources = game.getPlayerResources();
+    try {
+      if (ResourceHarvest.canHarvest(hexCoord, currentGameMap, civId)) {
+        ResourceHarvest.harvest(hexCoord, currentGameMap, civId, playerResources);
+        updateResourcesDisplay();
+        renderer.render(currentGameMap);
+      }
+    } catch (error) {
+      console.debug("R\xE9colte impossible:", error);
+    }
+  });
   regenerateBtn.addEventListener("click", () => {
     game.regenerate();
     const newGameMap = game.getGameMap();
     if (newGameMap) {
       renderer.render(newGameMap);
+      updateResourcesDisplay();
     }
   });
 }
