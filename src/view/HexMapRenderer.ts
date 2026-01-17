@@ -36,6 +36,8 @@ export class HexMapRenderer {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private showCoordinates: boolean = false;
+  private currentConfig: RenderConfig | null = null;
+  private currentGameMap: GameMap | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -106,6 +108,10 @@ export class HexMapRenderer {
       offsetX,
       offsetY,
     };
+
+    // Stocker la configuration et la carte pour la détection de clic
+    this.currentConfig = config;
+    this.currentGameMap = gameMap;
 
     // Dessiner uniquement les hexagones visibles
     for (const hex of visibleHexes) {
@@ -306,5 +312,93 @@ export class HexMapRenderer {
     
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight - headerHeight - footerHeight;
+  }
+
+  /**
+   * Convertit les coordonnées pixel (x, y) en coordonnées hexagonales (q, r).
+   * @param pixelX - Coordonnée X du pixel
+   * @param pixelY - Coordonnée Y du pixel
+   * @returns Les coordonnées hexagonales correspondantes, ou null si hors carte
+   */
+  pixelToHexCoord(pixelX: number, pixelY: number): HexCoord | null {
+    if (!this.currentConfig || !this.currentGameMap) {
+      return null;
+    }
+
+    const { hexSize, offsetX, offsetY } = this.currentConfig;
+    const grid = this.currentGameMap.getGrid();
+
+    // Convertir les coordonnées pixel en coordonnées hexagonales
+    // Formule inverse: 
+    // q = (sqrt(3)/3 * x - 1/3 * y) / size - r/2
+    // r = (2/3 * y) / size
+    // On utilise une approche itérative pour trouver le bon hexagone
+    
+    // Convertir pixel -> coordonnées hexagonales approximatives
+    const x = pixelX - offsetX;
+    const y = pixelY - offsetY;
+    
+    const q = (Math.sqrt(3) / 3 * x - 1 / 3 * y) / hexSize;
+    const r = (2 / 3 * y) / hexSize;
+
+    // Arrondir pour obtenir les coordonnées hexagonales les plus proches
+    const hexQ = Math.round(q);
+    const hexR = Math.round(r);
+    
+    // Vérifier les 3 hexagones les plus proches (arrondi peut donner des erreurs)
+    const candidates = [
+      new HexCoord(hexQ, hexR),
+      new HexCoord(hexQ + 1, hexR),
+      new HexCoord(hexQ, hexR + 1),
+      new HexCoord(hexQ - 1, hexR),
+      new HexCoord(hexQ, hexR - 1),
+      new HexCoord(hexQ + 1, hexR - 1),
+      new HexCoord(hexQ - 1, hexR + 1),
+    ];
+
+    // Trouver le candidat le plus proche du point cliqué et qui existe dans la grille
+    let closestHex: HexCoord | null = null;
+    let minDistance = Infinity;
+
+    for (const candidate of candidates) {
+      if (!grid.hasHex(candidate)) {
+        continue;
+      }
+
+      // Calculer la position du centre de l'hexagone
+      const hexX = offsetX + Math.sqrt(3) * (candidate.q + candidate.r / 2) * hexSize;
+      const hexY = offsetY + (3 / 2) * candidate.r * hexSize;
+
+      // Calculer la distance depuis le point cliqué
+      const dx = pixelX - hexX;
+      const dy = pixelY - hexY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      // Si la distance est inférieure au rayon de l'hexagone (à peu près)
+      // L'hexagone a un rayon de hexSize
+      if (distance < hexSize * 0.9 && distance < minDistance) {
+        minDistance = distance;
+        closestHex = candidate;
+      }
+    }
+
+    return closestHex;
+  }
+
+  /**
+   * Définit le callback à appeler lorsqu'un hexagone est cliqué.
+   * @param callback - Fonction appelée avec les coordonnées hexagonales du clic
+   */
+  setOnHexClick(callback: (hexCoord: HexCoord) => void): void {
+    this.canvas.addEventListener('click', (event) => {
+      const rect = this.canvas.getBoundingClientRect();
+      const pixelX = event.clientX - rect.left;
+      const pixelY = event.clientY - rect.top;
+
+      const hexCoord = this.pixelToHexCoord(pixelX, pixelY);
+      if (hexCoord) {
+        callback(hexCoord);
+      }
+    });
   }
 }

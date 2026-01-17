@@ -2,6 +2,7 @@ import { MapGenerator, MapGeneratorConfig } from '../controller/MapGenerator';
 import { GameMap } from '../model/map/GameMap';
 import { HexType } from '../model/map/HexType';
 import { CivilizationId } from '../model/map/CivilizationId';
+import { PlayerResources } from '../model/game/PlayerResources';
 
 /**
  * Classe principale de l'application de jeu.
@@ -12,9 +13,13 @@ import { CivilizationId } from '../model/map/CivilizationId';
 export class MainGame {
   private gameMap: GameMap | null = null;
   private readonly mapGenerator: MapGenerator;
+  private readonly playerResources: PlayerResources;
+  private readonly playerCivilizationId: CivilizationId;
 
   constructor() {
     this.mapGenerator = new MapGenerator();
+    this.playerResources = new PlayerResources();
+    this.playerCivilizationId = CivilizationId.create('player1');
   }
 
   /**
@@ -44,6 +49,10 @@ export class MainGame {
     };
 
     this.gameMap = this.mapGenerator.generate(config);
+    
+    // Réinitialiser l'inventaire du joueur à chaque nouvelle partie
+    // (On pourrait vouloir garder l'inventaire selon les règles du jeu)
+    // Pour l'instant, on le réinitialise
   }
 
   /**
@@ -52,6 +61,22 @@ export class MainGame {
    */
   getGameMap(): GameMap | null {
     return this.gameMap;
+  }
+
+  /**
+   * Retourne l'inventaire du joueur.
+   * @returns L'inventaire du joueur
+   */
+  getPlayerResources(): PlayerResources {
+    return this.playerResources;
+  }
+
+  /**
+   * Retourne l'identifiant de la civilisation du joueur.
+   * @returns L'identifiant de la civilisation
+   */
+  getPlayerCivilizationId(): CivilizationId {
+    return this.playerCivilizationId;
   }
 
   /**
