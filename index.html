@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Colons of Idlestan - Carte de Jeu</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>Colons of Idlestan</h1>
+            <div class="controls">
+                <button id="regenerate-btn">Nouvelle Carte</button>
+            </div>
+        </header>
+        <main>
+            <canvas id="map-canvas"></canvas>
+        </main>
+        <footer>
+            <div class="legend">
+                <h3>Légende des ressources :</h3>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #8B4513;"></div>
+                        <span>Bois</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #CD5C5C;"></div>
+                        <span>Brique</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #FFD700;"></div>
+                        <span>Blé</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #90EE90;"></div>
+                        <span>Mouton</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #708090;"></div>
+                        <span>Minerai</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #F4A460;"></div>
+                        <span>Désert</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #4169E1;"></div>
+                        <span>Eau</span>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+    <script type="module" src="main.js"></script>
+</body>
+</html>
