@@ -240,8 +240,9 @@ export class GameMap {
   /**
    * Détermine si un hexagone est visible.
    * 
-   * Un hexagone est visible si au moins un de ses sommets a une route connectée.
-   * Un hexagone sans route adjacente n'est pas visible.
+   * Un hexagone est visible si au moins un de ses sommets (vertices) a une ville ou une route connectée.
+   * Par défaut, tous les hexagones commencent non visibles.
+   * Un hexagone devient visible lorsqu'une ville ou une route est placée sur l'un de ses vertices.
    * 
    * @param hex - L'hexagone ou sa coordonnée
    * @returns true si l'hexagone est visible, false sinon
@@ -257,9 +258,15 @@ export class GameMap {
     // Obtenir tous les sommets de cet hexagone
     const vertices = this.grid.getVerticesForHex(coord);
     
-    // Vérifier si au moins un sommet a une route connectée
-    // Un sommet est formé par 3 hexagones, donc il y a 3 arêtes qui se rencontrent à ce sommet
+    // Vérifier si au moins un sommet a une ville ou une route connectée
     for (const vertex of vertices) {
+      // Vérifier si ce vertex a une ville
+      if (this.hasCity(vertex)) {
+        return true;
+      }
+      
+      // Vérifier si ce vertex a une route connectée
+      // Un sommet est formé par 3 hexagones, donc il y a 3 arêtes qui se rencontrent à ce sommet
       const hexes = vertex.getHexes();
       
       // Vérifier chaque paire d'hexagones pour former une arête
