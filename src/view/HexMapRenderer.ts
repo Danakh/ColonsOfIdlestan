@@ -42,6 +42,9 @@ export class HexMapRenderer {
   private currentGameMap: GameMap | null = null;
   private onHexClickCallback: ((hexCoord: HexCoord) => void) | null = null;
   private onEdgeClickCallback: ((edge: Edge) => void) | null = null;
+  private hoveredEdge: Edge | null = null;
+  private currentCivilizationId: CivilizationId | null = null;
+  private renderCallback: (() => void) | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -50,6 +53,7 @@ export class HexMapRenderer {
       throw new Error('Impossible d\'obtenir le contexte 2D du canvas');
     }
     this.ctx = context;
+    this.setupMouseMoveHandler();
   }
 
   /**
@@ -65,6 +69,8 @@ export class HexMapRenderer {
    * @param civId - Optionnel: la civilisation pour laquelle dessiner les routes constructibles
    */
   render(gameMap: GameMap, civId?: CivilizationId): void {
+    // Stocker la civilisation actuelle pour la détection de survol
+    this.currentCivilizationId = civId || null;
     // Effacer le canvas
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
@@ -140,6 +146,14 @@ export class HexMapRenderer {
     if (civId) {
       this.drawBuildableRoads(gameMap, config, civId);
     }
+  }
+
+  /**
+   * Définit un callback à appeler pour re-rendre la carte.
+   * Utilisé pour mettre à jour l'affichage lors du survol de la souris.
+   */
+  setRenderCallback(callback: () => void): void {
+    this.renderCallback = callback;
   }
 
   /**
@@ -344,7 +358,8 @@ export class HexMapRenderer {
     const buildableRoads = gameMap.getBuildableRoadsForCivilization(civId);
 
     for (const edge of buildableRoads) {
-      this.drawRoad(edge, config, true, gameMap); // true = trait pointillé
+      const isHighlighted = this.hoveredEdge !== null && this.hoveredEdge.equals(edge);
+      this.drawRoad(edge, config, true, gameMap, isHighlighted); // true = trait pointillé
     }
   }
 
@@ -353,8 +368,9 @@ export class HexMapRenderer {
    * @param edge - L'arête à dessiner
    * @param config - La configuration de rendu
    * @param isDashed - true pour un trait pointillé (route constructible), false pour un trait plein (route construite)
+   * @param isHighlighted - true pour mettre en surbrillance (route survolée)
    */
-  private drawRoad(edge: Edge, config: RenderConfig, isDashed: boolean, gameMap: GameMap): void {
+  private drawRoad(edge: Edge, config: RenderConfig, isDashed: boolean, gameMap: GameMap, isHighlighted: boolean = false): void {
     const { hexSize, offsetX, offsetY } = config;
     const [hex1, hex2] = edge.getHexes();
 
@@ -363,7 +379,7 @@ export class HexMapRenderer {
     
     if (vertices.length < 2) {
       // Fallback: utiliser les coins calculés à partir de la direction
-      this.drawRoadFromDirection(edge, config, isDashed);
+      this.drawRoadFromDirection(edge, config, isDashed, isHighlighted);
       return;
     }
 
@@ -380,8 +396,14 @@ export class HexMapRenderer {
     this.ctx.lineTo(pos2.x, pos2.y);
 
     // Configurer le style
-    this.ctx.strokeStyle = '#000000';
-    this.ctx.lineWidth = 4;
+    if (isHighlighted) {
+      // Surbrillance : couleur plus claire et trait plus épais
+      this.ctx.strokeStyle = '#FFA500'; // Orange
+      this.ctx.lineWidth = 6;
+    } else {
+      this.ctx.strokeStyle = '#000000';
+      this.ctx.lineWidth = 4;
+    }
 
     if (isDashed) {
       // Trait pointillé pour les routes constructibles
@@ -429,7 +451,7 @@ export class HexMapRenderer {
   /**
    * Dessine une route en utilisant la direction entre les deux hexagones (fallback).
    */
-  private drawRoadFromDirection(edge: Edge, config: RenderConfig, isDashed: boolean): void {
+  private drawRoadFromDirection(edge: Edge, config: RenderConfig, isDashed: boolean, isHighlighted: boolean = false): void {
     const { hexSize, offsetX, offsetY } = config;
     const [hex1, hex2] = edge.getHexes();
 
@@ -484,8 +506,13 @@ export class HexMapRenderer {
       this.ctx.beginPath();
       this.ctx.moveTo(centerX1, centerY1);
       this.ctx.lineTo(centerX2, centerY2);
-      this.ctx.strokeStyle = '#000000';
-      this.ctx.lineWidth = 4;
+      if (isHighlighted) {
+        this.ctx.strokeStyle = '#FFA500'; // Orange
+        this.ctx.lineWidth = 6;
+      } else {
+        this.ctx.strokeStyle = '#000000';
+        this.ctx.lineWidth = 4;
+      }
       if (isDashed) {
         this.ctx.setLineDash([5, 5]);
       } else {
@@ -511,8 +538,14 @@ export class HexMapRenderer {
     this.ctx.lineTo(cornerX2, cornerY2);
 
     // Configurer le style
-    this.ctx.strokeStyle = '#000000';
-    this.ctx.lineWidth = 4;
+    if (isHighlighted) {
+      // Surbrillance : couleur plus claire et trait plus épais
+      this.ctx.strokeStyle = '#FFA500'; // Orange
+      this.ctx.lineWidth = 6;
+    } else {
+      this.ctx.strokeStyle = '#000000';
+      this.ctx.lineWidth = 4;
+    }
 
     if (isDashed) {
       // Trait pointillé pour les routes constructibles
@@ -646,7 +679,7 @@ export class HexMapRenderer {
 
     let closestEdge: Edge | null = null;
     let minDistance = Infinity;
-    const maxDistance = 15; // Distance maximale en pixels pour considérer qu'on a cliqué sur une arête
+    const maxDistance = 8; // Distance maximale en pixels pour considérer qu'on a cliqué sur une arête
 
     for (const edge of allEdges) {
       // Obtenir les vertices de l'edge
@@ -734,6 +767,75 @@ export class HexMapRenderer {
     // Ajouter le nouveau listener
     this.canvas.addEventListener('click', this.handleClick);
   }
+
+  /**
+   * Configure le gestionnaire de mouvement de souris pour la surbrillance des routes constructibles.
+   */
+  private setupMouseMoveHandler(): void {
+    this.canvas.addEventListener('mousemove', this.handleMouseMove);
+    this.canvas.addEventListener('mouseleave', this.handleMouseLeave);
+  }
+
+  /**
+   * Gestionnaire de mouvement de souris pour mettre en surbrillance les routes constructibles.
+   */
+  private handleMouseMove = (event: MouseEvent): void => {
+    if (!this.currentConfig || !this.currentGameMap || !this.currentCivilizationId) {
+      return;
+    }
+
+    const rect = this.canvas.getBoundingClientRect();
+    
+    // Calculer les coordonnées en tenant compte de l'échelle CSS si le canvas est redimensionné
+    const scaleX = this.canvas.width / rect.width;
+    const scaleY = this.canvas.height / rect.height;
+    
+    const pixelX = (event.clientX - rect.left) * scaleX;
+    const pixelY = (event.clientY - rect.top) * scaleY;
+
+    // Détecter l'arête sous la souris
+    const edge = this.pixelToEdge(pixelX, pixelY);
+    
+    // Vérifier si c'est une route constructible
+    if (edge) {
+      const buildableRoads = this.currentGameMap.getBuildableRoadsForCivilization(this.currentCivilizationId);
+      const isBuildable = buildableRoads.some(buildableEdge => buildableEdge.equals(edge));
+      
+      if (isBuildable) {
+        // Vérifier si c'est une nouvelle arête (pour éviter les re-rendus inutiles)
+        if (!this.hoveredEdge || !this.hoveredEdge.equals(edge)) {
+          this.hoveredEdge = edge;
+          // Re-rendre la carte pour afficher la surbrillance
+          if (this.renderCallback) {
+            this.renderCallback();
+          }
+        }
+        return;
+      }
+    }
+
+    // Si on n'est pas sur une route constructible, retirer la surbrillance
+    if (this.hoveredEdge !== null) {
+      this.hoveredEdge = null;
+      // Re-rendre la carte pour retirer la surbrillance
+      if (this.renderCallback) {
+        this.renderCallback();
+      }
+    }
+  };
+
+  /**
+   * Gestionnaire quand la souris quitte le canvas.
+   */
+  private handleMouseLeave = (): void => {
+    if (this.hoveredEdge !== null) {
+      this.hoveredEdge = null;
+      // Re-rendre la carte pour retirer la surbrillance
+      if (this.renderCallback) {
+        this.renderCallback();
+      }
+    }
+  };
 
   /**
    * Gestionnaire de clic qui vérifie d'abord les edges, puis les hexagones.

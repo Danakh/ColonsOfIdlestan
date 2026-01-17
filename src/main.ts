@@ -117,6 +117,15 @@ function main(): void {
     renderer.render(gameMap, civId);
   }
 
+  // Configurer le callback de rendu pour la surbrillance au survol
+  renderer.setRenderCallback(() => {
+    const currentGameMap = game.getGameMap();
+    if (currentGameMap) {
+      const civId = game.getPlayerCivilizationId();
+      renderer.render(currentGameMap, civId);
+    }
+  });
+
   // Mettre à jour l'affichage des ressources
   updateResourcesDisplay();
 
