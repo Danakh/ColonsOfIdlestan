@@ -1677,7 +1677,6 @@ function main() {
       const count = playerResources.getResource(resourceType);
       const item = document.createElement("div");
       item.className = "resource-item";
-      item.style.borderLeftColor = resourceColors[resourceType];
       const color = document.createElement("div");
       color.className = "resource-color";
       color.style.backgroundColor = resourceColors[resourceType];
