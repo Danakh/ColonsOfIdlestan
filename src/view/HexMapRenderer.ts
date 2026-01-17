@@ -132,10 +132,11 @@ export class HexMapRenderer {
     const resource = gameMap.getResource(coord) || ResourceType.Desert;
     const color = RESOURCE_COLORS[resource] || '#CCCCCC';
 
-    // Dessiner l'hexagone
+    // Dessiner l'hexagone avec une rotation de 30° (pointy-top)
+    // Rotation de 30° = π/6 radians pour passer de flat-top à pointy-top
     this.ctx.beginPath();
     for (let i = 0; i < 6; i++) {
-      const angle = (Math.PI / 3) * i;
+      const angle = (Math.PI / 3) * i + Math.PI / 6;
       const hx = x + hexSize * Math.cos(angle);
       const hy = y + hexSize * Math.sin(angle);
       if (i === 0) {
@@ -160,8 +161,14 @@ export class HexMapRenderer {
    * Redimensionne le canvas pour qu'il s'adapte à la fenêtre.
    */
   resize(): void {
-    // Ajuster la taille du canvas à la fenêtre
+    // Ajuster la taille du canvas en tenant compte du header et footer
+    // Le canvas doit prendre tout l'espace disponible dans main
+    const header = document.querySelector('header');
+    const footer = document.querySelector('footer');
+    const headerHeight = header ? header.offsetHeight : 0;
+    const footerHeight = footer ? footer.offsetHeight : 0;
+    
     this.canvas.width = window.innerWidth;
-    this.canvas.height = window.innerHeight;
+    this.canvas.height = window.innerHeight - headerHeight - footerHeight;
   }
 }

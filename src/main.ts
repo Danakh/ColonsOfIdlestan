@@ -17,6 +17,9 @@ function main(): void {
     throw new Error('Bouton de régénération introuvable');
   }
 
+  // Créer le jeu principal
+  const game = new MainGame();
+
   // Créer le renderer
   const renderer = new HexMapRenderer(canvas);
   
@@ -29,9 +32,6 @@ function main(): void {
       renderer.render(gameMap);
     }
   });
-
-  // Créer le jeu principal
-  const game = new MainGame();
   
   // Initialiser et afficher la première carte
   game.initialize();

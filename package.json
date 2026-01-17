@@ -6,7 +6,9 @@
     "test": "vitest",
     "test:run": "vitest run",
     "build": "node build.js",
-    "dev": "node build.js --watch"
+    "dev": "node build.js --watch",
+    "serve": "node serve.js",
+    "start": "npm run build && npm run serve"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
