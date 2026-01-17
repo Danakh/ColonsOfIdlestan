@@ -37,7 +37,15 @@ export class MapGenerator {
     this.validateConfig(config);
 
     const rng = new SeededRNG(config.seed);
-    const hexGrid = this.generateHexGrid(config, rng);
+    
+    // Générer d'abord les hexagones terrestres
+    const terrestrialHexes = this.generateTerrestrialHexes(config, rng);
+    
+    // Ajouter la couche d'eau autour des hexagones terrestres
+    const allHexes = this.addWaterLayer(terrestrialHexes);
+    
+    // Créer la grille complète avec tous les hexagones (terrestres + eau)
+    const hexGrid = new HexGrid(allHexes);
     const gameMap = new GameMap(hexGrid);
 
     // Enregistrer les civilisations
@@ -45,8 +53,11 @@ export class MapGenerator {
       gameMap.registerCivilization(civId);
     }
 
-    // Assigner les ressources
-    this.assignResources(gameMap, config, rng);
+    // Assigner les ressources aux hexagones terrestres (sans les hexagones d'eau)
+    this.assignResources(gameMap, terrestrialHexes, config, rng);
+
+    // Assigner Water à tous les hexagones d'eau
+    this.assignWaterResources(gameMap, terrestrialHexes);
 
     return gameMap;
   }
@@ -80,11 +91,11 @@ export class MapGenerator {
   }
 
   /**
-   * Génère un HexGrid selon les règles de placement.
+   * Génère uniquement les hexagones terrestres selon les règles de placement.
    * - Les 2 premiers hexagones sont placés adjacents
    * - Chaque hexagone suivant doit être adjacent à au moins 2 hexagones déjà placés
    */
-  private generateHexGrid(config: MapGeneratorConfig, rng: SeededRNG): HexGrid {
+  private generateTerrestrialHexes(config: MapGeneratorConfig, rng: SeededRNG): Hex[] {
     const totalHexes = this.calculateTotalHexes(config.resourceDistribution);
     const placedCoords = new Set<string>();
     const hexes: Hex[] = [];
@@ -116,7 +127,7 @@ export class MapGenerator {
       placedCoords.add(candidateCoord.hashCode());
     }
 
-    return new HexGrid(hexes);
+    return hexes;
   }
 
   /**
@@ -177,12 +188,61 @@ export class MapGenerator {
   }
 
   /**
-   * Assignë les ressources aux hexagones selon la distribution.
+   * Ajoute une couche d'hexagones d'eau autour des hexagones terrestres.
+   * Retourne tous les hexagones (terrestres + eau).
    */
-  private assignResources(gameMap: GameMap, config: MapGeneratorConfig, rng: SeededRNG): void {
-    // Créer une liste de tous les types de ressources à assigner
+  private addWaterLayer(terrestrialHexes: Hex[]): Hex[] {
+    const terrestrialCoords = new Set<string>();
+    const waterCoords = new Set<string>();
+
+    // Marquer tous les hexagones terrestres
+    for (const hex of terrestrialHexes) {
+      terrestrialCoords.add(hex.coord.hashCode());
+    }
+
+    // Trouver tous les hexagones d'eau nécessaires (voisins des hexagones terrestres)
+    for (const hex of terrestrialHexes) {
+      for (const direction of ALL_DIRECTIONS) {
+        const neighborCoord = hex.coord.neighbor(direction);
+        const neighborHash = neighborCoord.hashCode();
+
+        // Si ce voisin n'est pas terrestre, c'est un hexagone d'eau
+        if (!terrestrialCoords.has(neighborHash) && !waterCoords.has(neighborHash)) {
+          waterCoords.add(neighborHash);
+        }
+      }
+    }
+
+    // Créer tous les hexagones (terrestres + eau)
+    const allHexes: Hex[] = [...terrestrialHexes];
+
+    // Ajouter tous les hexagones d'eau
+    for (const coordHash of waterCoords) {
+      const [q, r] = coordHash.split(',').map(Number);
+      const waterCoord = new HexCoord(q, r);
+      allHexes.push(new Hex(waterCoord));
+    }
+
+    return allHexes;
+  }
+
+  /**
+   * Assignë les ressources aux hexagones terrestres selon la distribution.
+   * Exclut les hexagones d'eau.
+   */
+  private assignResources(
+    gameMap: GameMap,
+    terrestrialHexes: Hex[],
+    config: MapGeneratorConfig,
+    rng: SeededRNG
+  ): void {
+    // Créer une liste de tous les types de ressources à assigner (sans l'eau)
     const resourcesToAssign: ResourceType[] = [];
     for (const [resourceType, count] of config.resourceDistribution.entries()) {
+      // Ignorer l'eau dans la distribution (elle sera ajoutée séparément)
+      if (resourceType === ResourceType.Water) {
+        continue;
+      }
       for (let i = 0; i < count; i++) {
         resourcesToAssign.push(resourceType);
       }
@@ -191,16 +251,35 @@ export class MapGenerator {
     // Mélanger la liste pour un placement aléatoire
     rng.shuffle(resourcesToAssign);
 
-    // Assigner chaque ressource à un hexagone
-    const grid = gameMap.getGrid();
-    const allHexes = grid.getAllHexes();
-    const shuffledHexes = [...allHexes];
+    // Mélanger les hexagones terrestres
+    const shuffledHexes = [...terrestrialHexes];
     rng.shuffle(shuffledHexes);
 
-    for (let i = 0; i < resourcesToAssign.length; i++) {
+    // Assigner chaque ressource à un hexagone terrestre
+    for (let i = 0; i < resourcesToAssign.length && i < shuffledHexes.length; i++) {
       const hex = shuffledHexes[i];
       const resource = resourcesToAssign[i];
       gameMap.setResource(hex.coord, resource);
+    }
+  }
+
+  /**
+   * Assignë Water à tous les hexagones d'eau de la carte.
+   */
+  private assignWaterResources(gameMap: GameMap, terrestrialHexes: Hex[]): void {
+    const grid = gameMap.getGrid();
+    const terrestrialCoords = new Set<string>();
+
+    // Marquer tous les hexagones terrestres
+    for (const hex of terrestrialHexes) {
+      terrestrialCoords.add(hex.coord.hashCode());
+    }
+
+    // Parcourir tous les hexagones de la grille et assigner Water à ceux qui ne sont pas terrestres
+    for (const hex of grid.getAllHexes()) {
+      if (!terrestrialCoords.has(hex.coord.hashCode())) {
+        gameMap.setResource(hex.coord, ResourceType.Water);
+      }
     }
   }
 }

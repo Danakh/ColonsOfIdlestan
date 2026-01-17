@@ -14,4 +14,6 @@ export enum ResourceType {
   Ore = 'Ore',
   /** Désert (pas de ressource) */
   Desert = 'Desert',
+  /** Eau */
+  Water = 'Water',
 }
