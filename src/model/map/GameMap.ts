@@ -9,14 +9,14 @@ import { CivilizationId } from './CivilizationId';
 /**
  * Carte de jeu construite sur une grille hexagonale.
  * 
- * Gère les ressources par hexagone, les villes sur les sommets,
+ * Gère les types d'hexagones, les villes sur les sommets,
  * et les routes sur les arêtes. Détermine la visibilité des hexagones
  * en fonction de la présence de routes adjacentes.
  * 
  * Gère également la propriété des villes et routes par différentes civilisations.
  */
 export class GameMap {
-  private readonly resourceMap: Map<string, HexType>;
+  private readonly hexTypeMap: Map<string, HexType>;
   private readonly cities: Set<string>;
   private readonly roads: Set<string>;
   private readonly registeredCivilizations: Set<string>;
@@ -28,16 +28,16 @@ export class GameMap {
    * @param grid - La grille hexagonale sous-jacente
    */
   constructor(private readonly grid: HexGrid) {
-    this.resourceMap = new Map();
+    this.hexTypeMap = new Map();
     this.cities = new Set();
     this.roads = new Set();
     this.registeredCivilizations = new Set();
     this.cityOwner = new Map();
     this.roadOwner = new Map();
 
-    // Initialiser toutes les ressources à Desert par défaut
+    // Initialiser tous les hexagones à Desert par défaut
     for (const hex of grid.getAllHexes()) {
-      this.resourceMap.set(hex.coord.hashCode(), HexType.Desert);
+      this.hexTypeMap.set(hex.coord.hashCode(), HexType.Desert);
     }
   }
 
@@ -54,12 +54,12 @@ export class GameMap {
    * @param hexType - Le type d'hexagone
    * @throws Error si l'hexagone n'existe pas dans la grille
    */
-  setResource(hex: Hex | HexCoord, hexType: HexType): void {
+  setHexType(hex: Hex | HexCoord, hexType: HexType): void {
     const coord = hex instanceof Hex ? hex.coord : hex;
     if (!this.grid.hasHex(coord)) {
       throw new Error(`L'hexagone à la coordonnée ${coord.toString()} n'existe pas dans la grille.`);
     }
-    this.resourceMap.set(coord.hashCode(), hexType);
+    this.hexTypeMap.set(coord.hashCode(), hexType);
   }
 
   /**
@@ -67,12 +67,12 @@ export class GameMap {
    * @param hex - L'hexagone ou sa coordonnée
    * @returns Le type d'hexagone, ou undefined si l'hexagone n'existe pas
    */
-  getResource(hex: Hex | HexCoord): HexType | undefined {
+  getHexType(hex: Hex | HexCoord): HexType | undefined {
     const coord = hex instanceof Hex ? hex.coord : hex;
     if (!this.grid.hasHex(coord)) {
       return undefined;
     }
-    return this.resourceMap.get(coord.hashCode());
+    return this.hexTypeMap.get(coord.hashCode());
   }
 
   /**

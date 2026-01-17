@@ -109,7 +109,7 @@ export class ResourceHarvest {
     }
 
     // Vérifier que l'hexagone contient une ressource récoltable
-    const hexType = gameMap.getResource(hexCoord);
+    const hexType = gameMap.getHexType(hexCoord);
     if (!hexType) {
       return false;
     }
@@ -141,7 +141,7 @@ export class ResourceHarvest {
     }
 
     // Obtenir le type d'hexagone
-    const hexType = gameMap.getResource(hexCoord);
+    const hexType = gameMap.getHexType(hexCoord);
     if (!hexType) {
       throw new Error(
         `Aucun type d'hexagone trouvé sur l'hexagone à ${hexCoord.toString()}.`

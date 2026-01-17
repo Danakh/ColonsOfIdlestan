@@ -94,7 +94,7 @@ describe('MapGenerator', () => {
 
       // Vérifier que les ressources sont identiques aux mêmes coordonnées
       for (const hex of hexes1) {
-        expect(map1.getResource(hex.coord)).toBe(map2.getResource(hex.coord));
+        expect(map1.getHexType(hex.coord)).toBe(map2.getHexType(hex.coord));
       }
     });
 
@@ -128,10 +128,10 @@ describe('MapGenerator', () => {
       // Vérifier si les ressources diffèrent à au moins une position
       for (let i = 0; i < hexes1.length; i++) {
         const coord1 = hexes1[i].coord;
-        const resource1 = map1.getResource(coord1);
+        const resource1 = map1.getHexType(coord1);
 
         // Trouver la ressource correspondante dans map2 (même position ou différente)
-        const resource2 = map2.getResource(coord1);
+        const resource2 = map2.getHexType(coord1);
 
         if (resource1 !== resource2) {
           hasDifference = true;
@@ -166,7 +166,7 @@ describe('MapGenerator', () => {
       // Compter les ressources assignées
       const resourceCounts = new Map<HexType, number>();
       for (const hex of allHexes) {
-        const resource = map.getResource(hex.coord);
+        const resource = map.getHexType(hex.coord);
         if (resource) {
           resourceCounts.set(resource, (resourceCounts.get(resource) || 0) + 1);
         }
@@ -184,7 +184,7 @@ describe('MapGenerator', () => {
       // Compter les hexagones terrestres seulement
       let terrestrialCount = 0;
       for (const hex of allHexes) {
-        const resource = map.getResource(hex.coord);
+        const resource = map.getHexType(hex.coord);
         if (resource !== HexType.Water) {
           terrestrialCount++;
         }
@@ -216,7 +216,7 @@ describe('MapGenerator', () => {
 
       // Tous les hexagones doivent avoir une ressource assignée
       for (const hex of allHexes) {
-        const resource = map.getResource(hex.coord);
+        const resource = map.getHexType(hex.coord);
         expect(resource).toBeDefined();
       }
     });
@@ -246,7 +246,7 @@ describe('MapGenerator', () => {
       // Vérifier que la grille a au moins 8 hexagones terrestres
       let terrestrialCount = 0;
       for (const hex of allHexes) {
-        const resource = map.getResource(hex.coord);
+        const resource = map.getHexType(hex.coord);
         if (resource !== HexType.Water) {
           terrestrialCount++;
         }
@@ -291,7 +291,7 @@ describe('MapGenerator', () => {
       let terrestrialCount = 0;
       const terrestrialCoords: HexCoord[] = [];
       for (const hex of allHexes) {
-        const resource = map.getResource(hex.coord);
+        const resource = map.getHexType(hex.coord);
         if (resource !== HexType.Water) {
           terrestrialCount++;
           terrestrialCoords.push(hex.coord);
@@ -363,7 +363,7 @@ describe('MapGenerator', () => {
       // Compter les hexagones terrestres uniquement
       let terrestrialCount = 0;
       for (const hex of allHexes) {
-        const resource = map.getResource(hex.coord);
+        const resource = map.getHexType(hex.coord);
         if (resource !== HexType.Water) {
           terrestrialCount++;
         }
@@ -396,7 +396,7 @@ describe('MapGenerator', () => {
       // Compter les hexagones terrestres uniquement
       let terrestrialCount = 0;
       for (const hex of allHexes) {
-        const resource = map.getResource(hex.coord);
+        const resource = map.getHexType(hex.coord);
         if (resource !== HexType.Water) {
           terrestrialCount++;
         }
@@ -430,7 +430,7 @@ describe('MapGenerator', () => {
       // Vérifier qu'il y a des hexagones d'eau
       let waterCount = 0;
       for (const hex of allHexes) {
-        const resource = map.getResource(hex.coord);
+        const resource = map.getHexType(hex.coord);
         if (resource === HexType.Water) {
           waterCount++;
         }
@@ -452,7 +452,7 @@ describe('MapGenerator', () => {
 
       // Tous les hexagones doivent avoir une ressource assignée
       for (const hex of grid.getAllHexes()) {
-        const resource = map.getResource(hex.coord);
+        const resource = map.getHexType(hex.coord);
         expect(resource).toBeDefined();
       }
     });
@@ -475,7 +475,7 @@ describe('MapGenerator', () => {
 
       // Pour chaque hexagone non-aqueux, vérifier qu'il a exactement 6 voisins dans la grille
       for (const hex of allHexes) {
-        const resource = map.getResource(hex.coord);
+        const resource = map.getHexType(hex.coord);
 
         // Ignorer les hexagones d'eau
         if (resource === HexType.Water) {
@@ -516,7 +516,7 @@ describe('MapGenerator', () => {
 
       // Pour chaque hexagone terrestre uniquement
       for (const hex of grid.getAllHexes()) {
-        const resource = map.getResource(hex.coord);
+        const resource = map.getHexType(hex.coord);
         
         // Ignorer les hexagones d'eau (ils peuvent ne pas avoir tous leurs 6 voisins)
         if (resource === HexType.Water) {

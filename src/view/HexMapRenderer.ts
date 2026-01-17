@@ -156,7 +156,7 @@ export class HexMapRenderer {
     const y = offsetY + (3 / 2) * coord.r * hexSize;
 
     // Obtenir le type d'hexagone
-    const hexType = gameMap.getResource(coord) || HexType.Desert;
+    const hexType = gameMap.getHexType(coord) || HexType.Desert;
     const color = HEX_TYPE_COLORS[hexType] || '#CCCCCC';
 
     // Dessiner l'hexagone avec une rotation de 30° (pointy-top)

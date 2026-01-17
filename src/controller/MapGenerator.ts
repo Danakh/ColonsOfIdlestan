@@ -339,8 +339,8 @@ export class MapGenerator {
     rng.shuffle(hexTypesToAssign);
 
     // Assigner Bois et Argile aux deux premiers hexagones
-    gameMap.setResource(woodCoord, HexType.Wood);
-    gameMap.setResource(brickCoord, HexType.Brick);
+    gameMap.setHexType(woodCoord, HexType.Wood);
+    gameMap.setHexType(brickCoord, HexType.Brick);
 
     // Filtrer les hexagones terrestres (exclure Bois et Argile)
     const remainingHexes = terrestrialHexes.filter(
@@ -355,7 +355,7 @@ export class MapGenerator {
     for (let i = 0; i < hexTypesToAssign.length && i < shuffledHexes.length; i++) {
       const hex = shuffledHexes[i];
       const hexType = hexTypesToAssign[i];
-      gameMap.setResource(hex.coord, hexType);
+      gameMap.setHexType(hex.coord, hexType);
     }
   }
 
@@ -374,7 +374,7 @@ export class MapGenerator {
     // Parcourir tous les hexagones de la grille et assigner Water à ceux qui ne sont pas terrestres
     for (const hex of grid.getAllHexes()) {
       if (!terrestrialCoords.has(hex.coord.hashCode())) {
-        gameMap.setResource(hex.coord, HexType.Water);
+        gameMap.setHexType(hex.coord, HexType.Water);
       }
     }
   }
@@ -410,7 +410,7 @@ export class MapGenerator {
         // Trouver l'hexagone qui n'est ni wood ni brick (c'est l'eau)
         const waterHex = hexes.find(h => !h.equals(woodCoord) && !h.equals(brickCoord));
         if (waterHex) {
-          const hexType = gameMap.getResource(waterHex);
+          const hexType = gameMap.getHexType(waterHex);
           if (hexType === HexType.Water) {
             // Ajouter la ville sur ce vertex (utiliser le vertex retourné par la grille)
             try {
@@ -441,7 +441,7 @@ export class MapGenerator {
         // Vérifier si cet hexagone existe dans la grille et est de l'eau
         const neighborHex = grid.getHex(neighborCoord);
         if (neighborHex) {
-          const hexType = gameMap.getResource(neighborCoord);
+          const hexType = gameMap.getHexType(neighborCoord);
           if (hexType === HexType.Water) {
             // Trouver le vertex correspondant dans la grille (pour utiliser le même instance)
             const vertices = grid.getVerticesForHex(woodCoord);

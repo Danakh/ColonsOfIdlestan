@@ -31,8 +31,8 @@ describe('GameMap', () => {
       const grid = new HexGrid(hexes);
       const map = new GameMap(grid);
 
-      expect(map.getResource(new HexCoord(0, 0))).toBe(HexType.Desert);
-      expect(map.getResource(new HexCoord(1, 0))).toBe(HexType.Desert);
+      expect(map.getHexType(new HexCoord(0, 0))).toBe(HexType.Desert);
+      expect(map.getHexType(new HexCoord(1, 0))).toBe(HexType.Desert);
     });
   });
 
@@ -42,8 +42,8 @@ describe('GameMap', () => {
       const grid = new HexGrid([hex]);
       const map = new GameMap(grid);
 
-      map.setResource(hex, HexType.Wood);
-      expect(map.getResource(hex)).toBe(HexType.Wood);
+      map.setHexType(hex, HexType.Wood);
+      expect(map.getHexType(hex)).toBe(HexType.Wood);
     });
 
     it('devrait accepter une coordonnée pour définir une ressource', () => {
@@ -51,8 +51,8 @@ describe('GameMap', () => {
       const grid = new HexGrid([hex]);
       const map = new GameMap(grid);
 
-      map.setResource(new HexCoord(0, 0), HexType.Brick);
-      expect(map.getResource(new HexCoord(0, 0))).toBe(HexType.Brick);
+      map.setHexType(new HexCoord(0, 0), HexType.Brick);
+      expect(map.getHexType(new HexCoord(0, 0))).toBe(HexType.Brick);
     });
 
     it('devrait gérer différents types de ressources', () => {
@@ -64,13 +64,13 @@ describe('GameMap', () => {
       const grid = new HexGrid(hexes);
       const map = new GameMap(grid);
 
-      map.setResource(new HexCoord(0, 0), HexType.Wood);
-      map.setResource(new HexCoord(1, 0), HexType.Brick);
-      map.setResource(new HexCoord(0, 1), HexType.Wheat);
+      map.setHexType(new HexCoord(0, 0), HexType.Wood);
+      map.setHexType(new HexCoord(1, 0), HexType.Brick);
+      map.setHexType(new HexCoord(0, 1), HexType.Wheat);
 
-      expect(map.getResource(new HexCoord(0, 0))).toBe(HexType.Wood);
-      expect(map.getResource(new HexCoord(1, 0))).toBe(HexType.Brick);
-      expect(map.getResource(new HexCoord(0, 1))).toBe(HexType.Wheat);
+      expect(map.getHexType(new HexCoord(0, 0))).toBe(HexType.Wood);
+      expect(map.getHexType(new HexCoord(1, 0))).toBe(HexType.Brick);
+      expect(map.getHexType(new HexCoord(0, 1))).toBe(HexType.Wheat);
     });
 
     it('devrait lancer une erreur si on définit une ressource pour un hexagone inexistant', () => {
@@ -79,7 +79,7 @@ describe('GameMap', () => {
       const map = new GameMap(grid);
 
       expect(() => {
-        map.setResource(new HexCoord(10, 10), HexType.Wood);
+        map.setHexType(new HexCoord(10, 10), HexType.Wood);
       }).toThrow();
     });
 
@@ -88,7 +88,7 @@ describe('GameMap', () => {
       const grid = new HexGrid([hex]);
       const map = new GameMap(grid);
 
-      expect(map.getResource(new HexCoord(10, 10))).toBeUndefined();
+      expect(map.getHexType(new HexCoord(10, 10))).toBeUndefined();
     });
   });
 
@@ -373,12 +373,12 @@ describe('GameMap', () => {
       const grid = new HexGrid(hexes);
       const map = new GameMap(grid);
 
-      map.setResource(new HexCoord(0, 0), HexType.Wood);
-      map.setResource(new HexCoord(1, 0), HexType.Brick);
+      map.setHexType(new HexCoord(0, 0), HexType.Wood);
+      map.setHexType(new HexCoord(1, 0), HexType.Brick);
 
       // Vérifier que les ressources sont toujours correctes
-      expect(map.getResource(new HexCoord(0, 0))).toBe(HexType.Wood);
-      expect(map.getResource(new HexCoord(1, 0))).toBe(HexType.Brick);
+      expect(map.getHexType(new HexCoord(0, 0))).toBe(HexType.Wood);
+      expect(map.getHexType(new HexCoord(1, 0))).toBe(HexType.Brick);
     });
   });
 

@@ -159,7 +159,7 @@ describe('ResourceHarvest', () => {
       // Ajouter une ville et définir une ressource récoltable
       const vertex = Vertex.create(center, north, northeast);
       map.addCity(vertex, civId);
-      map.setResource(center, HexType.Wood);
+      map.setHexType(center, HexType.Wood);
 
       // center devrait être récoltable
       expect(ResourceHarvest.canHarvest(center, map, civId)).toBe(true);
@@ -183,7 +183,7 @@ describe('ResourceHarvest', () => {
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
-      map.setResource(center, HexType.Wood);
+      map.setHexType(center, HexType.Wood);
 
       // Sans ville ou route, l'hexagone n'est pas visible
       expect(ResourceHarvest.canHarvest(center, map, civId)).toBe(false);
@@ -221,7 +221,7 @@ describe('ResourceHarvest', () => {
       const map2 = new GameMap(grid2);
       map2.registerCivilization(civId);
       map2.addCity(vertex, civId);
-      map2.setResource(isolated, HexType.Wood);
+      map2.setHexType(isolated, HexType.Wood);
       const edge = Edge.create(isolated, isolatedNorth);
       map2.addRoad(edge, civId);
 
@@ -247,11 +247,11 @@ describe('ResourceHarvest', () => {
       map.addCity(vertex, civId);
 
       // Tester avec Desert
-      map.setResource(center, HexType.Desert);
+      map.setHexType(center, HexType.Desert);
       expect(ResourceHarvest.canHarvest(center, map, civId)).toBe(false);
 
       // Tester avec Water
-      map.setResource(center, HexType.Water);
+      map.setHexType(center, HexType.Water);
       expect(ResourceHarvest.canHarvest(center, map, civId)).toBe(false);
     });
 
@@ -281,7 +281,7 @@ describe('ResourceHarvest', () => {
       ];
 
       for (const resource of harvestableResources) {
-        map.setResource(center, resource);
+        map.setHexType(center, resource);
         expect(ResourceHarvest.canHarvest(center, map, civId)).toBe(true);
       }
     });
@@ -304,7 +304,7 @@ describe('ResourceHarvest', () => {
 
       const vertex = Vertex.create(center, north, northeast);
       map.addCity(vertex, civId);
-      map.setResource(center, HexType.Wood);
+      map.setHexType(center, HexType.Wood);
 
       const playerResources = new PlayerResources();
 
@@ -330,7 +330,7 @@ describe('ResourceHarvest', () => {
 
       const vertex = Vertex.create(center, north, northeast);
       map.addCity(vertex, civId);
-      map.setResource(center, HexType.Wood);
+      map.setHexType(center, HexType.Wood);
 
       const playerResources = new PlayerResources();
 
@@ -364,13 +364,13 @@ describe('ResourceHarvest', () => {
       const playerResources = new PlayerResources();
 
       // Récolter différentes ressources
-      map.setResource(center, HexType.Wood);
+      map.setHexType(center, HexType.Wood);
       ResourceHarvest.harvest(center, map, civId, playerResources);
 
-      map.setResource(north, HexType.Brick);
+      map.setHexType(north, HexType.Brick);
       ResourceHarvest.harvest(north, map, civId, playerResources);
 
-      map.setResource(northeast, HexType.Wheat);
+      map.setHexType(northeast, HexType.Wheat);
       ResourceHarvest.harvest(northeast, map, civId, playerResources);
 
       expect(playerResources.getResource(ResourceType.Wood)).toBe(1);
@@ -423,7 +423,7 @@ describe('ResourceHarvest', () => {
       map2.addCity(vertex, civId);
 
       // Rendre isolated visible mais pas adjacent
-      map2.setResource(isolated, HexType.Wood);
+      map2.setHexType(isolated, HexType.Wood);
       const edge = Edge.create(isolated, isolatedNorth);
       map2.addRoad(edge, civId);
 
@@ -450,7 +450,7 @@ describe('ResourceHarvest', () => {
 
       const vertex = Vertex.create(center, north, northeast);
       map.addCity(vertex, civId);
-      map.setResource(center, HexType.Desert);
+      map.setHexType(center, HexType.Desert);
 
       const playerResources = new PlayerResources();
 
@@ -475,7 +475,7 @@ describe('ResourceHarvest', () => {
 
       const vertex = Vertex.create(center, north, northeast);
       map.addCity(vertex, civId);
-      map.setResource(center, HexType.Desert);
+      map.setHexType(center, HexType.Desert);
 
       const playerResources = new PlayerResources();
 

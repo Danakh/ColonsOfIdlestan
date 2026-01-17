@@ -424,14 +424,14 @@ var GameMap = class {
    */
   constructor(grid) {
     this.grid = grid;
-    this.resourceMap = /* @__PURE__ */ new Map();
+    this.hexTypeMap = /* @__PURE__ */ new Map();
     this.cities = /* @__PURE__ */ new Set();
     this.roads = /* @__PURE__ */ new Set();
     this.registeredCivilizations = /* @__PURE__ */ new Set();
     this.cityOwner = /* @__PURE__ */ new Map();
     this.roadOwner = /* @__PURE__ */ new Map();
     for (const hex of grid.getAllHexes()) {
-      this.resourceMap.set(hex.coord.hashCode(), "Desert" /* Desert */);
+      this.hexTypeMap.set(hex.coord.hashCode(), "Desert" /* Desert */);
     }
   }
   /**
@@ -446,24 +446,24 @@ var GameMap = class {
    * @param hexType - Le type d'hexagone
    * @throws Error si l'hexagone n'existe pas dans la grille
    */
-  setResource(hex, hexType) {
+  setHexType(hex, hexType) {
     const coord = hex instanceof Hex ? hex.coord : hex;
     if (!this.grid.hasHex(coord)) {
       throw new Error(`L'hexagone \xE0 la coordonn\xE9e ${coord.toString()} n'existe pas dans la grille.`);
     }
-    this.resourceMap.set(coord.hashCode(), hexType);
+    this.hexTypeMap.set(coord.hashCode(), hexType);
   }
   /**
    * Retourne le type d'hexagone d'un hexagone.
    * @param hex - L'hexagone ou sa coordonnée
    * @returns Le type d'hexagone, ou undefined si l'hexagone n'existe pas
    */
-  getResource(hex) {
+  getHexType(hex) {
     const coord = hex instanceof Hex ? hex.coord : hex;
     if (!this.grid.hasHex(coord)) {
       return void 0;
     }
-    return this.resourceMap.get(coord.hashCode());
+    return this.hexTypeMap.get(coord.hashCode());
   }
   /**
    * Enregistre une civilisation dans la carte.
@@ -903,8 +903,8 @@ var MapGenerator = class {
       }
     }
     rng.shuffle(hexTypesToAssign);
-    gameMap.setResource(woodCoord, "Wood" /* Wood */);
-    gameMap.setResource(brickCoord, "Brick" /* Brick */);
+    gameMap.setHexType(woodCoord, "Wood" /* Wood */);
+    gameMap.setHexType(brickCoord, "Brick" /* Brick */);
     const remainingHexes = terrestrialHexes.filter(
       (hex) => !hex.coord.equals(woodCoord) && !hex.coord.equals(brickCoord)
     );
@@ -913,7 +913,7 @@ var MapGenerator = class {
     for (let i = 0; i < hexTypesToAssign.length && i < shuffledHexes.length; i++) {
       const hex = shuffledHexes[i];
       const hexType = hexTypesToAssign[i];
-      gameMap.setResource(hex.coord, hexType);
+      gameMap.setHexType(hex.coord, hexType);
     }
   }
   /**
@@ -927,7 +927,7 @@ var MapGenerator = class {
     }
     for (const hex of grid.getAllHexes()) {
       if (!terrestrialCoords.has(hex.coord.hashCode())) {
-        gameMap.setResource(hex.coord, "Water" /* Water */);
+        gameMap.setHexType(hex.coord, "Water" /* Water */);
       }
     }
   }
@@ -944,7 +944,7 @@ var MapGenerator = class {
       if (hasWood && hasBrick) {
         const waterHex = hexes.find((h) => !h.equals(woodCoord) && !h.equals(brickCoord));
         if (waterHex) {
-          const hexType = gameMap.getResource(waterHex);
+          const hexType = gameMap.getHexType(waterHex);
           if (hexType === "Water" /* Water */) {
             try {
               gameMap.addCity(vertex, civId);
@@ -965,7 +965,7 @@ var MapGenerator = class {
       if (isNeighborOfBrick) {
         const neighborHex = grid.getHex(neighborCoord);
         if (neighborHex) {
-          const hexType = gameMap.getResource(neighborCoord);
+          const hexType = gameMap.getHexType(neighborCoord);
           if (hexType === "Water" /* Water */) {
             const vertices = grid.getVerticesForHex(woodCoord);
             for (const vertex of vertices) {
@@ -1048,7 +1048,7 @@ var MainGame = class {
       ["Wheat" /* Wheat */, 5],
       ["Sheep" /* Sheep */, 5],
       ["Ore" /* Ore */, 5],
-      ["Desert" /* Desert */, 5]
+      ["Desert" /* Desert */, 1]
     ]);
     const civilizations = [CivilizationId.create("player1")];
     const config = {
@@ -1171,7 +1171,7 @@ var HexMapRenderer = class {
     const coord = hex.coord;
     const x = offsetX + Math.sqrt(3) * (coord.q + coord.r / 2) * hexSize;
     const y = offsetY + 3 / 2 * coord.r * hexSize;
-    const hexType = gameMap.getResource(coord) || "Desert" /* Desert */;
+    const hexType = gameMap.getHexType(coord) || "Desert" /* Desert */;
     const color = HEX_TYPE_COLORS[hexType] || "#CCCCCC";
     this.ctx.beginPath();
     for (let i = 0; i < 6; i++) {
