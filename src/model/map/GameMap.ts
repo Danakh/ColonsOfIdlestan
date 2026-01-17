@@ -308,6 +308,101 @@ export class GameMap {
   }
 
   /**
+   * Retourne toutes les routes constructibles pour une civilisation donnée.
+   * Une route est constructible si elle touche une ville de la civilisation
+   * ou si elle touche une route existante de la civilisation.
+   * @param civId - L'identifiant de la civilisation
+   * @returns Un tableau des arêtes constructibles pour cette civilisation
+   */
+  getBuildableRoadsForCivilization(civId: CivilizationId): Edge[] {
+    const buildableRoads: Edge[] = [];
+    const civKey = civId.hashCode();
+
+    // Vérifier que la civilisation est enregistrée
+    if (!this.isCivilizationRegistered(civId)) {
+      return buildableRoads;
+    }
+
+    // Parcourir toutes les arêtes de la grille
+    const allEdges = this.grid.getAllEdges();
+    
+    for (const edge of allEdges) {
+      // Ignorer les routes déjà construites
+      if (this.hasRoad(edge)) {
+        continue;
+      }
+
+      // Vérifier si l'edge touche une ville de la civilisation
+      const vertices = this.getVerticesForEdge(edge);
+      let touchesCity = false;
+      for (const vertex of vertices) {
+        if (this.hasCity(vertex)) {
+          const owner = this.getCityOwner(vertex);
+          if (owner && owner.hashCode() === civKey) {
+            touchesCity = true;
+            break;
+          }
+        }
+      }
+
+      if (touchesCity) {
+        buildableRoads.push(edge);
+        continue;
+      }
+
+      // Vérifier si l'edge touche une route de la civilisation
+      // Un edge touche une route s'ils partagent un vertex
+      const adjacentEdges = this.getAdjacentEdges(edge);
+      for (const adjacentEdge of adjacentEdges) {
+        if (this.hasRoad(adjacentEdge)) {
+          const owner = this.getRoadOwner(adjacentEdge);
+          if (owner && owner.hashCode() === civKey) {
+            buildableRoads.push(edge);
+            break;
+          }
+        }
+      }
+    }
+
+    return buildableRoads;
+  }
+
+  /**
+   * Retourne les edges adjacents à un edge donné.
+   * Deux edges sont adjacents s'ils partagent un vertex.
+   * @param edge - L'arête pour laquelle trouver les edges adjacents
+   * @returns Un tableau des edges adjacents à cette arête
+   */
+  private getAdjacentEdges(edge: Edge): Edge[] {
+    const adjacentEdges: Edge[] = [];
+    const vertices = this.getVerticesForEdge(edge);
+
+    // Pour chaque vertex adjacent à l'edge, obtenir tous les edges qui touchent ce vertex
+    for (const vertex of vertices) {
+      const hexes = vertex.getHexes();
+      // Un vertex est formé de 3 hexagones, donc il y a 3 edges possibles entre ces hexagones
+      for (let i = 0; i < hexes.length; i++) {
+        for (let j = i + 1; j < hexes.length; j++) {
+          try {
+            const adjacentEdge = Edge.create(hexes[i], hexes[j]);
+            // Ne pas inclure l'edge original
+            if (!adjacentEdge.equals(edge)) {
+              // Éviter les doublons
+              if (!adjacentEdges.some(e => e.equals(adjacentEdge))) {
+                adjacentEdges.push(adjacentEdge);
+              }
+            }
+          } catch (e) {
+            // Ignorer les edges invalides
+          }
+        }
+      }
+    }
+
+    return adjacentEdges;
+  }
+
+  /**
    * Retourne les vertices adjacents à une arête donnée.
    * Un vertex est adjacent à un edge s'il contient les deux hexagones de l'edge.
    * @param edge - L'arête pour laquelle trouver les vertices adjacents

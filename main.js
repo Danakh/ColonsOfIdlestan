@@ -416,6 +416,109 @@ var HexCoord = class _HexCoord {
   }
 };
 
+// src/model/city/CityLevel.ts
+function isValidCityLevel(level) {
+  return level >= 0 /* Outpost */ && level <= 4 /* Capital */;
+}
+
+// src/model/city/City.ts
+var City = class {
+  // Pour l'instant, on stocke juste les IDs. Sera remplacé par Building[] plus tard
+  /**
+   * Crée une nouvelle ville.
+   * @param vertex - Le sommet où se trouve la ville
+   * @param owner - L'identifiant de la civilisation propriétaire
+   * @param level - Le niveau de la ville (par défaut: Outpost)
+   */
+  constructor(vertex, owner, level = 0 /* Outpost */) {
+    this.vertex = vertex;
+    this.owner = owner;
+    this.level = level;
+    this.buildings = [];
+    if (!isValidCityLevel(level)) {
+      throw new Error(`Niveau de ville invalide: ${level}. Doit \xEAtre entre ${0 /* Outpost */} et ${4 /* Capital */}.`);
+    }
+  }
+  /**
+   * Retourne le nombre maximum de bâtiments qu'une ville de ce niveau peut construire.
+   * @returns Le nombre maximum de bâtiments
+   */
+  getMaxBuildings() {
+    return this.level + 1;
+  }
+  /**
+   * Retourne le nombre de bâtiments actuellement construits.
+   * @returns Le nombre de bâtiments construits
+   */
+  getBuildingCount() {
+    return this.buildings.length;
+  }
+  /**
+   * Vérifie si la ville peut construire un bâtiment supplémentaire.
+   * @returns true si la ville peut construire un nouveau bâtiment
+   */
+  canBuildBuilding() {
+    return this.getBuildingCount() < this.getMaxBuildings();
+  }
+  /**
+   * Ajoute un bâtiment à la ville.
+   * @param buildingId - L'identifiant du bâtiment à ajouter
+   * @throws Error si la ville ne peut pas construire de bâtiment supplémentaire
+   */
+  addBuilding(buildingId) {
+    if (!this.canBuildBuilding()) {
+      throw new Error(
+        `La ville ne peut pas construire plus de ${this.getMaxBuildings()} b\xE2timents (niveau ${this.level}).`
+      );
+    }
+    this.buildings.push(buildingId);
+  }
+  /**
+   * Retourne la liste des bâtiments construits.
+   * @returns Un tableau des identifiants de bâtiments
+   */
+  getBuildings() {
+    return [...this.buildings];
+  }
+  /**
+   * Vérifie si la ville peut être améliorée au niveau suivant.
+   * @returns true si la ville peut être améliorée
+   */
+  canUpgrade() {
+    return this.level < 4 /* Capital */;
+  }
+  /**
+   * Améliore la ville au niveau suivant.
+   * @throws Error si la ville ne peut pas être améliorée (déjà au niveau maximum)
+   */
+  upgrade() {
+    if (!this.canUpgrade()) {
+      throw new Error(`La ville ne peut pas \xEAtre am\xE9lior\xE9e au-del\xE0 du niveau ${4 /* Capital */} (Capitale).`);
+    }
+    this.level = this.level + 1;
+  }
+  /**
+   * Vérifie si la ville a un hôtel de ville (requis pour l'amélioration).
+   * Pour l'instant, on suppose qu'une ville niveau > Outpost a forcément un hôtel de ville.
+   * @returns true si la ville a un hôtel de ville
+   */
+  hasCityHall() {
+    return this.level > 0 /* Outpost */ || this.buildings.length > 0;
+  }
+  /**
+   * Vérifie l'égalité avec une autre ville (basé sur le vertex).
+   */
+  equals(other) {
+    return this.vertex.equals(other.vertex);
+  }
+  /**
+   * Retourne une représentation en chaîne pour le débogage.
+   */
+  toString() {
+    return `City(vertex=${this.vertex.toString()}, level=${this.level}, owner=${this.owner.toString()})`;
+  }
+};
+
 // src/model/map/GameMap.ts
 var GameMap = class {
   /**
@@ -425,10 +528,9 @@ var GameMap = class {
   constructor(grid) {
     this.grid = grid;
     this.hexTypeMap = /* @__PURE__ */ new Map();
-    this.cities = /* @__PURE__ */ new Set();
+    this.cityMap = /* @__PURE__ */ new Map();
     this.roads = /* @__PURE__ */ new Set();
     this.registeredCivilizations = /* @__PURE__ */ new Set();
-    this.cityOwner = /* @__PURE__ */ new Map();
     this.roadOwner = /* @__PURE__ */ new Map();
     for (const hex of grid.getAllHexes()) {
       this.hexTypeMap.set(hex.coord.hashCode(), "Desert" /* Desert */);
@@ -482,18 +584,20 @@ var GameMap = class {
   }
   /**
    * Ajoute une ville sur un sommet pour une civilisation donnée.
+   * La ville est créée au niveau Outpost (0) par défaut.
    * @param vertex - Le sommet où placer la ville
    * @param civId - L'identifiant de la civilisation propriétaire
+   * @param level - Le niveau initial de la ville (par défaut: Outpost)
    * @throws Error si le sommet n'est pas valide dans la grille
    * @throws Error si une ville existe déjà sur ce sommet
    * @throws Error si la civilisation n'est pas enregistrée
    */
-  addCity(vertex, civId) {
+  addCity(vertex, civId, level = 0 /* Outpost */) {
     if (!this.isCivilizationRegistered(civId)) {
       throw new Error(`La civilisation ${civId.toString()} n'est pas enregistr\xE9e.`);
     }
     const vertexKey = vertex.hashCode();
-    if (this.cities.has(vertexKey)) {
+    if (this.cityMap.has(vertexKey)) {
       throw new Error(`Une ville existe d\xE9j\xE0 sur le sommet ${vertex.toString()}.`);
     }
     const hexes = vertex.getHexes();
@@ -501,8 +605,8 @@ var GameMap = class {
     if (!hasValidHex) {
       throw new Error(`Le sommet ${vertex.toString()} n'est pas valide dans la grille.`);
     }
-    this.cities.add(vertexKey);
-    this.cityOwner.set(vertexKey, civId);
+    const city = new City(vertex, civId, level);
+    this.cityMap.set(vertexKey, city);
   }
   /**
    * Vérifie si une ville existe sur un sommet.
@@ -510,7 +614,15 @@ var GameMap = class {
    * @returns true si une ville existe sur ce sommet
    */
   hasCity(vertex) {
-    return this.cities.has(vertex.hashCode());
+    return this.cityMap.has(vertex.hashCode());
+  }
+  /**
+   * Retourne la ville sur un sommet donné.
+   * @param vertex - Le sommet à vérifier
+   * @returns La ville, ou undefined s'il n'y a pas de ville sur ce sommet
+   */
+  getCity(vertex) {
+    return this.cityMap.get(vertex.hashCode());
   }
   /**
    * Ajoute une route sur une arête pour une civilisation donnée.
@@ -542,7 +654,58 @@ var GameMap = class {
    * @returns L'identifiant de la civilisation propriétaire, ou undefined s'il n'y a pas de ville
    */
   getCityOwner(vertex) {
-    return this.cityOwner.get(vertex.hashCode());
+    const city = this.cityMap.get(vertex.hashCode());
+    return city ? city.owner : void 0;
+  }
+  /**
+   * Améliore une ville au niveau suivant.
+   * @param vertex - Le sommet où se trouve la ville à améliorer
+   * @throws Error si aucune ville n'existe sur ce sommet
+   * @throws Error si la ville ne peut pas être améliorée (déjà au niveau maximum)
+   * @throws Error si une capitale existe déjà sur l'île et que la ville devient capitale
+   */
+  upgradeCity(vertex) {
+    const city = this.cityMap.get(vertex.hashCode());
+    if (!city) {
+      throw new Error(`Aucune ville n'existe sur le sommet ${vertex.toString()}.`);
+    }
+    if (city.level === 3 /* Metropolis */) {
+      if (this.hasCapital()) {
+        throw new Error("Une seule capitale est autoris\xE9e par \xEEle.");
+      }
+    }
+    city.upgrade();
+  }
+  /**
+   * Vérifie s'il existe une capitale sur cette carte (île).
+   * @returns true s'il existe au moins une capitale
+   */
+  hasCapital() {
+    for (const city of this.cityMap.values()) {
+      if (city.level === 4 /* Capital */) {
+        return true;
+      }
+    }
+    return false;
+  }
+  /**
+   * Retourne le sommet où se trouve la capitale, s'il y en a une.
+   * @returns Le sommet de la capitale, ou undefined s'il n'y a pas de capitale
+   */
+  getCapital() {
+    for (const city of this.cityMap.values()) {
+      if (city.level === 4 /* Capital */) {
+        return city.vertex;
+      }
+    }
+    return void 0;
+  }
+  /**
+   * Vérifie si une capitale peut être créée sur cette carte (île).
+   * @returns true si aucune capitale n'existe déjà
+   */
+  isCapitalAllowed() {
+    return !this.hasCapital();
   }
   /**
    * Retourne le propriétaire d'une route sur une arête.
@@ -555,15 +718,14 @@ var GameMap = class {
   /**
    * Retourne toutes les villes appartenant à une civilisation donnée.
    * @param civId - L'identifiant de la civilisation
-   * @returns Un tableau des sommets contenant des villes de cette civilisation
+   * @returns Un tableau des villes de cette civilisation
    */
   getCitiesForCivilization(civId) {
     const cities = [];
     const civKey = civId.hashCode();
-    for (const vertex of this.grid.getAllVertices()) {
-      const owner = this.cityOwner.get(vertex.hashCode());
-      if (owner && owner.hashCode() === civKey) {
-        cities.push(vertex);
+    for (const city of this.cityMap.values()) {
+      if (city.owner.hashCode() === civKey) {
+        cities.push(city);
       }
     }
     return cities;
@@ -594,6 +756,101 @@ var GameMap = class {
    */
   hasRoad(edge) {
     return this.roads.has(edge.hashCode());
+  }
+  /**
+   * Retourne toutes les routes constructibles pour une civilisation donnée.
+   * Une route est constructible si elle touche une ville de la civilisation
+   * ou si elle touche une route existante de la civilisation.
+   * @param civId - L'identifiant de la civilisation
+   * @returns Un tableau des arêtes constructibles pour cette civilisation
+   */
+  getBuildableRoadsForCivilization(civId) {
+    const buildableRoads = [];
+    const civKey = civId.hashCode();
+    if (!this.isCivilizationRegistered(civId)) {
+      return buildableRoads;
+    }
+    const allEdges = this.grid.getAllEdges();
+    for (const edge of allEdges) {
+      if (this.hasRoad(edge)) {
+        continue;
+      }
+      const vertices = this.getVerticesForEdge(edge);
+      let touchesCity = false;
+      for (const vertex of vertices) {
+        if (this.hasCity(vertex)) {
+          const owner = this.getCityOwner(vertex);
+          if (owner && owner.hashCode() === civKey) {
+            touchesCity = true;
+            break;
+          }
+        }
+      }
+      if (touchesCity) {
+        buildableRoads.push(edge);
+        continue;
+      }
+      const adjacentEdges = this.getAdjacentEdges(edge);
+      for (const adjacentEdge of adjacentEdges) {
+        if (this.hasRoad(adjacentEdge)) {
+          const owner = this.getRoadOwner(adjacentEdge);
+          if (owner && owner.hashCode() === civKey) {
+            buildableRoads.push(edge);
+            break;
+          }
+        }
+      }
+    }
+    return buildableRoads;
+  }
+  /**
+   * Retourne les edges adjacents à un edge donné.
+   * Deux edges sont adjacents s'ils partagent un vertex.
+   * @param edge - L'arête pour laquelle trouver les edges adjacents
+   * @returns Un tableau des edges adjacents à cette arête
+   */
+  getAdjacentEdges(edge) {
+    const adjacentEdges = [];
+    const vertices = this.getVerticesForEdge(edge);
+    for (const vertex of vertices) {
+      const hexes = vertex.getHexes();
+      for (let i = 0; i < hexes.length; i++) {
+        for (let j = i + 1; j < hexes.length; j++) {
+          try {
+            const adjacentEdge = Edge.create(hexes[i], hexes[j]);
+            if (!adjacentEdge.equals(edge)) {
+              if (!adjacentEdges.some((e) => e.equals(adjacentEdge))) {
+                adjacentEdges.push(adjacentEdge);
+              }
+            }
+          } catch (e) {
+          }
+        }
+      }
+    }
+    return adjacentEdges;
+  }
+  /**
+   * Retourne les vertices adjacents à une arête donnée.
+   * Un vertex est adjacent à un edge s'il contient les deux hexagones de l'edge.
+   * @param edge - L'arête pour laquelle trouver les vertices adjacents
+   * @returns Un tableau des vertices adjacents à cette arête
+   */
+  getVerticesForEdge(edge) {
+    const vertices = [];
+    const [hex1, hex2] = edge.getHexes();
+    for (const vertex of this.grid.getAllVertices()) {
+      const hexes = vertex.getHexes();
+      const containsHex1 = hexes.some((h) => h.equals(hex1));
+      const containsHex2 = hexes.some((h) => h.equals(hex2));
+      const allHexesExist = hexes.every((h) => this.grid.hasHex(h));
+      if (containsHex1 && containsHex2 && allHexesExist) {
+        if (!vertices.some((v) => v.equals(vertex))) {
+          vertices.push(vertex);
+        }
+      }
+    }
+    return vertices;
   }
   /**
    * Détermine si un hexagone est visible.
@@ -1270,8 +1527,9 @@ var HexMapRenderer = class {
   /**
    * Dessine la carte complète sur le canvas.
    * @param gameMap - La carte à dessiner
+   * @param civId - Optionnel: la civilisation pour laquelle dessiner les routes constructibles
    */
-  render(gameMap) {
+  render(gameMap, civId) {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     const grid = gameMap.getGrid();
     const allHexes = grid.getAllHexes();
@@ -1313,6 +1571,10 @@ var HexMapRenderer = class {
       }
     }
     this.drawCities(gameMap, config);
+    this.drawRoads(gameMap, config);
+    if (civId) {
+      this.drawBuildableRoads(gameMap, config, civId);
+    }
   }
   /**
    * Calcule la taille optimale des hexagones pour que la carte tienne dans le canvas.
@@ -1425,7 +1687,7 @@ var HexMapRenderer = class {
     }
     const centerX = sumX / 3;
     const centerY = sumY / 3;
-    const citySize = 6;
+    const citySize = 12;
     this.ctx.fillStyle = "#000000";
     this.ctx.fillRect(
       centerX - citySize / 2,
@@ -1433,6 +1695,149 @@ var HexMapRenderer = class {
       citySize,
       citySize
     );
+  }
+  /**
+   * Dessine les routes construites sur la carte.
+   */
+  drawRoads(gameMap, config) {
+    const grid = gameMap.getGrid();
+    const allEdges = grid.getAllEdges();
+    const drawnEdges = /* @__PURE__ */ new Set();
+    for (const edge of allEdges) {
+      if (gameMap.hasRoad(edge)) {
+        const edgeKey = edge.hashCode();
+        if (!drawnEdges.has(edgeKey)) {
+          drawnEdges.add(edgeKey);
+          this.drawRoad(edge, config, false, gameMap);
+        }
+      }
+    }
+  }
+  /**
+   * Dessine les routes constructibles pour une civilisation.
+   */
+  drawBuildableRoads(gameMap, config, civId) {
+    const buildableRoads = gameMap.getBuildableRoadsForCivilization(civId);
+    for (const edge of buildableRoads) {
+      this.drawRoad(edge, config, true, gameMap);
+    }
+  }
+  /**
+   * Dessine une route (construite ou constructible) sur une arête.
+   * @param edge - L'arête à dessiner
+   * @param config - La configuration de rendu
+   * @param isDashed - true pour un trait pointillé (route constructible), false pour un trait plein (route construite)
+   */
+  drawRoad(edge, config, isDashed, gameMap) {
+    const { hexSize, offsetX, offsetY } = config;
+    const [hex1, hex2] = edge.getHexes();
+    const vertices = gameMap.getVerticesForEdge(edge);
+    if (vertices.length < 2) {
+      this.drawRoadFromDirection(edge, config, isDashed);
+      return;
+    }
+    const vertex1 = vertices[0];
+    const vertex2 = vertices[1];
+    const pos1 = this.getVertexPosition(vertex1, config);
+    const pos2 = this.getVertexPosition(vertex2, config);
+    this.ctx.beginPath();
+    this.ctx.moveTo(pos1.x, pos1.y);
+    this.ctx.lineTo(pos2.x, pos2.y);
+    this.ctx.strokeStyle = "#000000";
+    this.ctx.lineWidth = 4;
+    if (isDashed) {
+      this.ctx.setLineDash([5, 5]);
+    } else {
+      this.ctx.setLineDash([]);
+    }
+    this.ctx.stroke();
+    this.ctx.setLineDash([]);
+  }
+  /**
+   * Calcule la position d'un vertex en pixels.
+   * Un vertex est le point où 3 hexagones se rencontrent (un coin d'hexagone).
+   */
+  getVertexPosition(vertex, config) {
+    const { hexSize, offsetX, offsetY } = config;
+    const hexes = vertex.getHexes();
+    let sumX = 0;
+    let sumY = 0;
+    for (const coord of hexes) {
+      const x = offsetX + Math.sqrt(3) * (coord.q + coord.r / 2) * hexSize;
+      const y = offsetY + 3 / 2 * coord.r * hexSize;
+      sumX += x;
+      sumY += y;
+    }
+    return {
+      x: sumX / 3,
+      y: sumY / 3
+    };
+  }
+  /**
+   * Dessine une route en utilisant la direction entre les deux hexagones (fallback).
+   */
+  drawRoadFromDirection(edge, config, isDashed) {
+    const { hexSize, offsetX, offsetY } = config;
+    const [hex1, hex2] = edge.getHexes();
+    const centerX1 = offsetX + Math.sqrt(3) * (hex1.q + hex1.r / 2) * hexSize;
+    const centerY1 = offsetY + 3 / 2 * hex1.r * hexSize;
+    const dq = hex2.q - hex1.q;
+    const dr = hex2.r - hex1.r;
+    let cornerIndex1;
+    let cornerIndex2;
+    if (dq === 0 && dr === -1) {
+      cornerIndex1 = 0;
+      cornerIndex2 = 1;
+    } else if (dq === 1 && dr === -1) {
+      cornerIndex1 = 1;
+      cornerIndex2 = 2;
+    } else if (dq === 1 && dr === 0) {
+      cornerIndex1 = 2;
+      cornerIndex2 = 3;
+    } else if (dq === 0 && dr === 1) {
+      cornerIndex1 = 3;
+      cornerIndex2 = 4;
+    } else if (dq === -1 && dr === 1) {
+      cornerIndex1 = 4;
+      cornerIndex2 = 5;
+    } else if (dq === -1 && dr === 0) {
+      cornerIndex1 = 5;
+      cornerIndex2 = 0;
+    } else {
+      const centerX2 = offsetX + Math.sqrt(3) * (hex2.q + hex2.r / 2) * hexSize;
+      const centerY2 = offsetY + 3 / 2 * hex2.r * hexSize;
+      this.ctx.beginPath();
+      this.ctx.moveTo(centerX1, centerY1);
+      this.ctx.lineTo(centerX2, centerY2);
+      this.ctx.strokeStyle = "#000000";
+      this.ctx.lineWidth = 4;
+      if (isDashed) {
+        this.ctx.setLineDash([5, 5]);
+      } else {
+        this.ctx.setLineDash([]);
+      }
+      this.ctx.stroke();
+      this.ctx.setLineDash([]);
+      return;
+    }
+    const angle1 = Math.PI / 3 * cornerIndex1 + Math.PI / 6;
+    const angle2 = Math.PI / 3 * cornerIndex2 + Math.PI / 6;
+    const cornerX1 = centerX1 + hexSize * Math.cos(angle1);
+    const cornerY1 = centerY1 + hexSize * Math.sin(angle1);
+    const cornerX2 = centerX1 + hexSize * Math.cos(angle2);
+    const cornerY2 = centerY1 + hexSize * Math.sin(angle2);
+    this.ctx.beginPath();
+    this.ctx.moveTo(cornerX1, cornerY1);
+    this.ctx.lineTo(cornerX2, cornerY2);
+    this.ctx.strokeStyle = "#000000";
+    this.ctx.lineWidth = 4;
+    if (isDashed) {
+      this.ctx.setLineDash([5, 5]);
+    } else {
+      this.ctx.setLineDash([]);
+    }
+    this.ctx.stroke();
+    this.ctx.setLineDash([]);
   }
   /**
    * Redimensionne le canvas pour qu'il s'adapte à la fenêtre.
@@ -1645,7 +2050,8 @@ function main() {
     renderer.resize();
     const gameMap2 = game.getGameMap();
     if (gameMap2) {
-      renderer.render(gameMap2);
+      const civId = game.getPlayerCivilizationId();
+      renderer.render(gameMap2, civId);
     }
   });
   function updateResourcesDisplay() {
@@ -1695,7 +2101,8 @@ function main() {
   game.initialize();
   const gameMap = game.getGameMap();
   if (gameMap) {
-    renderer.render(gameMap);
+    const civId = game.getPlayerCivilizationId();
+    renderer.render(gameMap, civId);
   }
   updateResourcesDisplay();
   renderer.setOnHexClick((hexCoord) => {
@@ -1709,7 +2116,7 @@ function main() {
       if (ResourceHarvest.canHarvest(hexCoord, currentGameMap, civId)) {
         ResourceHarvest.harvest(hexCoord, currentGameMap, civId, playerResources);
         updateResourcesDisplay();
-        renderer.render(currentGameMap);
+        renderer.render(currentGameMap, civId);
       }
     } catch (error) {
     }
@@ -1718,7 +2125,8 @@ function main() {
     game.regenerate();
     const newGameMap = game.getGameMap();
     if (newGameMap) {
-      renderer.render(newGameMap);
+      const civId = game.getPlayerCivilizationId();
+      renderer.render(newGameMap, civId);
       updateResourcesDisplay();
     }
   });

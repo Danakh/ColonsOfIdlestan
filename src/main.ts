@@ -37,7 +37,8 @@ function main(): void {
     renderer.resize();
     const gameMap = game.getGameMap();
     if (gameMap) {
-      renderer.render(gameMap);
+      const civId = game.getPlayerCivilizationId();
+      renderer.render(gameMap, civId);
     }
   });
   
@@ -109,7 +110,8 @@ function main(): void {
   game.initialize();
   const gameMap = game.getGameMap();
   if (gameMap) {
-    renderer.render(gameMap);
+    const civId = game.getPlayerCivilizationId();
+    renderer.render(gameMap, civId);
   }
 
   // Mettre à jour l'affichage des ressources
@@ -135,7 +137,7 @@ function main(): void {
         updateResourcesDisplay();
         
         // Optionnel: Re-rendre la carte pour un feedback visuel
-        renderer.render(currentGameMap);
+        renderer.render(currentGameMap, civId);
       }
     } catch (error) {
       // Ignorer silencieusement les erreurs de récolte (hexagone non récoltable)
@@ -148,7 +150,8 @@ function main(): void {
     game.regenerate();
     const newGameMap = game.getGameMap();
     if (newGameMap) {
-      renderer.render(newGameMap);
+      const civId = game.getPlayerCivilizationId();
+      renderer.render(newGameMap, civId);
       updateResourcesDisplay(); // Réinitialiser l'affichage des ressources
     }
   });

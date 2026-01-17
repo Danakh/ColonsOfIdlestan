@@ -2,7 +2,9 @@ import { GameMap } from '../model/map/GameMap';
 import { Hex } from '../model/hex/Hex';
 import { HexCoord } from '../model/hex/HexCoord';
 import { Vertex } from '../model/hex/Vertex';
+import { Edge } from '../model/hex/Edge';
 import { HexType } from '../model/map/HexType';
+import { CivilizationId } from '../model/map/CivilizationId';
 
 /**
  * Configuration pour le rendu des hexagones.
@@ -58,8 +60,9 @@ export class HexMapRenderer {
   /**
    * Dessine la carte complète sur le canvas.
    * @param gameMap - La carte à dessiner
+   * @param civId - Optionnel: la civilisation pour laquelle dessiner les routes constructibles
    */
-  render(gameMap: GameMap): void {
+  render(gameMap: GameMap, civId?: CivilizationId): void {
     // Effacer le canvas
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
@@ -127,6 +130,14 @@ export class HexMapRenderer {
 
     // Dessiner les villes sur leurs sommets
     this.drawCities(gameMap, config);
+
+    // Dessiner les routes construites
+    this.drawRoads(gameMap, config);
+
+    // Dessiner les routes constructibles si une civilisation est fournie
+    if (civId) {
+      this.drawBuildableRoads(gameMap, config, civId);
+    }
   }
 
   /**
@@ -288,8 +299,8 @@ export class HexMapRenderer {
     const centerX = sumX / 3;
     const centerY = sumY / 3;
 
-    // Dessiner un petit carré noir (taille 6x6 pixels)
-    const citySize = 6;
+    // Dessiner un petit carré noir (taille 12x12 pixels)
+    const citySize = 12;
     this.ctx.fillStyle = '#000000';
     this.ctx.fillRect(
       centerX - citySize / 2,
@@ -297,6 +308,222 @@ export class HexMapRenderer {
       citySize,
       citySize
     );
+  }
+
+  /**
+   * Dessine les routes construites sur la carte.
+   */
+  private drawRoads(gameMap: GameMap, config: RenderConfig): void {
+    const grid = gameMap.getGrid();
+    const allEdges = grid.getAllEdges();
+
+    // Utiliser un Set pour éviter de dessiner deux fois la même route
+    const drawnEdges = new Set<string>();
+
+    for (const edge of allEdges) {
+      if (gameMap.hasRoad(edge)) {
+        const edgeKey = edge.hashCode();
+        if (!drawnEdges.has(edgeKey)) {
+          drawnEdges.add(edgeKey);
+          this.drawRoad(edge, config, false, gameMap); // false = trait plein
+        }
+      }
+    }
+  }
+
+  /**
+   * Dessine les routes constructibles pour une civilisation.
+   */
+  private drawBuildableRoads(
+    gameMap: GameMap,
+    config: RenderConfig,
+    civId: CivilizationId
+  ): void {
+    const buildableRoads = gameMap.getBuildableRoadsForCivilization(civId);
+
+    for (const edge of buildableRoads) {
+      this.drawRoad(edge, config, true, gameMap); // true = trait pointillé
+    }
+  }
+
+  /**
+   * Dessine une route (construite ou constructible) sur une arête.
+   * @param edge - L'arête à dessiner
+   * @param config - La configuration de rendu
+   * @param isDashed - true pour un trait pointillé (route constructible), false pour un trait plein (route construite)
+   */
+  private drawRoad(edge: Edge, config: RenderConfig, isDashed: boolean, gameMap: GameMap): void {
+    const { hexSize, offsetX, offsetY } = config;
+    const [hex1, hex2] = edge.getHexes();
+
+    // Obtenir les vertices de l'edge (un edge a deux vertices)
+    const vertices = gameMap.getVerticesForEdge(edge);
+    
+    if (vertices.length < 2) {
+      // Fallback: utiliser les coins calculés à partir de la direction
+      this.drawRoadFromDirection(edge, config, isDashed);
+      return;
+    }
+
+    // Calculer les positions des deux vertices
+    const vertex1 = vertices[0];
+    const vertex2 = vertices[1];
+
+    const pos1 = this.getVertexPosition(vertex1, config);
+    const pos2 = this.getVertexPosition(vertex2, config);
+
+    // Dessiner la ligne entre les deux vertices
+    this.ctx.beginPath();
+    this.ctx.moveTo(pos1.x, pos1.y);
+    this.ctx.lineTo(pos2.x, pos2.y);
+
+    // Configurer le style
+    this.ctx.strokeStyle = '#000000';
+    this.ctx.lineWidth = 4;
+
+    if (isDashed) {
+      // Trait pointillé pour les routes constructibles
+      this.ctx.setLineDash([5, 5]);
+    } else {
+      // Trait plein pour les routes construites
+      this.ctx.setLineDash([]);
+    }
+
+    this.ctx.stroke();
+    
+    // Réinitialiser le lineDash pour ne pas affecter les autres dessins
+    this.ctx.setLineDash([]);
+  }
+
+  /**
+   * Calcule la position d'un vertex en pixels.
+   * Un vertex est le point où 3 hexagones se rencontrent (un coin d'hexagone).
+   */
+  private getVertexPosition(vertex: Vertex, config: RenderConfig): { x: number; y: number } {
+    const { hexSize, offsetX, offsetY } = config;
+    const hexes = vertex.getHexes();
+
+    // Pour un vertex, on peut calculer la position comme la moyenne des centres des 3 hexagones
+    // Mais plus précisément, un vertex est un coin d'hexagone, donc on peut le calculer
+    // en trouvant le coin commun aux 3 hexagones
+    
+    // Approche simple: moyenne des centres (ce qui donne approximativement le coin)
+    let sumX = 0;
+    let sumY = 0;
+
+    for (const coord of hexes) {
+      const x = offsetX + Math.sqrt(3) * (coord.q + coord.r / 2) * hexSize;
+      const y = offsetY + (3 / 2) * coord.r * hexSize;
+      sumX += x;
+      sumY += y;
+    }
+
+    return {
+      x: sumX / 3,
+      y: sumY / 3,
+    };
+  }
+
+  /**
+   * Dessine une route en utilisant la direction entre les deux hexagones (fallback).
+   */
+  private drawRoadFromDirection(edge: Edge, config: RenderConfig, isDashed: boolean): void {
+    const { hexSize, offsetX, offsetY } = config;
+    const [hex1, hex2] = edge.getHexes();
+
+    // Calculer les positions des centres des deux hexagones
+    const centerX1 = offsetX + Math.sqrt(3) * (hex1.q + hex1.r / 2) * hexSize;
+    const centerY1 = offsetY + (3 / 2) * hex1.r * hexSize;
+
+    // Déterminer la direction de hex1 vers hex2
+    const dq = hex2.q - hex1.q;
+    const dr = hex2.r - hex1.r;
+
+    // Mapper la direction (dq, dr) vers l'index du coin
+    // Pour un hexagone pointy-top, les directions sont:
+    // N: (0, -1) -> coin entre 0 et 1
+    // NE: (1, -1) -> coin entre 1 et 2
+    // SE: (1, 0) -> coin entre 2 et 3
+    // S: (0, 1) -> coin entre 3 et 4
+    // SW: (-1, 1) -> coin entre 4 et 5
+    // NW: (-1, 0) -> coin entre 5 et 0
+
+    let cornerIndex1: number;
+    let cornerIndex2: number;
+
+    if (dq === 0 && dr === -1) {
+      // N
+      cornerIndex1 = 0;
+      cornerIndex2 = 1;
+    } else if (dq === 1 && dr === -1) {
+      // NE
+      cornerIndex1 = 1;
+      cornerIndex2 = 2;
+    } else if (dq === 1 && dr === 0) {
+      // SE
+      cornerIndex1 = 2;
+      cornerIndex2 = 3;
+    } else if (dq === 0 && dr === 1) {
+      // S
+      cornerIndex1 = 3;
+      cornerIndex2 = 4;
+    } else if (dq === -1 && dr === 1) {
+      // SW
+      cornerIndex1 = 4;
+      cornerIndex2 = 5;
+    } else if (dq === -1 && dr === 0) {
+      // NW
+      cornerIndex1 = 5;
+      cornerIndex2 = 0;
+    } else {
+      // Fallback: utiliser les centres si la direction n'est pas reconnue
+      const centerX2 = offsetX + Math.sqrt(3) * (hex2.q + hex2.r / 2) * hexSize;
+      const centerY2 = offsetY + (3 / 2) * hex2.r * hexSize;
+      this.ctx.beginPath();
+      this.ctx.moveTo(centerX1, centerY1);
+      this.ctx.lineTo(centerX2, centerY2);
+      this.ctx.strokeStyle = '#000000';
+      this.ctx.lineWidth = 4;
+      if (isDashed) {
+        this.ctx.setLineDash([5, 5]);
+      } else {
+        this.ctx.setLineDash([]);
+      }
+      this.ctx.stroke();
+      this.ctx.setLineDash([]);
+      return;
+    }
+
+    // Calculer les positions des deux coins de hex1 qui forment l'edge
+    const angle1 = (Math.PI / 3) * cornerIndex1 + Math.PI / 6;
+    const angle2 = (Math.PI / 3) * cornerIndex2 + Math.PI / 6;
+    
+    const cornerX1 = centerX1 + hexSize * Math.cos(angle1);
+    const cornerY1 = centerY1 + hexSize * Math.sin(angle1);
+    const cornerX2 = centerX1 + hexSize * Math.cos(angle2);
+    const cornerY2 = centerY1 + hexSize * Math.sin(angle2);
+
+    // Dessiner la ligne entre les deux coins
+    this.ctx.beginPath();
+    this.ctx.moveTo(cornerX1, cornerY1);
+    this.ctx.lineTo(cornerX2, cornerY2);
+
+    // Configurer le style
+    this.ctx.strokeStyle = '#000000';
+    this.ctx.lineWidth = 4;
+
+    if (isDashed) {
+      // Trait pointillé pour les routes constructibles
+      this.ctx.setLineDash([5, 5]);
+    } else {
+      // Trait plein pour les routes construites
+      this.ctx.setLineDash([]);
+    }
+
+    this.ctx.stroke();
+    
+    // Réinitialiser le lineDash pour ne pas affecter les autres dessins
+    this.ctx.setLineDash([]);
   }
 
   /**
