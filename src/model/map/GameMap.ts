@@ -327,6 +327,19 @@ export class GameMap {
     const allEdges = this.grid.getAllEdges();
     
     for (const edge of allEdges) {
+      // Vérifier que les deux hexagones de l'edge existent dans la grille
+      const [hex1, hex2] = edge.getHexes();
+      if (!this.grid.hasHex(hex1) || !this.grid.hasHex(hex2)) {
+        continue; // Ignorer les edges vers des hexagones inexistants
+      }
+
+      // Ignorer les edges entre deux hexagones d'eau (mais autoriser terre-eau)
+      const hex1Type = this.getHexType(hex1);
+      const hex2Type = this.getHexType(hex2);
+      if (hex1Type === HexType.Water && hex2Type === HexType.Water) {
+        continue; // Ignorer les edges entre deux hexagones d'eau
+      }
+
       // Ignorer les routes déjà construites
       if (this.hasRoad(edge)) {
         continue;
@@ -336,6 +349,13 @@ export class GameMap {
       const vertices = this.getVerticesForEdge(edge);
       let touchesCity = false;
       for (const vertex of vertices) {
+        // Vérifier que tous les hexagones du vertex existent
+        const vertexHexes = vertex.getHexes();
+        const allVertexHexesExist = vertexHexes.every(h => this.grid.hasHex(h));
+        if (!allVertexHexesExist) {
+          continue; // Ignorer les vertices avec des hexagones inexistants
+        }
+        
         if (this.hasCity(vertex)) {
           const owner = this.getCityOwner(vertex);
           if (owner && owner.hashCode() === civKey) {
@@ -354,6 +374,19 @@ export class GameMap {
       // Un edge touche une route s'ils partagent un vertex
       const adjacentEdges = this.getAdjacentEdges(edge);
       for (const adjacentEdge of adjacentEdges) {
+        // Vérifier que l'edge adjacent existe vraiment dans la grille
+        const [adjHex1, adjHex2] = adjacentEdge.getHexes();
+        if (!this.grid.hasHex(adjHex1) || !this.grid.hasHex(adjHex2)) {
+          continue;
+        }
+        
+        // Ignorer les edges adjacents entre deux hexagones d'eau (mais autoriser terre-eau)
+        const adjHex1Type = this.getHexType(adjHex1);
+        const adjHex2Type = this.getHexType(adjHex2);
+        if (adjHex1Type === HexType.Water && adjHex2Type === HexType.Water) {
+          continue; // Ignorer les edges adjacents entre deux hexagones d'eau
+        }
+        
         if (this.hasRoad(adjacentEdge)) {
           const owner = this.getRoadOwner(adjacentEdge);
           if (owner && owner.hashCode() === civKey) {
@@ -369,7 +402,7 @@ export class GameMap {
 
   /**
    * Retourne les edges adjacents à un edge donné.
-   * Deux edges sont adjacents s'ils partagent un vertex.
+   * Deux edges sont adjacents s'ils partagent un vertex et que tous les hexagones existent dans la grille.
    * @param edge - L'arête pour laquelle trouver les edges adjacents
    * @returns Un tableau des edges adjacents à cette arête
    */
@@ -380,11 +413,32 @@ export class GameMap {
     // Pour chaque vertex adjacent à l'edge, obtenir tous les edges qui touchent ce vertex
     for (const vertex of vertices) {
       const hexes = vertex.getHexes();
+      
+      // Vérifier que tous les hexagones du vertex existent dans la grille
+      const allHexesExist = hexes.every(h => this.grid.hasHex(h));
+      if (!allHexesExist) {
+        continue; // Ignorer les vertices avec des hexagones inexistants
+      }
+      
       // Un vertex est formé de 3 hexagones, donc il y a 3 edges possibles entre ces hexagones
       for (let i = 0; i < hexes.length; i++) {
         for (let j = i + 1; j < hexes.length; j++) {
           try {
             const adjacentEdge = Edge.create(hexes[i], hexes[j]);
+            
+            // Vérifier que les deux hexagones de l'edge existent dans la grille
+            const [adjHex1, adjHex2] = adjacentEdge.getHexes();
+            if (!this.grid.hasHex(adjHex1) || !this.grid.hasHex(adjHex2)) {
+              continue; // Ignorer les edges avec des hexagones inexistants
+            }
+            
+            // Ignorer les edges adjacents entre deux hexagones d'eau (mais autoriser terre-eau)
+            const adjHex1Type = this.getHexType(adjHex1);
+            const adjHex2Type = this.getHexType(adjHex2);
+            if (adjHex1Type === HexType.Water && adjHex2Type === HexType.Water) {
+              continue; // Ignorer les edges entre deux hexagones d'eau
+            }
+            
             // Ne pas inclure l'edge original
             if (!adjacentEdge.equals(edge)) {
               // Éviter les doublons
