@@ -40,7 +40,7 @@ export class RoadController {
     if (!RoadConstruction.canAfford(resources)) {
       throw new Error(
         `Pas assez de ressources pour construire une route. ` +
-        `Requis: 1 ${ResourceType.Brick} et 1 ${ResourceType.Ore}.`
+        `Requis: 1 ${ResourceType.Brick} et 1 ${ResourceType.Wood}.`
       );
     }
 

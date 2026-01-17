@@ -11,12 +11,12 @@ import { PlayerResources } from './PlayerResources';
  * - L'edge touche une ville de la même civilisation
  * - OU l'edge touche une autre route de la même civilisation
  * 
- * Le coût de construction est : 1 argile (Brick) + 1 pierre (Ore).
+ * Le coût de construction est : 1 argile (Brick) + 1 bois (Wood).
  */
 export class RoadConstruction {
   private static readonly COST = new Map<ResourceType, number>([
     [ResourceType.Brick, 1],
-    [ResourceType.Ore, 1],
+    [ResourceType.Wood, 1],
   ]);
 
   /**

@@ -175,7 +175,7 @@ describe('RoadConstruction', () => {
     it('devrait retourner true si le joueur a assez de ressources', () => {
       const resources = new PlayerResources();
       resources.addResource(ResourceType.Brick, 1);
-      resources.addResource(ResourceType.Ore, 1);
+      resources.addResource(ResourceType.Wood, 1);
 
       expect(RoadConstruction.canAfford(resources)).toBe(true);
     });
@@ -183,19 +183,19 @@ describe('RoadConstruction', () => {
     it('devrait retourner true si le joueur a plus de ressources que nécessaire', () => {
       const resources = new PlayerResources();
       resources.addResource(ResourceType.Brick, 5);
-      resources.addResource(ResourceType.Ore, 5);
+      resources.addResource(ResourceType.Wood, 5);
 
       expect(RoadConstruction.canAfford(resources)).toBe(true);
     });
 
     it('devrait retourner false si le joueur n\'a pas assez d\'argile', () => {
       const resources = new PlayerResources();
-      resources.addResource(ResourceType.Ore, 1);
+      resources.addResource(ResourceType.Wood, 1);
 
       expect(RoadConstruction.canAfford(resources)).toBe(false);
     });
 
-    it('devrait retourner false si le joueur n\'a pas assez de pierre', () => {
+    it('devrait retourner false si le joueur n\'a pas assez de bois', () => {
       const resources = new PlayerResources();
       resources.addResource(ResourceType.Brick, 1);
 
@@ -230,7 +230,7 @@ describe('RoadConstruction', () => {
 
       const resources = new PlayerResources();
       resources.addResource(ResourceType.Brick, 1);
-      resources.addResource(ResourceType.Ore, 1);
+      resources.addResource(ResourceType.Wood, 1);
 
       const edge = Edge.create(center, north);
 
@@ -239,7 +239,7 @@ describe('RoadConstruction', () => {
       expect(map.hasRoad(edge)).toBe(true);
       expect(map.getRoadOwner(edge)).toEqual(civId);
       expect(resources.getResource(ResourceType.Brick)).toBe(0);
-      expect(resources.getResource(ResourceType.Ore)).toBe(0);
+      expect(resources.getResource(ResourceType.Wood)).toBe(0);
     });
 
     it('devrait lancer une erreur si l\'edge ne peut pas être construit', () => {
@@ -260,7 +260,7 @@ describe('RoadConstruction', () => {
 
       const resources = new PlayerResources();
       resources.addResource(ResourceType.Brick, 1);
-      resources.addResource(ResourceType.Ore, 1);
+      resources.addResource(ResourceType.Wood, 1);
 
       const edge = Edge.create(isolated, isolatedNeighbor);
 
@@ -319,14 +319,14 @@ describe('RoadConstruction', () => {
       const edge1 = Edge.create(center, north);
       const resources1 = new PlayerResources();
       resources1.addResource(ResourceType.Brick, 1);
-      resources1.addResource(ResourceType.Ore, 1);
+      resources1.addResource(ResourceType.Wood, 1);
       RoadController.buildRoad(edge1, civId, map, resources1);
 
       // Construire une deuxième route connectée à la première
       const edge2 = Edge.create(center, northeast);
       const resources2 = new PlayerResources();
       resources2.addResource(ResourceType.Brick, 1);
-      resources2.addResource(ResourceType.Ore, 1);
+      resources2.addResource(ResourceType.Wood, 1);
 
       RoadController.buildRoad(edge2, civId, map, resources2);
 
@@ -354,16 +354,16 @@ describe('RoadConstruction', () => {
 
       const resources = new PlayerResources();
       resources.addResource(ResourceType.Brick, 3);
-      resources.addResource(ResourceType.Ore, 5);
-      resources.addResource(ResourceType.Wood, 10); // Ressource qui ne devrait pas être affectée
+      resources.addResource(ResourceType.Wood, 5);
+      resources.addResource(ResourceType.Ore, 10); // Ressource qui ne devrait pas être affectée
 
       const edge = Edge.create(center, north);
 
       RoadController.buildRoad(edge, civId, map, resources);
 
       expect(resources.getResource(ResourceType.Brick)).toBe(2);
-      expect(resources.getResource(ResourceType.Ore)).toBe(4);
-      expect(resources.getResource(ResourceType.Wood)).toBe(10);
+      expect(resources.getResource(ResourceType.Wood)).toBe(4);
+      expect(resources.getResource(ResourceType.Ore)).toBe(10);
     });
   });
 
@@ -372,7 +372,7 @@ describe('RoadConstruction', () => {
       const cost = RoadConstruction.getCost();
 
       expect(cost.get(ResourceType.Brick)).toBe(1);
-      expect(cost.get(ResourceType.Ore)).toBe(1);
+      expect(cost.get(ResourceType.Wood)).toBe(1);
       expect(cost.size).toBe(2);
     });
   });
