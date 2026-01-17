@@ -5,6 +5,8 @@ import { Edge } from '../hex/Edge';
 import { Vertex } from '../hex/Vertex';
 import { HexType } from './HexType';
 import { CivilizationId } from './CivilizationId';
+import { City } from '../city/City';
+import { CityLevel } from '../city/CityLevel';
 
 /**
  * Carte de jeu construite sur une grille hexagonale.
@@ -17,10 +19,9 @@ import { CivilizationId } from './CivilizationId';
  */
 export class GameMap {
   private readonly hexTypeMap: Map<string, HexType>;
-  private readonly cities: Set<string>;
+  private readonly cityMap: Map<string, City>;
   private readonly roads: Set<string>;
   private readonly registeredCivilizations: Set<string>;
-  private readonly cityOwner: Map<string, CivilizationId>;
   private readonly roadOwner: Map<string, CivilizationId>;
 
   /**
@@ -29,10 +30,9 @@ export class GameMap {
    */
   constructor(private readonly grid: HexGrid) {
     this.hexTypeMap = new Map();
-    this.cities = new Set();
+    this.cityMap = new Map();
     this.roads = new Set();
     this.registeredCivilizations = new Set();
-    this.cityOwner = new Map();
     this.roadOwner = new Map();
 
     // Initialiser tous les hexagones à Desert par défaut
@@ -94,13 +94,15 @@ export class GameMap {
 
   /**
    * Ajoute une ville sur un sommet pour une civilisation donnée.
+   * La ville est créée au niveau Outpost (0) par défaut.
    * @param vertex - Le sommet où placer la ville
    * @param civId - L'identifiant de la civilisation propriétaire
+   * @param level - Le niveau initial de la ville (par défaut: Outpost)
    * @throws Error si le sommet n'est pas valide dans la grille
    * @throws Error si une ville existe déjà sur ce sommet
    * @throws Error si la civilisation n'est pas enregistrée
    */
-  addCity(vertex: Vertex, civId: CivilizationId): void {
+  addCity(vertex: Vertex, civId: CivilizationId, level: CityLevel = CityLevel.Outpost): void {
     // Vérifier que la civilisation est enregistrée
     if (!this.isCivilizationRegistered(civId)) {
       throw new Error(`La civilisation ${civId.toString()} n'est pas enregistrée.`);
@@ -109,7 +111,7 @@ export class GameMap {
     const vertexKey = vertex.hashCode();
 
     // Vérifier qu'il n'y a pas déjà une ville sur ce sommet
-    if (this.cities.has(vertexKey)) {
+    if (this.cityMap.has(vertexKey)) {
       throw new Error(`Une ville existe déjà sur le sommet ${vertex.toString()}.`);
     }
 
@@ -121,8 +123,9 @@ export class GameMap {
       throw new Error(`Le sommet ${vertex.toString()} n'est pas valide dans la grille.`);
     }
     
-    this.cities.add(vertexKey);
-    this.cityOwner.set(vertexKey, civId);
+    // Créer la ville
+    const city = new City(vertex, civId, level);
+    this.cityMap.set(vertexKey, city);
   }
 
   /**
@@ -131,7 +134,16 @@ export class GameMap {
    * @returns true si une ville existe sur ce sommet
    */
   hasCity(vertex: Vertex): boolean {
-    return this.cities.has(vertex.hashCode());
+    return this.cityMap.has(vertex.hashCode());
+  }
+
+  /**
+   * Retourne la ville sur un sommet donné.
+   * @param vertex - Le sommet à vérifier
+   * @returns La ville, ou undefined s'il n'y a pas de ville sur ce sommet
+   */
+  getCity(vertex: Vertex): City | undefined {
+    return this.cityMap.get(vertex.hashCode());
   }
 
   /**
@@ -173,7 +185,66 @@ export class GameMap {
    * @returns L'identifiant de la civilisation propriétaire, ou undefined s'il n'y a pas de ville
    */
   getCityOwner(vertex: Vertex): CivilizationId | undefined {
-    return this.cityOwner.get(vertex.hashCode());
+    const city = this.cityMap.get(vertex.hashCode());
+    return city ? city.owner : undefined;
+  }
+
+  /**
+   * Améliore une ville au niveau suivant.
+   * @param vertex - Le sommet où se trouve la ville à améliorer
+   * @throws Error si aucune ville n'existe sur ce sommet
+   * @throws Error si la ville ne peut pas être améliorée (déjà au niveau maximum)
+   * @throws Error si une capitale existe déjà sur l'île et que la ville devient capitale
+   */
+  upgradeCity(vertex: Vertex): void {
+    const city = this.cityMap.get(vertex.hashCode());
+    if (!city) {
+      throw new Error(`Aucune ville n'existe sur le sommet ${vertex.toString()}.`);
+    }
+
+    // Vérifier si la ville va devenir une capitale
+    if (city.level === CityLevel.Metropolis) {
+      // Vérifier s'il y a déjà une capitale sur l'île
+      if (this.hasCapital()) {
+        throw new Error('Une seule capitale est autorisée par île.');
+      }
+    }
+
+    city.upgrade();
+  }
+
+  /**
+   * Vérifie s'il existe une capitale sur cette carte (île).
+   * @returns true s'il existe au moins une capitale
+   */
+  hasCapital(): boolean {
+    for (const city of this.cityMap.values()) {
+      if (city.level === CityLevel.Capital) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Retourne le sommet où se trouve la capitale, s'il y en a une.
+   * @returns Le sommet de la capitale, ou undefined s'il n'y a pas de capitale
+   */
+  getCapital(): Vertex | undefined {
+    for (const city of this.cityMap.values()) {
+      if (city.level === CityLevel.Capital) {
+        return city.vertex;
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * Vérifie si une capitale peut être créée sur cette carte (île).
+   * @returns true si aucune capitale n'existe déjà
+   */
+  isCapitalAllowed(): boolean {
+    return !this.hasCapital();
   }
 
   /**
@@ -188,17 +259,16 @@ export class GameMap {
   /**
    * Retourne toutes les villes appartenant à une civilisation donnée.
    * @param civId - L'identifiant de la civilisation
-   * @returns Un tableau des sommets contenant des villes de cette civilisation
+   * @returns Un tableau des villes de cette civilisation
    */
-  getCitiesForCivilization(civId: CivilizationId): Vertex[] {
-    const cities: Vertex[] = [];
+  getCitiesForCivilization(civId: CivilizationId): City[] {
+    const cities: City[] = [];
     const civKey = civId.hashCode();
 
-    // Parcourir tous les sommets de la grille pour trouver ceux possédés par cette civilisation
-    for (const vertex of this.grid.getAllVertices()) {
-      const owner = this.cityOwner.get(vertex.hashCode());
-      if (owner && owner.hashCode() === civKey) {
-        cities.push(vertex);
+    // Parcourir toutes les villes pour trouver celles appartenant à cette civilisation
+    for (const city of this.cityMap.values()) {
+      if (city.owner.hashCode() === civKey) {
+        cities.push(city);
       }
     }
 
@@ -235,6 +305,37 @@ export class GameMap {
    */
   hasRoad(edge: Edge): boolean {
     return this.roads.has(edge.hashCode());
+  }
+
+  /**
+   * Retourne les vertices adjacents à une arête donnée.
+   * Un vertex est adjacent à un edge s'il contient les deux hexagones de l'edge.
+   * @param edge - L'arête pour laquelle trouver les vertices adjacents
+   * @returns Un tableau des vertices adjacents à cette arête
+   */
+  getVerticesForEdge(edge: Edge): Vertex[] {
+    const vertices: Vertex[] = [];
+    const [hex1, hex2] = edge.getHexes();
+
+    // Obtenir tous les vertices de la grille et filtrer ceux qui contiennent les deux hexagones de l'edge
+    // Un vertex est formé de 3 hexagones, donc on cherche ceux qui contiennent hex1 et hex2
+    for (const vertex of this.grid.getAllVertices()) {
+      const hexes = vertex.getHexes();
+      // Un vertex adjacent à un edge doit contenir les deux hexagones de l'edge
+      // et tous les 3 hexagones du vertex doivent exister dans la grille
+      const containsHex1 = hexes.some(h => h.equals(hex1));
+      const containsHex2 = hexes.some(h => h.equals(hex2));
+      const allHexesExist = hexes.every(h => this.grid.hasHex(h));
+
+      if (containsHex1 && containsHex2 && allHexesExist) {
+        // Éviter les doublons
+        if (!vertices.some(v => v.equals(vertex))) {
+          vertices.push(vertex);
+        }
+      }
+    }
+
+    return vertices;
   }
 
   /**
