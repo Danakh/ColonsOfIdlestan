@@ -140,16 +140,16 @@ export class HexMapRenderer {
       }
     }
 
-    // Dessiner les villes sur leurs sommets
-    this.drawCities(gameMap, config);
-
-    // Dessiner les routes construites
+    // Dessiner les routes construites (avant les villes pour qu'elles passent sous)
     this.drawRoads(gameMap, config);
 
-    // Dessiner les routes constructibles si une civilisation est fournie
+    // Dessiner les routes constructibles si une civilisation est fournie (avant les villes)
     if (civId) {
       this.drawBuildableRoads(gameMap, config, civId);
     }
+
+    // Dessiner les villes sur leurs sommets (en dernier pour qu'elles soient par-dessus les routes)
+    this.drawCities(gameMap, config);
   }
 
   /**

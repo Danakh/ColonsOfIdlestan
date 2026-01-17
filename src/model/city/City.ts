@@ -138,28 +138,18 @@ export class City {
 
     // Règles de disponibilité selon le niveau de la ville
     switch (buildingType) {
-      case BuildingType.CityHall:
-        // L'hôtel de ville est toujours constructible (sauf s'il est déjà construit)
-        return true;
-
-      case BuildingType.Warehouse:
-      case BuildingType.Market:
-        // Entrepôt et marché disponibles dès le niveau Outpost
-        return true;
-
-      case BuildingType.Forge:
-      case BuildingType.Farm:
-        // Forge et ferme disponibles à partir du niveau Colony
-        return this.level >= CityLevel.Colony;
+      case BuildingType.Seaport:
+      case BuildingType.TownHall:
+        // Port maritime et hôtel de ville disponibles au niveau Outpost (0)
+        return this.level >= CityLevel.Outpost;
 
       case BuildingType.Sawmill:
-      case BuildingType.Quarry:
-        // Scierie et carrière disponibles à partir du niveau Town
-        return this.level >= CityLevel.Town;
-
-      case BuildingType.Barracks:
-        // Caserne disponible à partir du niveau Metropolis
-        return this.level >= CityLevel.Metropolis;
+      case BuildingType.Brickworks:
+      case BuildingType.Mill:
+      case BuildingType.Sheepfold:
+      case BuildingType.Mine:
+        // Bâtiments de production de ressources disponibles à partir du niveau Colony (1)
+        return this.level >= CityLevel.Colony;
 
       default:
         return false;
@@ -190,7 +180,7 @@ export class City {
    * @returns true si la ville a un hôtel de ville
    */
   hasCityHall(): boolean {
-    return this.hasBuilding(BuildingType.CityHall);
+    return this.hasBuilding(BuildingType.TownHall);
   }
 
   /**
