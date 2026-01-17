@@ -741,20 +741,20 @@ var MapGenerator = class {
   }
   /**
    * Génère uniquement les hexagones terrestres selon les règles de placement.
-   * - Les 2 premiers hexagones sont placés adjacents (Bois et Argile)
+   * - Les 2 premiers hexagones sont placés adjacents
    * - Chaque hexagone suivant doit être adjacent à au moins 2 hexagones déjà placés
+   * - Après génération, trouve un vertex au bord (2 hexagones + 1 emplacement eau) pour Bois et Argile
    */
   generateTerrestrialHexes(config, rng) {
     const totalHexes = this.calculateTotalHexes(config.resourceDistribution);
     const placedCoords = /* @__PURE__ */ new Set();
     const hexes = [];
-    const woodCoord = new HexCoord(0, 0);
-    const brickCoord = woodCoord.neighbor(0 /* N */);
-    hexes.push(new Hex(woodCoord));
-    hexes.push(new Hex(brickCoord));
-    placedCoords.add(woodCoord.hashCode());
-    placedCoords.add(brickCoord.hashCode());
-    const result = { hexes, woodCoord, brickCoord };
+    const firstCoord = new HexCoord(0, 0);
+    const secondCoord = firstCoord.neighbor(0 /* N */);
+    hexes.push(new Hex(firstCoord));
+    hexes.push(new Hex(secondCoord));
+    placedCoords.add(firstCoord.hashCode());
+    placedCoords.add(secondCoord.hashCode());
     while (hexes.length < totalHexes) {
       const candidateCoord = this.findValidPlacement(placedCoords, rng);
       if (!candidateCoord) {
@@ -765,7 +765,46 @@ var MapGenerator = class {
       hexes.push(new Hex(candidateCoord));
       placedCoords.add(candidateCoord.hashCode());
     }
-    return result;
+    const borderVertex = this.findBorderVertex(placedCoords, rng);
+    if (!borderVertex) {
+      throw new Error("Impossible de trouver un vertex au bord pour placer Bois et Argile.");
+    }
+    const { woodCoord, brickCoord } = borderVertex;
+    return { hexes, woodCoord, brickCoord };
+  }
+  /**
+   * Trouve un vertex au bord de la carte terrestre.
+   * Un vertex au bord est formé par 2 hexagones terrestres adjacents
+   * qui ont un voisin commun qui n'est pas terrestre (sera l'eau).
+   */
+  findBorderVertex(terrestrialCoords, rng) {
+    const borderCandidates = [];
+    for (const coordHash of terrestrialCoords) {
+      const [q, r] = coordHash.split(",").map(Number);
+      const coord1 = new HexCoord(q, r);
+      for (const direction of ALL_DIRECTIONS) {
+        const coord2 = coord1.neighbor(direction);
+        if (terrestrialCoords.has(coord2.hashCode())) {
+          const neighbors1 = coord1.neighbors();
+          const neighbors2 = coord2.neighbors();
+          for (const n1 of neighbors1) {
+            if (neighbors2.some((n2) => n2.equals(n1))) {
+              if (!terrestrialCoords.has(n1.hashCode())) {
+                borderCandidates.push({
+                  woodCoord: coord1,
+                  brickCoord: coord2
+                });
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+    if (borderCandidates.length === 0) {
+      return null;
+    }
+    return rng.pick(borderCandidates) || null;
   }
   /**
    * Trouve une coordonnée valide pour le prochain hexagone.
