@@ -1,5 +1,6 @@
 /**
- * Types de ressources disponibles sur les hexagones de la carte.
+ * Types de ressources récoltables par les joueurs.
+ * Note: Les types d'hexagones (comme Desert et Water) sont définis dans HexType.
  */
 export enum ResourceType {
   /** Bois */
@@ -12,8 +13,4 @@ export enum ResourceType {
   Sheep = 'Sheep',
   /** Minerai */
   Ore = 'Ore',
-  /** Désert (pas de ressource) */
-  Desert = 'Desert',
-  /** Eau */
-  Water = 'Water',
 }

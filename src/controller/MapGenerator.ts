@@ -4,7 +4,7 @@ import { HexCoord } from '../model/hex/HexCoord';
 import { HexDirection, ALL_DIRECTIONS } from '../model/hex/HexDirection';
 import { Vertex } from '../model/hex/Vertex';
 import { GameMap } from '../model/map/GameMap';
-import { ResourceType } from '../model/map/ResourceType';
+import { HexType } from '../model/map/HexType';
 import { CivilizationId } from '../model/map/CivilizationId';
 import { SeededRNG } from './util/SeededRNG';
 
@@ -12,8 +12,8 @@ import { SeededRNG } from './util/SeededRNG';
  * Configuration pour la génération d'une carte.
  */
 export interface MapGeneratorConfig {
-  /** Distribution des ressources : nombre d'hexagones par type de ressource */
-  resourceDistribution: Map<ResourceType, number>;
+  /** Distribution des hexagones : nombre d'hexagones par type d'hexagone */
+  resourceDistribution: Map<HexType, number>;
   /** Liste des civilisations (au moins une requise) */
   civilizations: CivilizationId[];
   /** Seed pour la génération déterministe */
@@ -247,7 +247,7 @@ export class MapGenerator {
   /**
    * Calcule le nombre total d'hexagones requis.
    */
-  private calculateTotalHexes(resourceDistribution: Map<ResourceType, number>): number {
+  private calculateTotalHexes(resourceDistribution: Map<HexType, number>): number {
     let total = 0;
     for (const count of resourceDistribution.values()) {
       total += count;
@@ -307,40 +307,40 @@ export class MapGenerator {
     woodCoord: HexCoord,
     brickCoord: HexCoord
   ): void {
-    // Créer une liste de tous les types de ressources à assigner (sans l'eau)
-    const resourcesToAssign: ResourceType[] = [];
-    for (const [resourceType, count] of config.resourceDistribution.entries()) {
+    // Créer une liste de tous les types d'hexagones à assigner (sans l'eau)
+    const hexTypesToAssign: HexType[] = [];
+    for (const [hexType, count] of config.resourceDistribution.entries()) {
       // Ignorer l'eau dans la distribution (elle sera ajoutée séparément)
-      if (resourceType === ResourceType.Water) {
+      if (hexType === HexType.Water) {
         continue;
       }
       for (let i = 0; i < count; i++) {
-        resourcesToAssign.push(resourceType);
+        hexTypesToAssign.push(hexType);
       }
     }
 
-    // Séparer les ressources Bois et Argile pour les placer en premier
-    const woodIndex = resourcesToAssign.indexOf(ResourceType.Wood);
-    const brickIndex = resourcesToAssign.indexOf(ResourceType.Brick);
+    // Séparer les hexagones Bois et Argile pour les placer en premier
+    const woodIndex = hexTypesToAssign.indexOf(HexType.Wood);
+    const brickIndex = hexTypesToAssign.indexOf(HexType.Brick);
     
     // Retirer Bois et Argile de la liste (un exemplaire de chaque)
     if (woodIndex !== -1) {
-      resourcesToAssign.splice(woodIndex, 1);
+      hexTypesToAssign.splice(woodIndex, 1);
     }
     if (brickIndex !== -1 && brickIndex !== woodIndex) {
       // Ajuster l'index si Wood a été retiré avant
-      const adjustedBrickIndex = resourcesToAssign.indexOf(ResourceType.Brick);
+      const adjustedBrickIndex = hexTypesToAssign.indexOf(HexType.Brick);
       if (adjustedBrickIndex !== -1) {
-        resourcesToAssign.splice(adjustedBrickIndex, 1);
+        hexTypesToAssign.splice(adjustedBrickIndex, 1);
       }
     }
 
     // Mélanger la liste pour un placement aléatoire
-    rng.shuffle(resourcesToAssign);
+    rng.shuffle(hexTypesToAssign);
 
     // Assigner Bois et Argile aux deux premiers hexagones
-    gameMap.setResource(woodCoord, ResourceType.Wood);
-    gameMap.setResource(brickCoord, ResourceType.Brick);
+    gameMap.setResource(woodCoord, HexType.Wood);
+    gameMap.setResource(brickCoord, HexType.Brick);
 
     // Filtrer les hexagones terrestres (exclure Bois et Argile)
     const remainingHexes = terrestrialHexes.filter(
@@ -351,11 +351,11 @@ export class MapGenerator {
     const shuffledHexes = [...remainingHexes];
     rng.shuffle(shuffledHexes);
 
-    // Assigner chaque ressource restante à un hexagone
-    for (let i = 0; i < resourcesToAssign.length && i < shuffledHexes.length; i++) {
+    // Assigner chaque type d'hexagone restant à un hexagone
+    for (let i = 0; i < hexTypesToAssign.length && i < shuffledHexes.length; i++) {
       const hex = shuffledHexes[i];
-      const resource = resourcesToAssign[i];
-      gameMap.setResource(hex.coord, resource);
+      const hexType = hexTypesToAssign[i];
+      gameMap.setResource(hex.coord, hexType);
     }
   }
 
@@ -374,7 +374,7 @@ export class MapGenerator {
     // Parcourir tous les hexagones de la grille et assigner Water à ceux qui ne sont pas terrestres
     for (const hex of grid.getAllHexes()) {
       if (!terrestrialCoords.has(hex.coord.hashCode())) {
-        gameMap.setResource(hex.coord, ResourceType.Water);
+        gameMap.setResource(hex.coord, HexType.Water);
       }
     }
   }
@@ -410,8 +410,8 @@ export class MapGenerator {
         // Trouver l'hexagone qui n'est ni wood ni brick (c'est l'eau)
         const waterHex = hexes.find(h => !h.equals(woodCoord) && !h.equals(brickCoord));
         if (waterHex) {
-          const resource = gameMap.getResource(waterHex);
-          if (resource === ResourceType.Water) {
+          const hexType = gameMap.getResource(waterHex);
+          if (hexType === HexType.Water) {
             // Ajouter la ville sur ce vertex (utiliser le vertex retourné par la grille)
             try {
               gameMap.addCity(vertex, civId);
@@ -441,8 +441,8 @@ export class MapGenerator {
         // Vérifier si cet hexagone existe dans la grille et est de l'eau
         const neighborHex = grid.getHex(neighborCoord);
         if (neighborHex) {
-          const resource = gameMap.getResource(neighborCoord);
-          if (resource === ResourceType.Water) {
+          const hexType = gameMap.getResource(neighborCoord);
+          if (hexType === HexType.Water) {
             // Trouver le vertex correspondant dans la grille (pour utiliser le même instance)
             const vertices = grid.getVerticesForHex(woodCoord);
             for (const vertex of vertices) {

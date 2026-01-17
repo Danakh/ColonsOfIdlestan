@@ -2,7 +2,7 @@ import { GameMap } from '../model/map/GameMap';
 import { Hex } from '../model/hex/Hex';
 import { HexCoord } from '../model/hex/HexCoord';
 import { Vertex } from '../model/hex/Vertex';
-import { ResourceType } from '../model/map/ResourceType';
+import { HexType } from '../model/map/HexType';
 
 /**
  * Configuration pour le rendu des hexagones.
@@ -17,16 +17,16 @@ interface RenderConfig {
 }
 
 /**
- * Couleur associée à chaque type de ressource.
+ * Couleur associée à chaque type d'hexagone.
  */
-const RESOURCE_COLORS: Record<ResourceType, string> = {
-  [ResourceType.Wood]: '#8B4513',      // Marron (bois)
-  [ResourceType.Brick]: '#CD5C5C',     // Rouge brique
-  [ResourceType.Wheat]: '#FFD700',     // Or (blé)
-  [ResourceType.Sheep]: '#90EE90',     // Vert clair (mouton)
-  [ResourceType.Ore]: '#708090',       // Gris ardoise (minerai)
-  [ResourceType.Desert]: '#F4A460',   // Sable (désert)
-  [ResourceType.Water]: '#4169E1',     // Bleu royal (eau)
+const HEX_TYPE_COLORS: Record<HexType, string> = {
+  [HexType.Wood]: '#8B4513',      // Marron (bois)
+  [HexType.Brick]: '#CD5C5C',     // Rouge brique
+  [HexType.Wheat]: '#FFD700',     // Or (blé)
+  [HexType.Sheep]: '#90EE90',     // Vert clair (mouton)
+  [HexType.Ore]: '#708090',       // Gris ardoise (minerai)
+  [HexType.Desert]: '#F4A460',   // Sable (désert)
+  [HexType.Water]: '#4169E1',     // Bleu royal (eau)
 };
 
 /**
@@ -155,9 +155,9 @@ export class HexMapRenderer {
     const x = offsetX + Math.sqrt(3) * (coord.q + coord.r / 2) * hexSize;
     const y = offsetY + (3 / 2) * coord.r * hexSize;
 
-    // Obtenir la ressource de cet hexagone
-    const resource = gameMap.getResource(coord) || ResourceType.Desert;
-    const color = RESOURCE_COLORS[resource] || '#CCCCCC';
+    // Obtenir le type d'hexagone
+    const hexType = gameMap.getResource(coord) || HexType.Desert;
+    const color = HEX_TYPE_COLORS[hexType] || '#CCCCCC';
 
     // Dessiner l'hexagone avec une rotation de 30° (pointy-top)
     // Rotation de 30° = π/6 radians pour passer de flat-top à pointy-top

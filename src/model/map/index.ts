@@ -4,6 +4,7 @@
  * une carte de jeu avec ressources, villes et routes.
  */
 
+export { HexType } from './HexType';
 export { ResourceType } from './ResourceType';
 export { GameMap } from './GameMap';
 export { CivilizationId } from './CivilizationId';

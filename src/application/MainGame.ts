@@ -1,6 +1,6 @@
 import { MapGenerator, MapGeneratorConfig } from '../controller/MapGenerator';
 import { GameMap } from '../model/map/GameMap';
-import { ResourceType } from '../model/map/ResourceType';
+import { HexType } from '../model/map/HexType';
 import { CivilizationId } from '../model/map/CivilizationId';
 
 /**
@@ -24,14 +24,14 @@ export class MainGame {
   initialize(seed?: number): void {
     const actualSeed = seed ?? Date.now();
 
-    // Configuration : 5 ressources de chaque type (sauf Water qui est généré automatiquement)
-    const resourceDistribution = new Map<ResourceType, number>([
-      [ResourceType.Wood, 5],
-      [ResourceType.Brick, 5],
-      [ResourceType.Wheat, 5],
-      [ResourceType.Sheep, 5],
-      [ResourceType.Ore, 5],
-      [ResourceType.Desert, 5],
+    // Configuration : 5 hexagones de chaque type (sauf Water qui est généré automatiquement)
+    const resourceDistribution = new Map<HexType, number>([
+      [HexType.Wood, 5],
+      [HexType.Brick, 5],
+      [HexType.Wheat, 5],
+      [HexType.Sheep, 5],
+      [HexType.Ore, 5],
+      [HexType.Desert, 1],
     ]);
 
     // Créer une civilisation par défaut

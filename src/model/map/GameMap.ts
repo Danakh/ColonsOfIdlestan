@@ -3,7 +3,7 @@ import { Hex } from '../hex/Hex';
 import { HexCoord } from '../hex/HexCoord';
 import { Edge } from '../hex/Edge';
 import { Vertex } from '../hex/Vertex';
-import { ResourceType } from './ResourceType';
+import { HexType } from './HexType';
 import { CivilizationId } from './CivilizationId';
 
 /**
@@ -16,7 +16,7 @@ import { CivilizationId } from './CivilizationId';
  * Gère également la propriété des villes et routes par différentes civilisations.
  */
 export class GameMap {
-  private readonly resourceMap: Map<string, ResourceType>;
+  private readonly resourceMap: Map<string, HexType>;
   private readonly cities: Set<string>;
   private readonly roads: Set<string>;
   private readonly registeredCivilizations: Set<string>;
@@ -37,7 +37,7 @@ export class GameMap {
 
     // Initialiser toutes les ressources à Desert par défaut
     for (const hex of grid.getAllHexes()) {
-      this.resourceMap.set(hex.coord.hashCode(), ResourceType.Desert);
+      this.resourceMap.set(hex.coord.hashCode(), HexType.Desert);
     }
   }
 
@@ -49,25 +49,25 @@ export class GameMap {
   }
 
   /**
-   * Définit le type de ressource pour un hexagone.
+   * Définit le type d'hexagone pour un hexagone.
    * @param hex - L'hexagone ou sa coordonnée
-   * @param resource - Le type de ressource
+   * @param hexType - Le type d'hexagone
    * @throws Error si l'hexagone n'existe pas dans la grille
    */
-  setResource(hex: Hex | HexCoord, resource: ResourceType): void {
+  setResource(hex: Hex | HexCoord, hexType: HexType): void {
     const coord = hex instanceof Hex ? hex.coord : hex;
     if (!this.grid.hasHex(coord)) {
       throw new Error(`L'hexagone à la coordonnée ${coord.toString()} n'existe pas dans la grille.`);
     }
-    this.resourceMap.set(coord.hashCode(), resource);
+    this.resourceMap.set(coord.hashCode(), hexType);
   }
 
   /**
-   * Retourne le type de ressource d'un hexagone.
+   * Retourne le type d'hexagone d'un hexagone.
    * @param hex - L'hexagone ou sa coordonnée
-   * @returns Le type de ressource, ou undefined si l'hexagone n'existe pas
+   * @returns Le type d'hexagone, ou undefined si l'hexagone n'existe pas
    */
-  getResource(hex: Hex | HexCoord): ResourceType | undefined {
+  getResource(hex: Hex | HexCoord): HexType | undefined {
     const coord = hex instanceof Hex ? hex.coord : hex;
     if (!this.grid.hasHex(coord)) {
       return undefined;

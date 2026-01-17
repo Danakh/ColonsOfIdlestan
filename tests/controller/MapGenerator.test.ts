@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { MapGenerator, MapGeneratorConfig } from '../../src/controller/MapGenerator';
-import { ResourceType } from '../../src/model/map/ResourceType';
+import { HexType } from '../../src/model/map/HexType';
 import { CivilizationId } from '../../src/model/map/CivilizationId';
 import { HexCoord } from '../../src/model/hex/HexCoord';
 
@@ -9,7 +9,7 @@ describe('MapGenerator', () => {
     it('devrait lancer une erreur si aucune civilisation n\'est fournie', () => {
       const generator = new MapGenerator();
       const config: MapGeneratorConfig = {
-        resourceDistribution: new Map([[ResourceType.Wood, 1]]),
+        resourceDistribution: new Map([[HexType.Wood, 1]]),
         civilizations: [],
         seed: 123,
       };
@@ -36,8 +36,8 @@ describe('MapGenerator', () => {
       const generator = new MapGenerator();
       const config: MapGeneratorConfig = {
         resourceDistribution: new Map([
-          [ResourceType.Wood, 1],
-          [ResourceType.Brick, -1],
+          [HexType.Wood, 1],
+          [HexType.Brick, -1],
         ]),
         civilizations: [CivilizationId.create('civ1')],
         seed: 123,
@@ -51,7 +51,7 @@ describe('MapGenerator', () => {
     it('devrait lancer une erreur si le seed n\'est pas un nombre fini', () => {
       const generator = new MapGenerator();
       const config: MapGeneratorConfig = {
-        resourceDistribution: new Map([[ResourceType.Wood, 1]]),
+        resourceDistribution: new Map([[HexType.Wood, 1]]),
         civilizations: [CivilizationId.create('civ1')],
         seed: Infinity,
       };
@@ -67,9 +67,9 @@ describe('MapGenerator', () => {
       const generator = new MapGenerator();
       const config: MapGeneratorConfig = {
         resourceDistribution: new Map([
-          [ResourceType.Wood, 3],
-          [ResourceType.Brick, 2],
-          [ResourceType.Wheat, 2],
+          [HexType.Wood, 3],
+          [HexType.Brick, 2],
+          [HexType.Wheat, 2],
         ]),
         civilizations: [CivilizationId.create('civ1')],
         seed: 42,
@@ -102,9 +102,9 @@ describe('MapGenerator', () => {
       const generator = new MapGenerator();
       const baseConfig: Omit<MapGeneratorConfig, 'seed'> = {
         resourceDistribution: new Map([
-          [ResourceType.Wood, 3],
-          [ResourceType.Brick, 3],
-          [ResourceType.Wheat, 3],
+          [HexType.Wood, 3],
+          [HexType.Brick, 3],
+          [HexType.Wheat, 3],
         ]),
         civilizations: [CivilizationId.create('civ1')],
       };
@@ -150,10 +150,10 @@ describe('MapGenerator', () => {
       const generator = new MapGenerator();
       const config: MapGeneratorConfig = {
         resourceDistribution: new Map([
-          [ResourceType.Wood, 3],
-          [ResourceType.Brick, 2],
-          [ResourceType.Wheat, 1],
-          [ResourceType.Desert, 1],
+          [HexType.Wood, 3],
+          [HexType.Brick, 2],
+          [HexType.Wheat, 1],
+          [HexType.Desert, 1],
         ]),
         civilizations: [CivilizationId.create('civ1')],
         seed: 123,
@@ -164,7 +164,7 @@ describe('MapGenerator', () => {
       const allHexes = grid.getAllHexes();
 
       // Compter les ressources assignées
-      const resourceCounts = new Map<ResourceType, number>();
+      const resourceCounts = new Map<HexType, number>();
       for (const hex of allHexes) {
         const resource = map.getResource(hex.coord);
         if (resource) {
@@ -185,7 +185,7 @@ describe('MapGenerator', () => {
       let terrestrialCount = 0;
       for (const hex of allHexes) {
         const resource = map.getResource(hex.coord);
-        if (resource !== ResourceType.Water) {
+        if (resource !== HexType.Water) {
           terrestrialCount++;
         }
       }
@@ -200,11 +200,11 @@ describe('MapGenerator', () => {
       const generator = new MapGenerator();
       const config: MapGeneratorConfig = {
         resourceDistribution: new Map([
-          [ResourceType.Wood, 5],
-          [ResourceType.Brick, 4],
-          [ResourceType.Wheat, 3],
-          [ResourceType.Sheep, 2],
-          [ResourceType.Ore, 2],
+          [HexType.Wood, 5],
+          [HexType.Brick, 4],
+          [HexType.Wheat, 3],
+          [HexType.Sheep, 2],
+          [HexType.Ore, 2],
         ]),
         civilizations: [CivilizationId.create('civ1')],
         seed: 456,
@@ -227,8 +227,8 @@ describe('MapGenerator', () => {
       const generator = new MapGenerator();
       const config: MapGeneratorConfig = {
         resourceDistribution: new Map([
-          [ResourceType.Wood, 5],
-          [ResourceType.Brick, 3],
+          [HexType.Wood, 5],
+          [HexType.Brick, 3],
         ]),
         civilizations: [CivilizationId.create('civ1')],
         seed: 789,
@@ -247,7 +247,7 @@ describe('MapGenerator', () => {
       let terrestrialCount = 0;
       for (const hex of allHexes) {
         const resource = map.getResource(hex.coord);
-        if (resource !== ResourceType.Water) {
+        if (resource !== HexType.Water) {
           terrestrialCount++;
         }
       }
@@ -262,7 +262,7 @@ describe('MapGenerator', () => {
       const civ1 = CivilizationId.create('civ1');
       const civ2 = CivilizationId.create('civ2');
       const config: MapGeneratorConfig = {
-        resourceDistribution: new Map([[ResourceType.Wood, 3]]),
+        resourceDistribution: new Map([[HexType.Wood, 3]]),
         civilizations: [civ1, civ2],
         seed: 999,
       };
@@ -278,7 +278,7 @@ describe('MapGenerator', () => {
     it('devrait placer les 2 premiers hexagones adjacents', () => {
       const generator = new MapGenerator();
       const config: MapGeneratorConfig = {
-        resourceDistribution: new Map([[ResourceType.Wood, 2]]),
+        resourceDistribution: new Map([[HexType.Wood, 2]]),
         civilizations: [CivilizationId.create('civ1')],
         seed: 111,
       };
@@ -292,7 +292,7 @@ describe('MapGenerator', () => {
       const terrestrialCoords: HexCoord[] = [];
       for (const hex of allHexes) {
         const resource = map.getResource(hex.coord);
-        if (resource !== ResourceType.Water) {
+        if (resource !== HexType.Water) {
           terrestrialCount++;
           terrestrialCoords.push(hex.coord);
         }
@@ -312,8 +312,8 @@ describe('MapGenerator', () => {
       const generator = new MapGenerator();
       const config: MapGeneratorConfig = {
         resourceDistribution: new Map([
-          [ResourceType.Wood, 5],
-          [ResourceType.Brick, 2],
+          [HexType.Wood, 5],
+          [HexType.Brick, 2],
         ]),
         civilizations: [CivilizationId.create('civ1')],
         seed: 222,
@@ -351,7 +351,7 @@ describe('MapGenerator', () => {
     it('devrait gérer une petite carte', () => {
       const generator = new MapGenerator();
       const config: MapGeneratorConfig = {
-        resourceDistribution: new Map([[ResourceType.Wood, 3]]),
+        resourceDistribution: new Map([[HexType.Wood, 3]]),
         civilizations: [CivilizationId.create('civ1')],
         seed: 333,
       };
@@ -364,7 +364,7 @@ describe('MapGenerator', () => {
       let terrestrialCount = 0;
       for (const hex of allHexes) {
         const resource = map.getResource(hex.coord);
-        if (resource !== ResourceType.Water) {
+        if (resource !== HexType.Water) {
           terrestrialCount++;
         }
       }
@@ -378,11 +378,11 @@ describe('MapGenerator', () => {
       const generator = new MapGenerator();
       const config: MapGeneratorConfig = {
         resourceDistribution: new Map([
-          [ResourceType.Wood, 10],
-          [ResourceType.Brick, 8],
-          [ResourceType.Wheat, 6],
-          [ResourceType.Sheep, 5],
-          [ResourceType.Ore, 4],
+          [HexType.Wood, 10],
+          [HexType.Brick, 8],
+          [HexType.Wheat, 6],
+          [HexType.Sheep, 5],
+          [HexType.Ore, 4],
         ]),
         civilizations: [CivilizationId.create('civ1')],
         seed: 444,
@@ -397,7 +397,7 @@ describe('MapGenerator', () => {
       let terrestrialCount = 0;
       for (const hex of allHexes) {
         const resource = map.getResource(hex.coord);
-        if (resource !== ResourceType.Water) {
+        if (resource !== HexType.Water) {
           terrestrialCount++;
         }
       }
@@ -413,8 +413,8 @@ describe('MapGenerator', () => {
       const generator = new MapGenerator();
       const config: MapGeneratorConfig = {
         resourceDistribution: new Map([
-          [ResourceType.Wood, 3],
-          [ResourceType.Brick, 2],
+          [HexType.Wood, 3],
+          [HexType.Brick, 2],
         ]),
         civilizations: [CivilizationId.create('civ1')],
         seed: 555,
@@ -431,7 +431,7 @@ describe('MapGenerator', () => {
       let waterCount = 0;
       for (const hex of allHexes) {
         const resource = map.getResource(hex.coord);
-        if (resource === ResourceType.Water) {
+        if (resource === HexType.Water) {
           waterCount++;
         }
       }
@@ -442,7 +442,7 @@ describe('MapGenerator', () => {
     it('devrait assigner Water à tous les hexagones d\'eau', () => {
       const generator = new MapGenerator();
       const config: MapGeneratorConfig = {
-        resourceDistribution: new Map([[ResourceType.Wood, 3]]),
+        resourceDistribution: new Map([[HexType.Wood, 3]]),
         civilizations: [CivilizationId.create('civ1')],
         seed: 666,
       };
@@ -461,9 +461,9 @@ describe('MapGenerator', () => {
       const generator = new MapGenerator();
       const config: MapGeneratorConfig = {
         resourceDistribution: new Map([
-          [ResourceType.Wood, 5],
-          [ResourceType.Brick, 4],
-          [ResourceType.Wheat, 3],
+          [HexType.Wood, 5],
+          [HexType.Brick, 4],
+          [HexType.Wheat, 3],
         ]),
         civilizations: [CivilizationId.create('civ1')],
         seed: 777,
@@ -478,7 +478,7 @@ describe('MapGenerator', () => {
         const resource = map.getResource(hex.coord);
 
         // Ignorer les hexagones d'eau
-        if (resource === ResourceType.Water) {
+        if (resource === HexType.Water) {
           continue;
         }
 
@@ -504,8 +504,8 @@ describe('MapGenerator', () => {
       const generator = new MapGenerator();
       const config: MapGeneratorConfig = {
         resourceDistribution: new Map([
-          [ResourceType.Wood, 7],
-          [ResourceType.Brick, 5],
+          [HexType.Wood, 7],
+          [HexType.Brick, 5],
         ]),
         civilizations: [CivilizationId.create('civ1')],
         seed: 888,
@@ -519,7 +519,7 @@ describe('MapGenerator', () => {
         const resource = map.getResource(hex.coord);
         
         // Ignorer les hexagones d'eau (ils peuvent ne pas avoir tous leurs 6 voisins)
-        if (resource === ResourceType.Water) {
+        if (resource === HexType.Water) {
           continue;
         }
 
