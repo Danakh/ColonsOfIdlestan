@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { RoadConstruction } from '../../../src/model/game/RoadConstruction';
+import { RoadController } from '../../../src/controller/RoadController';
 import { Edge } from '../../../src/model/hex/Edge';
 import { Vertex } from '../../../src/model/hex/Vertex';
 import { GameMap } from '../../../src/model/map/GameMap';
@@ -233,7 +234,7 @@ describe('RoadConstruction', () => {
 
       const edge = Edge.create(center, north);
 
-      RoadConstruction.buildRoad(edge, civId, map, resources);
+      RoadController.buildRoad(edge, civId, map, resources);
 
       expect(map.hasRoad(edge)).toBe(true);
       expect(map.getRoadOwner(edge)).toEqual(civId);
@@ -264,7 +265,7 @@ describe('RoadConstruction', () => {
       const edge = Edge.create(isolated, isolatedNeighbor);
 
       expect(() => {
-        RoadConstruction.buildRoad(edge, civId, map, resources);
+        RoadController.buildRoad(edge, civId, map, resources);
       }).toThrow();
     });
 
@@ -292,7 +293,7 @@ describe('RoadConstruction', () => {
       const edge = Edge.create(center, north);
 
       expect(() => {
-        RoadConstruction.buildRoad(edge, civId, map, resources);
+        RoadController.buildRoad(edge, civId, map, resources);
       }).toThrow();
     });
 
@@ -319,7 +320,7 @@ describe('RoadConstruction', () => {
       const resources1 = new PlayerResources();
       resources1.addResource(ResourceType.Brick, 1);
       resources1.addResource(ResourceType.Ore, 1);
-      RoadConstruction.buildRoad(edge1, civId, map, resources1);
+      RoadController.buildRoad(edge1, civId, map, resources1);
 
       // Construire une deuxième route connectée à la première
       const edge2 = Edge.create(center, northeast);
@@ -327,7 +328,7 @@ describe('RoadConstruction', () => {
       resources2.addResource(ResourceType.Brick, 1);
       resources2.addResource(ResourceType.Ore, 1);
 
-      RoadConstruction.buildRoad(edge2, civId, map, resources2);
+      RoadController.buildRoad(edge2, civId, map, resources2);
 
       expect(map.hasRoad(edge2)).toBe(true);
       expect(map.getRoadOwner(edge2)).toEqual(civId);
@@ -358,7 +359,7 @@ describe('RoadConstruction', () => {
 
       const edge = Edge.create(center, north);
 
-      RoadConstruction.buildRoad(edge, civId, map, resources);
+      RoadController.buildRoad(edge, civId, map, resources);
 
       expect(resources.getResource(ResourceType.Brick)).toBe(2);
       expect(resources.getResource(ResourceType.Ore)).toBe(4);

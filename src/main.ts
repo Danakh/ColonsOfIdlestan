@@ -1,8 +1,11 @@
 import { MainGame } from './application/MainGame';
 import { HexMapRenderer } from './view/HexMapRenderer';
 import { ResourceHarvest } from './model/game/ResourceHarvest';
+import { RoadConstruction } from './model/game/RoadConstruction';
+import { RoadController } from './controller/RoadController';
 import { ResourceType } from './model/map/ResourceType';
 import { HexCoord } from './model/hex/HexCoord';
+import { Edge } from './model/hex/Edge';
 
 /**
  * Point d'entrée principal de l'application web.
@@ -116,6 +119,31 @@ function main(): void {
 
   // Mettre à jour l'affichage des ressources
   updateResourcesDisplay();
+
+  // Gérer le clic sur les routes (edges) pour les construire
+  renderer.setOnEdgeClick((edge: Edge) => {
+    const currentGameMap = game.getGameMap();
+    if (!currentGameMap) {
+      return;
+    }
+
+    const civId = game.getPlayerCivilizationId();
+    const playerResources = game.getPlayerResources();
+
+    try {
+      // Construire la route (le contrôleur vérifie les conditions et consomme les ressources)
+      RoadController.buildRoad(edge, civId, currentGameMap, playerResources);
+      
+      // Mettre à jour l'affichage des ressources
+      updateResourcesDisplay();
+      
+      // Re-rendre la carte pour afficher la nouvelle route
+      renderer.render(currentGameMap, civId);
+    } catch (error) {
+      // Ignorer silencieusement les erreurs de construction
+      // On pourrait afficher un message à l'utilisateur si nécessaire
+    }
+  });
 
   // Gérer le clic sur les hexagones pour récolter les ressources
   renderer.setOnHexClick((hexCoord: HexCoord) => {

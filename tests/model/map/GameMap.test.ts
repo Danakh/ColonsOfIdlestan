@@ -637,9 +637,9 @@ describe('GameMap', () => {
 
       const cities = map.getCitiesForCivilization(civId1);
       expect(cities).toHaveLength(2);
-      expect(cities.some(v => v.equals(vertex1))).toBe(true);
-      expect(cities.some(v => v.equals(vertex2))).toBe(true);
-      expect(cities.some(v => v.equals(vertex3))).toBe(false);
+      expect(cities.some(city => city.vertex.equals(vertex1))).toBe(true);
+      expect(cities.some(city => city.vertex.equals(vertex2))).toBe(true);
+      expect(cities.some(city => city.vertex.equals(vertex3))).toBe(false);
     });
 
     it('devrait retourner un tableau vide si une civilisation n\'a pas de villes', () => {

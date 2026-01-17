@@ -40,6 +40,8 @@ export class HexMapRenderer {
   private showCoordinates: boolean = false;
   private currentConfig: RenderConfig | null = null;
   private currentGameMap: GameMap | null = null;
+  private onHexClickCallback: ((hexCoord: HexCoord) => void) | null = null;
+  private onEdgeClickCallback: ((edge: Edge) => void) | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -623,21 +625,144 @@ export class HexMapRenderer {
    * @param callback - Fonction appelée avec les coordonnées hexagonales du clic
    */
   setOnHexClick(callback: (hexCoord: HexCoord) => void): void {
-    this.canvas.addEventListener('click', (event) => {
-      const rect = this.canvas.getBoundingClientRect();
-      
-      // Calculer les coordonnées en tenant compte de l'échelle CSS si le canvas est redimensionné
-      // Si canvas.width/height != rect.width/height, il y a un scaling CSS
-      const scaleX = this.canvas.width / rect.width;
-      const scaleY = this.canvas.height / rect.height;
-      
-      const pixelX = (event.clientX - rect.left) * scaleX;
-      const pixelY = (event.clientY - rect.top) * scaleY;
+    this.onHexClickCallback = callback;
+    this.setupClickHandler();
+  }
 
+  /**
+   * Convertit les coordonnées pixel (x, y) en Edge (arête) si le clic est proche d'une arête.
+   * @param pixelX - Coordonnée X du pixel
+   * @param pixelY - Coordonnée Y du pixel
+   * @returns L'arête la plus proche du point cliqué, ou null si aucune arête n'est assez proche
+   */
+  pixelToEdge(pixelX: number, pixelY: number): Edge | null {
+    if (!this.currentConfig || !this.currentGameMap) {
+      return null;
+    }
+
+    const gameMap = this.currentGameMap;
+    const grid = gameMap.getGrid();
+    const allEdges = grid.getAllEdges();
+
+    let closestEdge: Edge | null = null;
+    let minDistance = Infinity;
+    const maxDistance = 15; // Distance maximale en pixels pour considérer qu'on a cliqué sur une arête
+
+    for (const edge of allEdges) {
+      // Obtenir les vertices de l'edge
+      const vertices = gameMap.getVerticesForEdge(edge);
+      
+      if (vertices.length < 2) {
+        continue;
+      }
+
+      // Calculer les positions des deux vertices
+      const pos1 = this.getVertexPosition(vertices[0], this.currentConfig);
+      const pos2 = this.getVertexPosition(vertices[1], this.currentConfig);
+
+      // Calculer la distance du point cliqué au segment de ligne formé par les deux vertices
+      const distance = this.distanceToLineSegment(pixelX, pixelY, pos1.x, pos1.y, pos2.x, pos2.y);
+
+      if (distance < maxDistance && distance < minDistance) {
+        minDistance = distance;
+        closestEdge = edge;
+      }
+    }
+
+    return closestEdge;
+  }
+
+  /**
+   * Calcule la distance d'un point à un segment de ligne.
+   * @param px - Coordonnée X du point
+   * @param py - Coordonnée Y du point
+   * @param x1 - Coordonnée X du premier point du segment
+   * @param y1 - Coordonnée Y du premier point du segment
+   * @param x2 - Coordonnée X du deuxième point du segment
+   * @param y2 - Coordonnée Y du deuxième point du segment
+   * @returns La distance minimale du point au segment
+   */
+  private distanceToLineSegment(
+    px: number,
+    py: number,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number
+  ): number {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const lengthSquared = dx * dx + dy * dy;
+
+    if (lengthSquared === 0) {
+      // Le segment est un point
+      const dx2 = px - x1;
+      const dy2 = py - y1;
+      return Math.sqrt(dx2 * dx2 + dy2 * dy2);
+    }
+
+    // Calculer le paramètre t qui représente la projection du point sur le segment
+    const t = Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / lengthSquared));
+
+    // Calculer le point le plus proche sur le segment
+    const closestX = x1 + t * dx;
+    const closestY = y1 + t * dy;
+
+    // Calculer la distance
+    const dx3 = px - closestX;
+    const dy3 = py - closestY;
+    return Math.sqrt(dx3 * dx3 + dy3 * dy3);
+  }
+
+  /**
+   * Définit le callback à appeler lorsqu'une arête (route) est cliquée.
+   * @param callback - Fonction appelée avec l'arête cliquée
+   */
+  setOnEdgeClick(callback: (edge: Edge) => void): void {
+    this.onEdgeClickCallback = callback;
+    this.setupClickHandler();
+  }
+
+  /**
+   * Configure le gestionnaire de clic unique qui gère à la fois les clics sur les edges et les hexagones.
+   * Priorité aux edges : si on clique sur un edge, on ne déclenche pas le clic sur l'hexagone.
+   */
+  private setupClickHandler(): void {
+    // Supprimer les anciens listeners s'ils existent
+    this.canvas.removeEventListener('click', this.handleClick);
+    
+    // Ajouter le nouveau listener
+    this.canvas.addEventListener('click', this.handleClick);
+  }
+
+  /**
+   * Gestionnaire de clic qui vérifie d'abord les edges, puis les hexagones.
+   */
+  private handleClick = (event: MouseEvent): void => {
+    const rect = this.canvas.getBoundingClientRect();
+    
+    // Calculer les coordonnées en tenant compte de l'échelle CSS si le canvas est redimensionné
+    const scaleX = this.canvas.width / rect.width;
+    const scaleY = this.canvas.height / rect.height;
+    
+    const pixelX = (event.clientX - rect.left) * scaleX;
+    const pixelY = (event.clientY - rect.top) * scaleY;
+
+    // Vérifier d'abord si on a cliqué sur un edge
+    if (this.onEdgeClickCallback) {
+      const edge = this.pixelToEdge(pixelX, pixelY);
+      if (edge) {
+        this.onEdgeClickCallback(edge);
+        return; // Ne pas vérifier les hexagones si on a cliqué sur un edge
+      }
+    }
+
+    // Sinon, vérifier si on a cliqué sur un hexagone
+    if (this.onHexClickCallback) {
       const hexCoord = this.pixelToHexCoord(pixelX, pixelY);
       if (hexCoord) {
-        callback(hexCoord);
+        this.onHexClickCallback(hexCoord);
       }
-    });
-  }
+    }
+  };
 }

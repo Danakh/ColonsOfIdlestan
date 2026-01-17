@@ -1511,6 +1511,31 @@ var HexMapRenderer = class {
     this.showCoordinates = false;
     this.currentConfig = null;
     this.currentGameMap = null;
+    this.onHexClickCallback = null;
+    this.onEdgeClickCallback = null;
+    /**
+     * Gestionnaire de clic qui vérifie d'abord les edges, puis les hexagones.
+     */
+    this.handleClick = (event) => {
+      const rect = this.canvas.getBoundingClientRect();
+      const scaleX = this.canvas.width / rect.width;
+      const scaleY = this.canvas.height / rect.height;
+      const pixelX = (event.clientX - rect.left) * scaleX;
+      const pixelY = (event.clientY - rect.top) * scaleY;
+      if (this.onEdgeClickCallback) {
+        const edge = this.pixelToEdge(pixelX, pixelY);
+        if (edge) {
+          this.onEdgeClickCallback(edge);
+          return;
+        }
+      }
+      if (this.onHexClickCallback) {
+        const hexCoord = this.pixelToHexCoord(pixelX, pixelY);
+        if (hexCoord) {
+          this.onHexClickCallback(hexCoord);
+        }
+      }
+    };
     this.canvas = canvas;
     const context = canvas.getContext("2d");
     if (!context) {
@@ -1903,17 +1928,81 @@ var HexMapRenderer = class {
    * @param callback - Fonction appelée avec les coordonnées hexagonales du clic
    */
   setOnHexClick(callback) {
-    this.canvas.addEventListener("click", (event) => {
-      const rect = this.canvas.getBoundingClientRect();
-      const scaleX = this.canvas.width / rect.width;
-      const scaleY = this.canvas.height / rect.height;
-      const pixelX = (event.clientX - rect.left) * scaleX;
-      const pixelY = (event.clientY - rect.top) * scaleY;
-      const hexCoord = this.pixelToHexCoord(pixelX, pixelY);
-      if (hexCoord) {
-        callback(hexCoord);
+    this.onHexClickCallback = callback;
+    this.setupClickHandler();
+  }
+  /**
+   * Convertit les coordonnées pixel (x, y) en Edge (arête) si le clic est proche d'une arête.
+   * @param pixelX - Coordonnée X du pixel
+   * @param pixelY - Coordonnée Y du pixel
+   * @returns L'arête la plus proche du point cliqué, ou null si aucune arête n'est assez proche
+   */
+  pixelToEdge(pixelX, pixelY) {
+    if (!this.currentConfig || !this.currentGameMap) {
+      return null;
+    }
+    const gameMap = this.currentGameMap;
+    const grid = gameMap.getGrid();
+    const allEdges = grid.getAllEdges();
+    let closestEdge = null;
+    let minDistance = Infinity;
+    const maxDistance = 15;
+    for (const edge of allEdges) {
+      const vertices = gameMap.getVerticesForEdge(edge);
+      if (vertices.length < 2) {
+        continue;
       }
-    });
+      const pos1 = this.getVertexPosition(vertices[0], this.currentConfig);
+      const pos2 = this.getVertexPosition(vertices[1], this.currentConfig);
+      const distance = this.distanceToLineSegment(pixelX, pixelY, pos1.x, pos1.y, pos2.x, pos2.y);
+      if (distance < maxDistance && distance < minDistance) {
+        minDistance = distance;
+        closestEdge = edge;
+      }
+    }
+    return closestEdge;
+  }
+  /**
+   * Calcule la distance d'un point à un segment de ligne.
+   * @param px - Coordonnée X du point
+   * @param py - Coordonnée Y du point
+   * @param x1 - Coordonnée X du premier point du segment
+   * @param y1 - Coordonnée Y du premier point du segment
+   * @param x2 - Coordonnée X du deuxième point du segment
+   * @param y2 - Coordonnée Y du deuxième point du segment
+   * @returns La distance minimale du point au segment
+   */
+  distanceToLineSegment(px, py, x1, y1, x2, y2) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const lengthSquared = dx * dx + dy * dy;
+    if (lengthSquared === 0) {
+      const dx2 = px - x1;
+      const dy2 = py - y1;
+      return Math.sqrt(dx2 * dx2 + dy2 * dy2);
+    }
+    const t = Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / lengthSquared));
+    const closestX = x1 + t * dx;
+    const closestY = y1 + t * dy;
+    const dx3 = px - closestX;
+    const dy3 = py - closestY;
+    return Math.sqrt(dx3 * dx3 + dy3 * dy3);
+  }
+  /**
+   * Définit le callback à appeler lorsqu'une arête (route) est cliquée.
+   * @param callback - Fonction appelée avec l'arête cliquée
+   */
+  setOnEdgeClick(callback) {
+    this.onEdgeClickCallback = callback;
+    this.setupClickHandler();
+  }
+  /**
+   * Configure le gestionnaire de clic unique qui gère à la fois les clics sur les edges et les hexagones.
+   * Priorité aux edges : si on clique sur un edge, on ne déclenche pas le clic sur l'hexagone.
+   */
+  setupClickHandler() {
+    this.canvas.removeEventListener("click", this.handleClick);
+    this.canvas.addEventListener("click", this.handleClick);
   }
 };
 
@@ -2029,6 +2118,121 @@ var ResourceHarvest = class {
   }
 };
 
+// src/model/game/RoadConstruction.ts
+var _RoadConstruction = class _RoadConstruction {
+  /**
+   * Vérifie si un edge peut être construit par une civilisation donnée.
+   * @param edge - L'arête à construire
+   * @param civId - L'identifiant de la civilisation
+   * @param map - La carte de jeu
+   * @returns true si l'edge peut être construit
+   */
+  static canBuildRoad(edge, civId, map) {
+    if (!map.isCivilizationRegistered(civId)) {
+      return false;
+    }
+    if (map.hasRoad(edge)) {
+      return false;
+    }
+    const vertices = map.getVerticesForEdge(edge);
+    for (const vertex of vertices) {
+      if (map.hasCity(vertex)) {
+        const owner = map.getCityOwner(vertex);
+        if (owner && owner.equals(civId)) {
+          return true;
+        }
+      }
+    }
+    const adjacentEdges = this.getAdjacentEdges(edge, map);
+    for (const adjacentEdge of adjacentEdges) {
+      if (map.hasRoad(adjacentEdge)) {
+        const owner = map.getRoadOwner(adjacentEdge);
+        if (owner && owner.equals(civId)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+  /**
+   * Vérifie si le joueur a assez de ressources pour construire une route.
+   * @param resources - Les ressources du joueur
+   * @returns true si le joueur a assez de ressources
+   */
+  static canAfford(resources) {
+    return resources.canAfford(_RoadConstruction.COST);
+  }
+  /**
+   * Retourne le coût de construction d'une route.
+   * @returns Le coût sous forme de Map
+   */
+  static getCost() {
+    return new Map(_RoadConstruction.COST);
+  }
+  /**
+   * Retourne les edges adjacents à un edge donné.
+   * Deux edges sont adjacents s'ils partagent un vertex.
+   * @param edge - L'arête pour laquelle trouver les edges adjacents
+   * @param map - La carte de jeu
+   * @returns Un tableau des edges adjacents à cette arête
+   */
+  static getAdjacentEdges(edge, map) {
+    const adjacentEdges = [];
+    const vertices = map.getVerticesForEdge(edge);
+    for (const vertex of vertices) {
+      const hexes = vertex.getHexes();
+      for (let i = 0; i < hexes.length; i++) {
+        for (let j = i + 1; j < hexes.length; j++) {
+          try {
+            const adjacentEdge = Edge.create(hexes[i], hexes[j]);
+            if (!adjacentEdge.equals(edge)) {
+              if (!adjacentEdges.some((e) => e.equals(adjacentEdge))) {
+                adjacentEdges.push(adjacentEdge);
+              }
+            }
+          } catch (e) {
+          }
+        }
+      }
+    }
+    return adjacentEdges;
+  }
+};
+_RoadConstruction.COST = /* @__PURE__ */ new Map([
+  ["Brick" /* Brick */, 1],
+  ["Ore" /* Ore */, 1]
+]);
+var RoadConstruction = _RoadConstruction;
+
+// src/controller/RoadController.ts
+var RoadController = class {
+  /**
+   * Construit une route sur un edge pour une civilisation donnée.
+   * Vérifie les conditions de construction et consomme les ressources nécessaires.
+   * 
+   * @param edge - L'arête où construire la route
+   * @param civId - L'identifiant de la civilisation
+   * @param map - La carte de jeu
+   * @param resources - Les ressources du joueur
+   * @throws Error si la construction n'est pas possible ou si les ressources sont insuffisantes
+   */
+  static buildRoad(edge, civId, map, resources) {
+    if (!RoadConstruction.canBuildRoad(edge, civId, map)) {
+      throw new Error(
+        `La route ne peut pas \xEAtre construite sur l'ar\xEAte ${edge.toString()}. L'ar\xEAte doit toucher une ville ou une autre route de la m\xEAme civilisation.`
+      );
+    }
+    if (!RoadConstruction.canAfford(resources)) {
+      throw new Error(
+        `Pas assez de ressources pour construire une route. Requis: 1 ${"Brick" /* Brick */} et 1 ${"Ore" /* Ore */}.`
+      );
+    }
+    const cost = RoadConstruction.getCost();
+    resources.payCost(cost);
+    map.addRoad(edge, civId);
+  }
+};
+
 // src/main.ts
 function main() {
   const canvas = document.getElementById("map-canvas");
@@ -2105,6 +2309,20 @@ function main() {
     renderer.render(gameMap, civId);
   }
   updateResourcesDisplay();
+  renderer.setOnEdgeClick((edge) => {
+    const currentGameMap = game.getGameMap();
+    if (!currentGameMap) {
+      return;
+    }
+    const civId = game.getPlayerCivilizationId();
+    const playerResources = game.getPlayerResources();
+    try {
+      RoadController.buildRoad(edge, civId, currentGameMap, playerResources);
+      updateResourcesDisplay();
+      renderer.render(currentGameMap, civId);
+    } catch (error) {
+    }
+  });
   renderer.setOnHexClick((hexCoord) => {
     const currentGameMap = game.getGameMap();
     if (!currentGameMap) {

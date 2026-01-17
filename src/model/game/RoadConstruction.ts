@@ -1,5 +1,4 @@
 import { Edge } from '../hex/Edge';
-import { Vertex } from '../hex/Vertex';
 import { GameMap } from '../map/GameMap';
 import { CivilizationId } from '../map/CivilizationId';
 import { ResourceType } from '../map/ResourceType';
@@ -70,43 +69,6 @@ export class RoadConstruction {
    */
   static canAfford(resources: PlayerResources): boolean {
     return resources.canAfford(RoadConstruction.COST);
-  }
-
-  /**
-   * Construit une route sur un edge pour une civilisation donnée.
-   * @param edge - L'arête où construire la route
-   * @param civId - L'identifiant de la civilisation
-   * @param map - La carte de jeu
-   * @param resources - Les ressources du joueur
-   * @throws Error si la construction n'est pas possible
-   */
-  static buildRoad(
-    edge: Edge,
-    civId: CivilizationId,
-    map: GameMap,
-    resources: PlayerResources
-  ): void {
-    // Vérifier que la construction est possible
-    if (!RoadConstruction.canBuildRoad(edge, civId, map)) {
-      throw new Error(
-        `La route ne peut pas être construite sur l'arête ${edge.toString()}. ` +
-        `L'arête doit toucher une ville ou une autre route de la même civilisation.`
-      );
-    }
-
-    // Vérifier que le joueur a assez de ressources
-    if (!RoadConstruction.canAfford(resources)) {
-      throw new Error(
-        `Pas assez de ressources pour construire une route. ` +
-        `Requis: 1 ${ResourceType.Brick} et 1 ${ResourceType.Ore}.`
-      );
-    }
-
-    // Retirer les ressources
-    resources.payCost(RoadConstruction.COST);
-
-    // Ajouter la route sur la carte
-    map.addRoad(edge, civId);
   }
 
   /**
