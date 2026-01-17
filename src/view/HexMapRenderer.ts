@@ -69,13 +69,21 @@ export class HexMapRenderer {
       return;
     }
 
-    // Trouver les limites de la carte
+    // Filtrer uniquement les hexagones visibles
+    const visibleHexes = allHexes.filter(hex => gameMap.isHexVisible(hex.coord));
+
+    if (visibleHexes.length === 0) {
+      // Si aucun hexagone n'est visible, ne rien dessiner
+      return;
+    }
+
+    // Trouver les limites de la carte (uniquement pour les hexagones visibles)
     let minQ = Infinity;
     let maxQ = -Infinity;
     let minR = Infinity;
     let maxR = -Infinity;
 
-    for (const hex of allHexes) {
+    for (const hex of visibleHexes) {
       minQ = Math.min(minQ, hex.coord.q);
       maxQ = Math.max(maxQ, hex.coord.q);
       minR = Math.min(minR, hex.coord.r);
@@ -99,14 +107,14 @@ export class HexMapRenderer {
       offsetY,
     };
 
-    // Dessiner tous les hexagones
-    for (const hex of allHexes) {
+    // Dessiner uniquement les hexagones visibles
+    for (const hex of visibleHexes) {
       this.drawHex(hex, gameMap, config);
     }
 
-    // Dessiner les coordonnées si activé
+    // Dessiner les coordonnées si activé (uniquement pour les hexagones visibles)
     if (this.showCoordinates) {
-      for (const hex of allHexes) {
+      for (const hex of visibleHexes) {
         this.drawCoordinates(hex, config);
       }
     }

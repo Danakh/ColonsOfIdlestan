@@ -598,8 +598,9 @@ var GameMap = class {
   /**
    * Détermine si un hexagone est visible.
    * 
-   * Un hexagone est visible si au moins un de ses sommets a une route connectée.
-   * Un hexagone sans route adjacente n'est pas visible.
+   * Un hexagone est visible si au moins un de ses sommets (vertices) a une ville ou une route connectée.
+   * Par défaut, tous les hexagones commencent non visibles.
+   * Un hexagone devient visible lorsqu'une ville ou une route est placée sur l'un de ses vertices.
    * 
    * @param hex - L'hexagone ou sa coordonnée
    * @returns true si l'hexagone est visible, false sinon
@@ -611,6 +612,9 @@ var GameMap = class {
     }
     const vertices = this.grid.getVerticesForHex(coord);
     for (const vertex of vertices) {
+      if (this.hasCity(vertex)) {
+        return true;
+      }
       const hexes = vertex.getHexes();
       for (let i = 0; i < hexes.length; i++) {
         for (let j = i + 1; j < hexes.length; j++) {
@@ -1116,11 +1120,15 @@ var HexMapRenderer = class {
     if (allHexes.length === 0) {
       return;
     }
+    const visibleHexes = allHexes.filter((hex) => gameMap.isHexVisible(hex.coord));
+    if (visibleHexes.length === 0) {
+      return;
+    }
     let minQ = Infinity;
     let maxQ = -Infinity;
     let minR = Infinity;
     let maxR = -Infinity;
-    for (const hex of allHexes) {
+    for (const hex of visibleHexes) {
       minQ = Math.min(minQ, hex.coord.q);
       maxQ = Math.max(maxQ, hex.coord.q);
       minR = Math.min(minR, hex.coord.r);
@@ -1136,11 +1144,11 @@ var HexMapRenderer = class {
       offsetX,
       offsetY
     };
-    for (const hex of allHexes) {
+    for (const hex of visibleHexes) {
       this.drawHex(hex, gameMap, config);
     }
     if (this.showCoordinates) {
-      for (const hex of allHexes) {
+      for (const hex of visibleHexes) {
         this.drawCoordinates(hex, config);
       }
     }
