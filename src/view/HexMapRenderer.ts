@@ -5,6 +5,7 @@ import { Vertex } from '../model/hex/Vertex';
 import { Edge } from '../model/hex/Edge';
 import { HexType } from '../model/map/HexType';
 import { CivilizationId } from '../model/map/CivilizationId';
+import { City } from '../model/city/City';
 
 /**
  * Configuration pour le rendu des hexagones.
@@ -42,7 +43,10 @@ export class HexMapRenderer {
   private currentGameMap: GameMap | null = null;
   private onHexClickCallback: ((hexCoord: HexCoord) => void) | null = null;
   private onEdgeClickCallback: ((edge: Edge) => void) | null = null;
+  private onVertexClickCallback: ((vertex: Vertex) => void) | null = null;
   private hoveredEdge: Edge | null = null;
+  private hoveredVertex: Vertex | null = null;
+  private selectedVertex: Vertex | null = null;
   private currentCivilizationId: CivilizationId | null = null;
   private renderCallback: (() => void) | null = null;
 
@@ -273,7 +277,9 @@ export class HexMapRenderer {
           // Vérifier si ce vertex a une ville en utilisant le même vertex retourné par la grille
           // Cela garantit que le hashCode correspond
           if (gameMap.hasCity(vertex)) {
-            this.drawCity(vertex, config);
+            const isHovered = this.hoveredVertex !== null && this.hoveredVertex.equals(vertex);
+            const isSelected = this.selectedVertex !== null && this.selectedVertex.equals(vertex);
+            this.drawCity(vertex, config, isHovered, isSelected);
           }
         }
       }
@@ -288,7 +294,9 @@ export class HexMapRenderer {
         // Si on trouve une ville dans getAllVertices mais pas dans drawCities,
         // on la dessine quand même
         if (!processedVertices.has(vertexKey)) {
-          this.drawCity(vertex, config);
+          const isHovered = this.hoveredVertex !== null && this.hoveredVertex.equals(vertex);
+          const isSelected = this.selectedVertex !== null && this.selectedVertex.equals(vertex);
+          this.drawCity(vertex, config, isHovered, isSelected);
         }
       }
     }
@@ -296,8 +304,12 @@ export class HexMapRenderer {
 
   /**
    * Dessine une ville sur un sommet (petit carré noir).
+   * @param vertex - Le sommet où se trouve la ville
+   * @param config - La configuration de rendu
+   * @param isHovered - true si la ville est survolée par la souris
+   * @param isSelected - true si la ville est sélectionnée
    */
-  private drawCity(vertex: Vertex, config: RenderConfig): void {
+  private drawCity(vertex: Vertex, config: RenderConfig, isHovered: boolean = false, isSelected: boolean = false): void {
     const { hexSize, offsetX, offsetY } = config;
     const hexes = vertex.getHexes();
 
@@ -315,15 +327,52 @@ export class HexMapRenderer {
     const centerX = sumX / 3;
     const centerY = sumY / 3;
 
-    // Dessiner un petit carré noir (taille 12x12 pixels)
-    const citySize = 12;
-    this.ctx.fillStyle = '#000000';
-    this.ctx.fillRect(
-      centerX - citySize / 2,
-      centerY - citySize / 2,
-      citySize,
-      citySize
-    );
+    // Taille de base de la ville
+    let citySize = 12;
+    
+    // Agrandir si survolée ou sélectionnée
+    if (isHovered || isSelected) {
+      citySize = 16;
+    }
+
+    // Couleur selon l'état
+    if (isSelected) {
+      // Ville sélectionnée : carré orange avec bordure
+      this.ctx.fillStyle = '#FFA500'; // Orange
+      this.ctx.fillRect(
+        centerX - citySize / 2,
+        centerY - citySize / 2,
+        citySize,
+        citySize
+      );
+      // Bordure noire pour la sélection
+      this.ctx.strokeStyle = '#000000';
+      this.ctx.lineWidth = 2;
+      this.ctx.strokeRect(
+        centerX - citySize / 2,
+        centerY - citySize / 2,
+        citySize,
+        citySize
+      );
+    } else if (isHovered) {
+      // Ville survolée : carré jaune
+      this.ctx.fillStyle = '#FFFF00'; // Jaune
+      this.ctx.fillRect(
+        centerX - citySize / 2,
+        centerY - citySize / 2,
+        citySize,
+        citySize
+      );
+    } else {
+      // Ville normale : carré noir
+      this.ctx.fillStyle = '#000000';
+      this.ctx.fillRect(
+        centerX - citySize / 2,
+        centerY - citySize / 2,
+        citySize,
+        citySize
+      );
+    }
   }
 
   /**
@@ -663,6 +712,48 @@ export class HexMapRenderer {
   }
 
   /**
+   * Convertit les coordonnées pixel (x, y) en Vertex (sommet avec ville) si le clic est proche d'un vertex avec une ville.
+   * @param pixelX - Coordonnée X du pixel
+   * @param pixelY - Coordonnée Y du pixel
+   * @returns Le vertex avec une ville le plus proche du point cliqué, ou null si aucun vertex n'est assez proche
+   */
+  pixelToVertex(pixelX: number, pixelY: number): Vertex | null {
+    if (!this.currentConfig || !this.currentGameMap) {
+      return null;
+    }
+
+    const gameMap = this.currentGameMap;
+    const grid = gameMap.getGrid();
+    const allVertices = grid.getAllVertices();
+
+    let closestVertex: Vertex | null = null;
+    let minDistance = Infinity;
+    const maxDistance = 12; // Distance maximale en pixels (taille de la ville + marge)
+
+    for (const vertex of allVertices) {
+      // Ne vérifier que les vertices qui ont une ville
+      if (!gameMap.hasCity(vertex)) {
+        continue;
+      }
+
+      // Calculer la position du vertex
+      const pos = this.getVertexPosition(vertex, this.currentConfig);
+
+      // Calculer la distance du point cliqué au vertex
+      const dx = pixelX - pos.x;
+      const dy = pixelY - pos.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance < maxDistance && distance < minDistance) {
+        minDistance = distance;
+        closestVertex = vertex;
+      }
+    }
+
+    return closestVertex;
+  }
+
+  /**
    * Convertit les coordonnées pixel (x, y) en Edge (arête) si le clic est proche d'une arête.
    * @param pixelX - Coordonnée X du pixel
    * @param pixelY - Coordonnée Y du pixel
@@ -777,10 +868,10 @@ export class HexMapRenderer {
   }
 
   /**
-   * Gestionnaire de mouvement de souris pour mettre en surbrillance les routes constructibles.
+   * Gestionnaire de mouvement de souris pour mettre en surbrillance les routes constructibles et les villes.
    */
   private handleMouseMove = (event: MouseEvent): void => {
-    if (!this.currentConfig || !this.currentGameMap || !this.currentCivilizationId) {
+    if (!this.currentConfig || !this.currentGameMap) {
       return;
     }
 
@@ -793,34 +884,60 @@ export class HexMapRenderer {
     const pixelX = (event.clientX - rect.left) * scaleX;
     const pixelY = (event.clientY - rect.top) * scaleY;
 
-    // Détecter l'arête sous la souris
-    const edge = this.pixelToEdge(pixelX, pixelY);
-    
-    // Vérifier si c'est une route constructible
-    if (edge) {
-      const buildableRoads = this.currentGameMap.getBuildableRoadsForCivilization(this.currentCivilizationId);
-      const isBuildable = buildableRoads.some(buildableEdge => buildableEdge.equals(edge));
-      
-      if (isBuildable) {
-        // Vérifier si c'est une nouvelle arête (pour éviter les re-rendus inutiles)
-        if (!this.hoveredEdge || !this.hoveredEdge.equals(edge)) {
-          this.hoveredEdge = edge;
-          // Re-rendre la carte pour afficher la surbrillance
-          if (this.renderCallback) {
-            this.renderCallback();
+    let needsRender = false;
+
+    // PRIORITÉ 1: Vérifier d'abord si on survole une ville
+    const vertex = this.pixelToVertex(pixelX, pixelY);
+    if (vertex) {
+      // On survole une ville
+      if (!this.hoveredVertex || !this.hoveredVertex.equals(vertex)) {
+        this.hoveredVertex = vertex;
+        // Retirer la surbrillance des routes si on survole une ville
+        if (this.hoveredEdge !== null) {
+          this.hoveredEdge = null;
+        }
+        needsRender = true;
+      }
+    } else {
+      // Pas de ville sous la souris, vérifier les routes constructibles
+      if (this.currentCivilizationId) {
+        const edge = this.pixelToEdge(pixelX, pixelY);
+        
+        if (edge) {
+          const buildableRoads = this.currentGameMap.getBuildableRoadsForCivilization(this.currentCivilizationId);
+          const isBuildable = buildableRoads.some(buildableEdge => buildableEdge.equals(edge));
+          
+          if (isBuildable) {
+            if (!this.hoveredEdge || !this.hoveredEdge.equals(edge)) {
+              this.hoveredEdge = edge;
+              needsRender = true;
+            }
+          } else {
+            // Route non constructible, retirer la surbrillance
+            if (this.hoveredEdge !== null) {
+              this.hoveredEdge = null;
+              needsRender = true;
+            }
+          }
+        } else {
+          // Pas d'arête constructible, retirer la surbrillance
+          if (this.hoveredEdge !== null) {
+            this.hoveredEdge = null;
+            needsRender = true;
           }
         }
-        return;
+      }
+
+      // Retirer la surbrillance de la ville si on ne survole plus
+      if (this.hoveredVertex !== null) {
+        this.hoveredVertex = null;
+        needsRender = true;
       }
     }
 
-    // Si on n'est pas sur une route constructible, retirer la surbrillance
-    if (this.hoveredEdge !== null) {
-      this.hoveredEdge = null;
-      // Re-rendre la carte pour retirer la surbrillance
-      if (this.renderCallback) {
-        this.renderCallback();
-      }
+    // Re-rendre seulement si nécessaire
+    if (needsRender && this.renderCallback) {
+      this.renderCallback();
     }
   };
 
@@ -828,17 +945,25 @@ export class HexMapRenderer {
    * Gestionnaire quand la souris quitte le canvas.
    */
   private handleMouseLeave = (): void => {
+    let needsRender = false;
+    
     if (this.hoveredEdge !== null) {
       this.hoveredEdge = null;
-      // Re-rendre la carte pour retirer la surbrillance
-      if (this.renderCallback) {
-        this.renderCallback();
-      }
+      needsRender = true;
+    }
+    
+    if (this.hoveredVertex !== null) {
+      this.hoveredVertex = null;
+      needsRender = true;
+    }
+
+    if (needsRender && this.renderCallback) {
+      this.renderCallback();
     }
   };
 
   /**
-   * Gestionnaire de clic qui vérifie d'abord les edges, puis les hexagones.
+   * Gestionnaire de clic qui vérifie d'abord les villes (priorité maximale), puis les edges, puis les hexagones.
    */
   private handleClick = (event: MouseEvent): void => {
     const rect = this.canvas.getBoundingClientRect();
@@ -850,7 +975,40 @@ export class HexMapRenderer {
     const pixelX = (event.clientX - rect.left) * scaleX;
     const pixelY = (event.clientY - rect.top) * scaleY;
 
-    // Vérifier d'abord si on a cliqué sur un edge
+    // PRIORITÉ 1: Vérifier d'abord si on a cliqué sur une ville (vertex avec ville)
+    const vertex = this.pixelToVertex(pixelX, pixelY);
+    if (vertex && this.currentGameMap && this.currentGameMap.hasCity(vertex)) {
+      // Sélectionner/désélectionner la ville
+      if (this.selectedVertex && this.selectedVertex.equals(vertex)) {
+        // Désélectionner si on reclique sur la même ville
+        this.selectedVertex = null;
+      } else {
+        // Sélectionner la nouvelle ville
+        this.selectedVertex = vertex;
+      }
+      
+      // Appeler le callback si défini
+      if (this.onVertexClickCallback) {
+        this.onVertexClickCallback(vertex);
+      }
+      
+      // Re-rendre pour afficher la sélection
+      if (this.renderCallback) {
+        this.renderCallback();
+      }
+      
+      return; // Ne pas vérifier les edges ni les hexagones si on a cliqué sur une ville
+    }
+
+    // Si on a cliqué ailleurs que sur une ville, désélectionner
+    if (this.selectedVertex !== null) {
+      this.selectedVertex = null;
+      if (this.renderCallback) {
+        this.renderCallback();
+      }
+    }
+
+    // PRIORITÉ 2: Vérifier si on a cliqué sur un edge
     if (this.onEdgeClickCallback) {
       const edge = this.pixelToEdge(pixelX, pixelY);
       if (edge) {
@@ -859,7 +1017,7 @@ export class HexMapRenderer {
       }
     }
 
-    // Sinon, vérifier si on a cliqué sur un hexagone
+    // PRIORITÉ 3: Vérifier si on a cliqué sur un hexagone
     if (this.onHexClickCallback) {
       const hexCoord = this.pixelToHexCoord(pixelX, pixelY);
       if (hexCoord) {

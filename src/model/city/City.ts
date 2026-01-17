@@ -1,6 +1,7 @@
 import { Vertex } from '../hex/Vertex';
 import { CivilizationId } from '../map/CivilizationId';
 import { CityLevel, isValidCityLevel } from './CityLevel';
+import { BuildingType, getAllBuildingTypes } from './BuildingType';
 
 /**
  * Représente une ville sur la carte de jeu.
@@ -9,7 +10,7 @@ import { CityLevel, isValidCityLevel } from './CityLevel';
  * Elle a un niveau qui détermine ses capacités et le nombre de bâtiments qu'elle peut construire.
  */
 export class City {
-  private readonly buildings: string[] = []; // Pour l'instant, on stocke juste les IDs. Sera remplacé par Building[] plus tard
+  private readonly buildings: BuildingType[] = [];
 
   /**
    * Crée une nouvelle ville.
@@ -59,24 +60,110 @@ export class City {
 
   /**
    * Ajoute un bâtiment à la ville.
-   * @param buildingId - L'identifiant du bâtiment à ajouter
+   * @param buildingType - Le type de bâtiment à ajouter
    * @throws Error si la ville ne peut pas construire de bâtiment supplémentaire
+   * @throws Error si le bâtiment n'est pas constructible dans cette ville
+   * @throws Error si le bâtiment est déjà construit
    */
-  addBuilding(buildingId: string): void {
+  addBuilding(buildingType: BuildingType): void {
     if (!this.canBuildBuilding()) {
       throw new Error(
         `La ville ne peut pas construire plus de ${this.getMaxBuildings()} bâtiments (niveau ${this.level}).`
       );
     }
-    this.buildings.push(buildingId);
+
+    if (!this.canBuildBuildingType(buildingType)) {
+      throw new Error(
+        `Le bâtiment ${buildingType} n'est pas constructible dans cette ville (niveau ${this.level}).`
+      );
+    }
+
+    if (this.hasBuilding(buildingType)) {
+      throw new Error(`Le bâtiment ${buildingType} est déjà construit dans cette ville.`);
+    }
+
+    this.buildings.push(buildingType);
   }
 
   /**
    * Retourne la liste des bâtiments construits.
-   * @returns Un tableau des identifiants de bâtiments
+   * @returns Un tableau des types de bâtiments construits
    */
-  getBuildings(): readonly string[] {
+  getBuildings(): readonly BuildingType[] {
     return [...this.buildings];
+  }
+
+  /**
+   * Vérifie si un type de bâtiment est construit dans la ville.
+   * @param buildingType - Le type de bâtiment à vérifier
+   * @returns true si le bâtiment est construit
+   */
+  hasBuilding(buildingType: BuildingType): boolean {
+    return this.buildings.includes(buildingType);
+  }
+
+  /**
+   * Retourne la liste des bâtiments constructibles pour cette ville.
+   * Les bâtiments constructibles dépendent du niveau de la ville.
+   * @returns Un tableau des types de bâtiments constructibles
+   */
+  getBuildableBuildings(): BuildingType[] {
+    const allBuildings = getAllBuildingTypes();
+    const buildableBuildings: BuildingType[] = [];
+
+    for (const buildingType of allBuildings) {
+      if (this.canBuildBuildingType(buildingType)) {
+        buildableBuildings.push(buildingType);
+      }
+    }
+
+    return buildableBuildings;
+  }
+
+  /**
+   * Vérifie si un type de bâtiment peut être construit dans cette ville.
+   * @param buildingType - Le type de bâtiment à vérifier
+   * @returns true si le bâtiment peut être construit
+   */
+  canBuildBuildingType(buildingType: BuildingType): boolean {
+    // Vérifier si le bâtiment est déjà construit
+    if (this.hasBuilding(buildingType)) {
+      return false;
+    }
+
+    // Vérifier si on a encore de la place
+    if (!this.canBuildBuilding()) {
+      return false;
+    }
+
+    // Règles de disponibilité selon le niveau de la ville
+    switch (buildingType) {
+      case BuildingType.CityHall:
+        // L'hôtel de ville est toujours constructible (sauf s'il est déjà construit)
+        return true;
+
+      case BuildingType.Warehouse:
+      case BuildingType.Market:
+        // Entrepôt et marché disponibles dès le niveau Outpost
+        return true;
+
+      case BuildingType.Forge:
+      case BuildingType.Farm:
+        // Forge et ferme disponibles à partir du niveau Colony
+        return this.level >= CityLevel.Colony;
+
+      case BuildingType.Sawmill:
+      case BuildingType.Quarry:
+        // Scierie et carrière disponibles à partir du niveau Town
+        return this.level >= CityLevel.Town;
+
+      case BuildingType.Barracks:
+        // Caserne disponible à partir du niveau Metropolis
+        return this.level >= CityLevel.Metropolis;
+
+      default:
+        return false;
+    }
   }
 
   /**
@@ -100,13 +187,10 @@ export class City {
 
   /**
    * Vérifie si la ville a un hôtel de ville (requis pour l'amélioration).
-   * Pour l'instant, on suppose qu'une ville niveau > Outpost a forcément un hôtel de ville.
    * @returns true si la ville a un hôtel de ville
    */
   hasCityHall(): boolean {
-    // Pour l'instant, on vérifie simplement si la ville a un bâtiment.
-    // Plus tard, on vérifiera spécifiquement le BuildingType.CityHall
-    return this.level > CityLevel.Outpost || this.buildings.length > 0;
+    return this.hasBuilding(BuildingType.CityHall);
   }
 
   /**
