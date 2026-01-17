@@ -2,6 +2,7 @@ import { HexGrid } from '../model/hex/HexGrid';
 import { Hex } from '../model/hex/Hex';
 import { HexCoord } from '../model/hex/HexCoord';
 import { HexDirection, ALL_DIRECTIONS } from '../model/hex/HexDirection';
+import { Vertex } from '../model/hex/Vertex';
 import { GameMap } from '../model/map/GameMap';
 import { ResourceType } from '../model/map/ResourceType';
 import { CivilizationId } from '../model/map/CivilizationId';
@@ -38,8 +39,8 @@ export class MapGenerator {
 
     const rng = new SeededRNG(config.seed);
     
-    // Générer d'abord les hexagones terrestres
-    const terrestrialHexes = this.generateTerrestrialHexes(config, rng);
+    // Générer d'abord les hexagones terrestres (avec identification de Bois et Argile)
+    const { hexes: terrestrialHexes, woodCoord, brickCoord } = this.generateTerrestrialHexes(config, rng);
     
     // Ajouter la couche d'eau autour des hexagones terrestres
     const allHexes = this.addWaterLayer(terrestrialHexes);
@@ -53,11 +54,19 @@ export class MapGenerator {
       gameMap.registerCivilization(civId);
     }
 
-    // Assigner les ressources aux hexagones terrestres (sans les hexagones d'eau)
-    this.assignResources(gameMap, terrestrialHexes, config, rng);
+    // Assigner les ressources aux hexagones terrestres
+    // Les deux premiers (Bois et Argile) doivent être assignés en premier
+    this.assignResources(gameMap, terrestrialHexes, config, rng, woodCoord, brickCoord);
 
     // Assigner Water à tous les hexagones d'eau
     this.assignWaterResources(gameMap, terrestrialHexes);
+
+    // Ajouter la ville initiale sur le vertex bois-argile-eau pour la première civilisation
+    if (config.civilizations.length > 0) {
+      console.log(`[MapGenerator] Hexagone initial Bois: (${woodCoord.q}, ${woodCoord.r})`);
+      console.log(`[MapGenerator] Hexagone initial Argile: (${brickCoord.q}, ${brickCoord.r})`);
+      this.addInitialCity(gameMap, woodCoord, brickCoord, config.civilizations[0]);
+    }
 
     return gameMap;
   }
@@ -92,22 +101,26 @@ export class MapGenerator {
 
   /**
    * Génère uniquement les hexagones terrestres selon les règles de placement.
-   * - Les 2 premiers hexagones sont placés adjacents
+   * - Les 2 premiers hexagones sont placés adjacents (Bois et Argile)
    * - Chaque hexagone suivant doit être adjacent à au moins 2 hexagones déjà placés
    */
-  private generateTerrestrialHexes(config: MapGeneratorConfig, rng: SeededRNG): Hex[] {
+  private generateTerrestrialHexes(config: MapGeneratorConfig, rng: SeededRNG): { hexes: Hex[], woodCoord: HexCoord, brickCoord: HexCoord } {
     const totalHexes = this.calculateTotalHexes(config.resourceDistribution);
     const placedCoords = new Set<string>();
     const hexes: Hex[] = [];
 
-    // Étape 1: Placer les 2 premiers hexagones adjacents
-    const startCoord = new HexCoord(0, 0);
-    const firstNeighbor = startCoord.neighbor(HexDirection.NE);
+    // Étape 1: Placer les 2 premiers hexagones adjacents (Bois et Argile)
+    // Le premier sera Bois, le second Argile
+    const woodCoord = new HexCoord(0, 0);
+    const brickCoord = woodCoord.neighbor(HexDirection.N);
 
-    hexes.push(new Hex(startCoord));
-    hexes.push(new Hex(firstNeighbor));
-    placedCoords.add(startCoord.hashCode());
-    placedCoords.add(firstNeighbor.hashCode());
+    hexes.push(new Hex(woodCoord));
+    hexes.push(new Hex(brickCoord));
+    placedCoords.add(woodCoord.hashCode());
+    placedCoords.add(brickCoord.hashCode());
+
+    // Retourner aussi les coordonnées pour pouvoir les identifier plus tard
+    const result = { hexes, woodCoord, brickCoord };
 
     // Étape 2: Placer les hexagones restants
     while (hexes.length < totalHexes) {
@@ -127,7 +140,7 @@ export class MapGenerator {
       placedCoords.add(candidateCoord.hashCode());
     }
 
-    return hexes;
+    return result;
   }
 
   /**
@@ -229,12 +242,15 @@ export class MapGenerator {
   /**
    * Assignë les ressources aux hexagones terrestres selon la distribution.
    * Exclut les hexagones d'eau.
+   * Les deux premiers hexagones (Bois et Argile) sont assignés en premier.
    */
   private assignResources(
     gameMap: GameMap,
     terrestrialHexes: Hex[],
     config: MapGeneratorConfig,
-    rng: SeededRNG
+    rng: SeededRNG,
+    woodCoord: HexCoord,
+    brickCoord: HexCoord
   ): void {
     // Créer une liste de tous les types de ressources à assigner (sans l'eau)
     const resourcesToAssign: ResourceType[] = [];
@@ -248,14 +264,39 @@ export class MapGenerator {
       }
     }
 
+    // Séparer les ressources Bois et Argile pour les placer en premier
+    const woodIndex = resourcesToAssign.indexOf(ResourceType.Wood);
+    const brickIndex = resourcesToAssign.indexOf(ResourceType.Brick);
+    
+    // Retirer Bois et Argile de la liste (un exemplaire de chaque)
+    if (woodIndex !== -1) {
+      resourcesToAssign.splice(woodIndex, 1);
+    }
+    if (brickIndex !== -1 && brickIndex !== woodIndex) {
+      // Ajuster l'index si Wood a été retiré avant
+      const adjustedBrickIndex = resourcesToAssign.indexOf(ResourceType.Brick);
+      if (adjustedBrickIndex !== -1) {
+        resourcesToAssign.splice(adjustedBrickIndex, 1);
+      }
+    }
+
     // Mélanger la liste pour un placement aléatoire
     rng.shuffle(resourcesToAssign);
 
-    // Mélanger les hexagones terrestres
-    const shuffledHexes = [...terrestrialHexes];
+    // Assigner Bois et Argile aux deux premiers hexagones
+    gameMap.setResource(woodCoord, ResourceType.Wood);
+    gameMap.setResource(brickCoord, ResourceType.Brick);
+
+    // Filtrer les hexagones terrestres (exclure Bois et Argile)
+    const remainingHexes = terrestrialHexes.filter(
+      hex => !hex.coord.equals(woodCoord) && !hex.coord.equals(brickCoord)
+    );
+
+    // Mélanger les hexagones restants
+    const shuffledHexes = [...remainingHexes];
     rng.shuffle(shuffledHexes);
 
-    // Assigner chaque ressource à un hexagone terrestre
+    // Assigner chaque ressource restante à un hexagone
     for (let i = 0; i < resourcesToAssign.length && i < shuffledHexes.length; i++) {
       const hex = shuffledHexes[i];
       const resource = resourcesToAssign[i];
@@ -281,5 +322,95 @@ export class MapGenerator {
         gameMap.setResource(hex.coord, ResourceType.Water);
       }
     }
+  }
+
+  /**
+   * Ajoute la ville initiale sur le vertex bois-argile-eau.
+   */
+  private addInitialCity(
+    gameMap: GameMap,
+    woodCoord: HexCoord,
+    brickCoord: HexCoord,
+    civId: CivilizationId
+  ): void {
+    const grid = gameMap.getGrid();
+
+    // Trouver l'hexagone d'eau qui forme un vertex avec Bois et Argile
+    // Un vertex est formé par trois hexagones mutuellement adjacents
+    // Nous devons trouver un hexagone d'eau adjacent à la fois à Bois et Argile
+    
+    // Les deux hexagones sont adjacents (brickCoord est en N de woodCoord)
+    // Pour former un vertex, il faut un troisième hexagone adjacent aux deux
+    
+    // Méthode 1: Chercher parmi tous les vertices du hexagone Bois
+    // Cela garantit que le vertex retourné correspond à celui utilisé dans la grille
+    const woodVertices = grid.getVerticesForHex(woodCoord);
+    for (const vertex of woodVertices) {
+      const hexes = vertex.getHexes();
+      // Vérifier si ce vertex contient woodCoord, brickCoord et un hexagone d'eau
+      const hasWood = hexes.some(h => h.equals(woodCoord));
+      const hasBrick = hexes.some(h => h.equals(brickCoord));
+      
+      if (hasWood && hasBrick) {
+        // Trouver l'hexagone qui n'est ni wood ni brick (c'est l'eau)
+        const waterHex = hexes.find(h => !h.equals(woodCoord) && !h.equals(brickCoord));
+        if (waterHex) {
+          const resource = gameMap.getResource(waterHex);
+          if (resource === ResourceType.Water) {
+            // Ajouter la ville sur ce vertex (utiliser le vertex retourné par la grille)
+            try {
+              gameMap.addCity(vertex, civId);
+              const hexList = hexes.map(h => `(${h.q},${h.r})`).join(', ');
+              console.log(`[MapGenerator] ✓ Ville créée avec succès sur le vertex: [${hexList}]`);
+              return;
+            } catch (e) {
+              // Ignorer les erreurs (ville déjà présente ou civilisation non enregistrée)
+              // mais continuer la recherche
+              console.warn(`[MapGenerator] Échec lors de l'ajout de la ville (méthode 1): ${e}`);
+            }
+          }
+        }
+      }
+    }
+
+    // Méthode 2: Si la méthode 1 échoue, chercher les voisins communs
+    // Trouver tous les voisins communs de woodCoord et brickCoord
+    const woodNeighbors = woodCoord.neighbors();
+    const brickNeighbors = brickCoord.neighbors();
+    
+    for (const neighborCoord of woodNeighbors) {
+      // Vérifier si ce voisin est aussi voisin de brickCoord
+      const isNeighborOfBrick = brickNeighbors.some(n => n.equals(neighborCoord));
+      
+      if (isNeighborOfBrick) {
+        // Vérifier si cet hexagone existe dans la grille et est de l'eau
+        const neighborHex = grid.getHex(neighborCoord);
+        if (neighborHex) {
+          const resource = gameMap.getResource(neighborCoord);
+          if (resource === ResourceType.Water) {
+            // Trouver le vertex correspondant dans la grille (pour utiliser le même instance)
+            const vertices = grid.getVerticesForHex(woodCoord);
+            for (const vertex of vertices) {
+              const hexes = vertex.getHexes();
+              if (hexes.some(h => h.equals(woodCoord)) &&
+                  hexes.some(h => h.equals(brickCoord)) &&
+                  hexes.some(h => h.equals(neighborCoord))) {
+                try {
+                  gameMap.addCity(vertex, civId);
+                  const hexList = hexes.map(h => `(${h.q},${h.r})`).join(', ');
+                  console.log(`[MapGenerator] ✓ Ville créée avec succès sur le vertex: [${hexList}]`);
+                  return;
+                } catch (e) {
+                  console.warn(`[MapGenerator] Échec lors de l'ajout de la ville (méthode 2): ${e}`);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Si on arrive ici, la ville n'a pas pu être créée
+    console.error(`[MapGenerator] ✗ ÉCHEC: Impossible de créer la ville initiale sur le vertex Bois(${woodCoord.q},${woodCoord.r})-Argile(${brickCoord.q},${brickCoord.r})-Eau`);
   }
 }

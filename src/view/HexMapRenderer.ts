@@ -1,6 +1,7 @@
 import { GameMap } from '../model/map/GameMap';
 import { Hex } from '../model/hex/Hex';
 import { HexCoord } from '../model/hex/HexCoord';
+import { Vertex } from '../model/hex/Vertex';
 import { ResourceType } from '../model/map/ResourceType';
 
 /**
@@ -34,6 +35,7 @@ const RESOURCE_COLORS: Record<ResourceType, string> = {
 export class HexMapRenderer {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
+  private showCoordinates: boolean = false;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -42,6 +44,13 @@ export class HexMapRenderer {
       throw new Error('Impossible d\'obtenir le contexte 2D du canvas');
     }
     this.ctx = context;
+  }
+
+  /**
+   * Active ou désactive l'affichage des coordonnées.
+   */
+  setShowCoordinates(show: boolean): void {
+    this.showCoordinates = show;
   }
 
   /**
@@ -94,6 +103,16 @@ export class HexMapRenderer {
     for (const hex of allHexes) {
       this.drawHex(hex, gameMap, config);
     }
+
+    // Dessiner les coordonnées si activé
+    if (this.showCoordinates) {
+      for (const hex of allHexes) {
+        this.drawCoordinates(hex, config);
+      }
+    }
+
+    // Dessiner les villes sur leurs sommets
+    this.drawCities(gameMap, config);
   }
 
   /**
@@ -137,8 +156,8 @@ export class HexMapRenderer {
     this.ctx.beginPath();
     for (let i = 0; i < 6; i++) {
       const angle = (Math.PI / 3) * i + Math.PI / 6;
-      const hx = x + hexSize * Math.cos(angle);
-      const hy = y + hexSize * Math.sin(angle);
+      const hx = x + hexSize * Math.cos(angle) * 0.9;
+      const hy = y + hexSize * Math.sin(angle) * 0.9;
       if (i === 0) {
         this.ctx.moveTo(hx, hy);
       } else {
@@ -155,6 +174,115 @@ export class HexMapRenderer {
     this.ctx.strokeStyle = '#000000';
     this.ctx.lineWidth = 1;
     this.ctx.stroke();
+  }
+
+  /**
+   * Dessine les coordonnées (q, r) au centre d'un hexagone.
+   */
+  private drawCoordinates(hex: Hex, config: RenderConfig): void {
+    const { hexSize, offsetX, offsetY } = config;
+    const coord = hex.coord;
+
+    // Convertir les coordonnées axiales en coordonnées pixel (centre de l'hexagone)
+    const x = offsetX + Math.sqrt(3) * (coord.q + coord.r / 2) * hexSize;
+    const y = offsetY + (3 / 2) * coord.r * hexSize;
+
+    // Dessiner le texte des coordonnées
+    const text = `(${coord.q},${coord.r})`;
+    this.ctx.fillStyle = '#000000';
+    this.ctx.font = `${Math.max(8, hexSize / 4)}px Arial`;
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
+    
+    // Dessiner un fond semi-transparent pour améliorer la lisibilité
+    const metrics = this.ctx.measureText(text);
+    const textWidth = metrics.width;
+    const textHeight = parseInt(this.ctx.font) || 12;
+    
+    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    this.ctx.fillRect(
+      x - textWidth / 2 - 2,
+      y - textHeight / 2 - 2,
+      textWidth + 4,
+      textHeight + 4
+    );
+    
+    this.ctx.fillStyle = '#000000';
+    this.ctx.fillText(text, x, y);
+  }
+
+  /**
+   * Dessine les villes sur leurs sommets.
+   */
+  private drawCities(gameMap: GameMap, config: RenderConfig): void {
+    const grid = gameMap.getGrid();
+    const allHexes = grid.getAllHexes();
+
+    // Parcourir tous les hexagones pour trouver leurs vertices
+    // Utiliser un Set pour éviter les doublons
+    const processedVertices = new Set<string>();
+
+    for (const hex of allHexes) {
+      const vertices = grid.getVerticesForHex(hex.coord);
+      for (const vertex of vertices) {
+        const vertexKey = vertex.hashCode();
+        if (!processedVertices.has(vertexKey)) {
+          processedVertices.add(vertexKey);
+          
+          // Vérifier si ce vertex a une ville en utilisant le même vertex retourné par la grille
+          // Cela garantit que le hashCode correspond
+          if (gameMap.hasCity(vertex)) {
+            this.drawCity(vertex, config);
+          }
+        }
+      }
+    }
+    
+    // Debug: Vérifier tous les vertices pour s'assurer qu'on ne manque rien
+    // Cela peut aider à identifier les villes non trouvées
+    const allVertices = grid.getAllVertices();
+    for (const vertex of allVertices) {
+      const vertexKey = vertex.hashCode();
+      if (gameMap.hasCity(vertex)) {
+        // Si on trouve une ville dans getAllVertices mais pas dans drawCities,
+        // on la dessine quand même
+        if (!processedVertices.has(vertexKey)) {
+          this.drawCity(vertex, config);
+        }
+      }
+    }
+  }
+
+  /**
+   * Dessine une ville sur un sommet (petit carré noir).
+   */
+  private drawCity(vertex: Vertex, config: RenderConfig): void {
+    const { hexSize, offsetX, offsetY } = config;
+    const hexes = vertex.getHexes();
+
+    // Calculer la position du sommet (centre du triangle formé par les 3 hexagones)
+    let sumX = 0;
+    let sumY = 0;
+
+    for (const coord of hexes) {
+      const x = offsetX + Math.sqrt(3) * (coord.q + coord.r / 2) * hexSize;
+      const y = offsetY + (3 / 2) * coord.r * hexSize;
+      sumX += x;
+      sumY += y;
+    }
+
+    const centerX = sumX / 3;
+    const centerY = sumY / 3;
+
+    // Dessiner un petit carré noir (taille 6x6 pixels)
+    const citySize = 6;
+    this.ctx.fillStyle = '#000000';
+    this.ctx.fillRect(
+      centerX - citySize / 2,
+      centerY - citySize / 2,
+      citySize,
+      citySize
+    );
   }
 
   /**

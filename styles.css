@@ -105,6 +105,10 @@ footer {
     border-radius: 3px;
 }
 
+.legend-city {
+    border: none;
+}
+
 .legend-item span {
     color: #555;
     font-size: 0.9rem;

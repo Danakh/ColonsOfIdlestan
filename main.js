@@ -701,15 +701,20 @@ var MapGenerator = class {
   generate(config) {
     this.validateConfig(config);
     const rng = new SeededRNG(config.seed);
-    const terrestrialHexes = this.generateTerrestrialHexes(config, rng);
+    const { hexes: terrestrialHexes, woodCoord, brickCoord } = this.generateTerrestrialHexes(config, rng);
     const allHexes = this.addWaterLayer(terrestrialHexes);
     const hexGrid = new HexGrid(allHexes);
     const gameMap = new GameMap(hexGrid);
     for (const civId of config.civilizations) {
       gameMap.registerCivilization(civId);
     }
-    this.assignResources(gameMap, terrestrialHexes, config, rng);
+    this.assignResources(gameMap, terrestrialHexes, config, rng, woodCoord, brickCoord);
     this.assignWaterResources(gameMap, terrestrialHexes);
+    if (config.civilizations.length > 0) {
+      console.log(`[MapGenerator] Hexagone initial Bois: (${woodCoord.q}, ${woodCoord.r})`);
+      console.log(`[MapGenerator] Hexagone initial Argile: (${brickCoord.q}, ${brickCoord.r})`);
+      this.addInitialCity(gameMap, woodCoord, brickCoord, config.civilizations[0]);
+    }
     return gameMap;
   }
   /**
@@ -736,19 +741,20 @@ var MapGenerator = class {
   }
   /**
    * Génère uniquement les hexagones terrestres selon les règles de placement.
-   * - Les 2 premiers hexagones sont placés adjacents
+   * - Les 2 premiers hexagones sont placés adjacents (Bois et Argile)
    * - Chaque hexagone suivant doit être adjacent à au moins 2 hexagones déjà placés
    */
   generateTerrestrialHexes(config, rng) {
     const totalHexes = this.calculateTotalHexes(config.resourceDistribution);
     const placedCoords = /* @__PURE__ */ new Set();
     const hexes = [];
-    const startCoord = new HexCoord(0, 0);
-    const firstNeighbor = startCoord.neighbor(1 /* NE */);
-    hexes.push(new Hex(startCoord));
-    hexes.push(new Hex(firstNeighbor));
-    placedCoords.add(startCoord.hashCode());
-    placedCoords.add(firstNeighbor.hashCode());
+    const woodCoord = new HexCoord(0, 0);
+    const brickCoord = woodCoord.neighbor(0 /* N */);
+    hexes.push(new Hex(woodCoord));
+    hexes.push(new Hex(brickCoord));
+    placedCoords.add(woodCoord.hashCode());
+    placedCoords.add(brickCoord.hashCode());
+    const result = { hexes, woodCoord, brickCoord };
     while (hexes.length < totalHexes) {
       const candidateCoord = this.findValidPlacement(placedCoords, rng);
       if (!candidateCoord) {
@@ -759,7 +765,7 @@ var MapGenerator = class {
       hexes.push(new Hex(candidateCoord));
       placedCoords.add(candidateCoord.hashCode());
     }
-    return hexes;
+    return result;
   }
   /**
    * Trouve une coordonnée valide pour le prochain hexagone.
@@ -833,8 +839,9 @@ var MapGenerator = class {
   /**
    * Assignë les ressources aux hexagones terrestres selon la distribution.
    * Exclut les hexagones d'eau.
+   * Les deux premiers hexagones (Bois et Argile) sont assignés en premier.
    */
-  assignResources(gameMap, terrestrialHexes, config, rng) {
+  assignResources(gameMap, terrestrialHexes, config, rng, woodCoord, brickCoord) {
     const resourcesToAssign = [];
     for (const [resourceType, count] of config.resourceDistribution.entries()) {
       if (resourceType === "Water" /* Water */) {
@@ -844,8 +851,24 @@ var MapGenerator = class {
         resourcesToAssign.push(resourceType);
       }
     }
+    const woodIndex = resourcesToAssign.indexOf("Wood" /* Wood */);
+    const brickIndex = resourcesToAssign.indexOf("Brick" /* Brick */);
+    if (woodIndex !== -1) {
+      resourcesToAssign.splice(woodIndex, 1);
+    }
+    if (brickIndex !== -1 && brickIndex !== woodIndex) {
+      const adjustedBrickIndex = resourcesToAssign.indexOf("Brick" /* Brick */);
+      if (adjustedBrickIndex !== -1) {
+        resourcesToAssign.splice(adjustedBrickIndex, 1);
+      }
+    }
     rng.shuffle(resourcesToAssign);
-    const shuffledHexes = [...terrestrialHexes];
+    gameMap.setResource(woodCoord, "Wood" /* Wood */);
+    gameMap.setResource(brickCoord, "Brick" /* Brick */);
+    const remainingHexes = terrestrialHexes.filter(
+      (hex) => !hex.coord.equals(woodCoord) && !hex.coord.equals(brickCoord)
+    );
+    const shuffledHexes = [...remainingHexes];
     rng.shuffle(shuffledHexes);
     for (let i = 0; i < resourcesToAssign.length && i < shuffledHexes.length; i++) {
       const hex = shuffledHexes[i];
@@ -867,6 +890,62 @@ var MapGenerator = class {
         gameMap.setResource(hex.coord, "Water" /* Water */);
       }
     }
+  }
+  /**
+   * Ajoute la ville initiale sur le vertex bois-argile-eau.
+   */
+  addInitialCity(gameMap, woodCoord, brickCoord, civId) {
+    const grid = gameMap.getGrid();
+    const woodVertices = grid.getVerticesForHex(woodCoord);
+    for (const vertex of woodVertices) {
+      const hexes = vertex.getHexes();
+      const hasWood = hexes.some((h) => h.equals(woodCoord));
+      const hasBrick = hexes.some((h) => h.equals(brickCoord));
+      if (hasWood && hasBrick) {
+        const waterHex = hexes.find((h) => !h.equals(woodCoord) && !h.equals(brickCoord));
+        if (waterHex) {
+          const resource = gameMap.getResource(waterHex);
+          if (resource === "Water" /* Water */) {
+            try {
+              gameMap.addCity(vertex, civId);
+              const hexList = hexes.map((h) => `(${h.q},${h.r})`).join(", ");
+              console.log(`[MapGenerator] \u2713 Ville cr\xE9\xE9e avec succ\xE8s sur le vertex: [${hexList}]`);
+              return;
+            } catch (e) {
+              console.warn(`[MapGenerator] \xC9chec lors de l'ajout de la ville (m\xE9thode 1): ${e}`);
+            }
+          }
+        }
+      }
+    }
+    const woodNeighbors = woodCoord.neighbors();
+    const brickNeighbors = brickCoord.neighbors();
+    for (const neighborCoord of woodNeighbors) {
+      const isNeighborOfBrick = brickNeighbors.some((n) => n.equals(neighborCoord));
+      if (isNeighborOfBrick) {
+        const neighborHex = grid.getHex(neighborCoord);
+        if (neighborHex) {
+          const resource = gameMap.getResource(neighborCoord);
+          if (resource === "Water" /* Water */) {
+            const vertices = grid.getVerticesForHex(woodCoord);
+            for (const vertex of vertices) {
+              const hexes = vertex.getHexes();
+              if (hexes.some((h) => h.equals(woodCoord)) && hexes.some((h) => h.equals(brickCoord)) && hexes.some((h) => h.equals(neighborCoord))) {
+                try {
+                  gameMap.addCity(vertex, civId);
+                  const hexList = hexes.map((h) => `(${h.q},${h.r})`).join(", ");
+                  console.log(`[MapGenerator] \u2713 Ville cr\xE9\xE9e avec succ\xE8s sur le vertex: [${hexList}]`);
+                  return;
+                } catch (e) {
+                  console.warn(`[MapGenerator] \xC9chec lors de l'ajout de la ville (m\xE9thode 2): ${e}`);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    console.error(`[MapGenerator] \u2717 \xC9CHEC: Impossible de cr\xE9er la ville initiale sur le vertex Bois(${woodCoord.q},${woodCoord.r})-Argile(${brickCoord.q},${brickCoord.r})-Eau`);
   }
 };
 
@@ -973,12 +1052,19 @@ var RESOURCE_COLORS = {
 };
 var HexMapRenderer = class {
   constructor(canvas) {
+    this.showCoordinates = false;
     this.canvas = canvas;
     const context = canvas.getContext("2d");
     if (!context) {
       throw new Error("Impossible d'obtenir le contexte 2D du canvas");
     }
     this.ctx = context;
+  }
+  /**
+   * Active ou désactive l'affichage des coordonnées.
+   */
+  setShowCoordinates(show) {
+    this.showCoordinates = show;
   }
   /**
    * Dessine la carte complète sur le canvas.
@@ -1014,6 +1100,12 @@ var HexMapRenderer = class {
     for (const hex of allHexes) {
       this.drawHex(hex, gameMap, config);
     }
+    if (this.showCoordinates) {
+      for (const hex of allHexes) {
+        this.drawCoordinates(hex, config);
+      }
+    }
+    this.drawCities(gameMap, config);
   }
   /**
    * Calcule la taille optimale des hexagones pour que la carte tienne dans le canvas.
@@ -1040,8 +1132,8 @@ var HexMapRenderer = class {
     this.ctx.beginPath();
     for (let i = 0; i < 6; i++) {
       const angle = Math.PI / 3 * i + Math.PI / 6;
-      const hx = x + hexSize * Math.cos(angle);
-      const hy = y + hexSize * Math.sin(angle);
+      const hx = x + hexSize * Math.cos(angle) * 0.9;
+      const hy = y + hexSize * Math.sin(angle) * 0.9;
       if (i === 0) {
         this.ctx.moveTo(hx, hy);
       } else {
@@ -1054,6 +1146,86 @@ var HexMapRenderer = class {
     this.ctx.strokeStyle = "#000000";
     this.ctx.lineWidth = 1;
     this.ctx.stroke();
+  }
+  /**
+   * Dessine les coordonnées (q, r) au centre d'un hexagone.
+   */
+  drawCoordinates(hex, config) {
+    const { hexSize, offsetX, offsetY } = config;
+    const coord = hex.coord;
+    const x = offsetX + Math.sqrt(3) * (coord.q + coord.r / 2) * hexSize;
+    const y = offsetY + 3 / 2 * coord.r * hexSize;
+    const text = `(${coord.q},${coord.r})`;
+    this.ctx.fillStyle = "#000000";
+    this.ctx.font = `${Math.max(8, hexSize / 4)}px Arial`;
+    this.ctx.textAlign = "center";
+    this.ctx.textBaseline = "middle";
+    const metrics = this.ctx.measureText(text);
+    const textWidth = metrics.width;
+    const textHeight = parseInt(this.ctx.font) || 12;
+    this.ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+    this.ctx.fillRect(
+      x - textWidth / 2 - 2,
+      y - textHeight / 2 - 2,
+      textWidth + 4,
+      textHeight + 4
+    );
+    this.ctx.fillStyle = "#000000";
+    this.ctx.fillText(text, x, y);
+  }
+  /**
+   * Dessine les villes sur leurs sommets.
+   */
+  drawCities(gameMap, config) {
+    const grid = gameMap.getGrid();
+    const allHexes = grid.getAllHexes();
+    const processedVertices = /* @__PURE__ */ new Set();
+    for (const hex of allHexes) {
+      const vertices = grid.getVerticesForHex(hex.coord);
+      for (const vertex of vertices) {
+        const vertexKey = vertex.hashCode();
+        if (!processedVertices.has(vertexKey)) {
+          processedVertices.add(vertexKey);
+          if (gameMap.hasCity(vertex)) {
+            this.drawCity(vertex, config);
+          }
+        }
+      }
+    }
+    const allVertices = grid.getAllVertices();
+    for (const vertex of allVertices) {
+      const vertexKey = vertex.hashCode();
+      if (gameMap.hasCity(vertex)) {
+        if (!processedVertices.has(vertexKey)) {
+          this.drawCity(vertex, config);
+        }
+      }
+    }
+  }
+  /**
+   * Dessine une ville sur un sommet (petit carré noir).
+   */
+  drawCity(vertex, config) {
+    const { hexSize, offsetX, offsetY } = config;
+    const hexes = vertex.getHexes();
+    let sumX = 0;
+    let sumY = 0;
+    for (const coord of hexes) {
+      const x = offsetX + Math.sqrt(3) * (coord.q + coord.r / 2) * hexSize;
+      const y = offsetY + 3 / 2 * coord.r * hexSize;
+      sumX += x;
+      sumY += y;
+    }
+    const centerX = sumX / 3;
+    const centerY = sumY / 3;
+    const citySize = 6;
+    this.ctx.fillStyle = "#000000";
+    this.ctx.fillRect(
+      centerX - citySize / 2,
+      centerY - citySize / 2,
+      citySize,
+      citySize
+    );
   }
   /**
    * Redimensionne le canvas pour qu'il s'adapte à la fenêtre.
@@ -1072,11 +1244,15 @@ var HexMapRenderer = class {
 function main() {
   const canvas = document.getElementById("map-canvas");
   const regenerateBtn = document.getElementById("regenerate-btn");
+  const coordinatesBtn = document.getElementById("coordinates-btn");
   if (!canvas) {
     throw new Error("Canvas introuvable");
   }
   if (!regenerateBtn) {
     throw new Error("Bouton de r\xE9g\xE9n\xE9ration introuvable");
+  }
+  if (!coordinatesBtn) {
+    throw new Error("Bouton de coordonn\xE9es introuvable");
   }
   const game = new MainGame();
   const renderer = new HexMapRenderer(canvas);
@@ -1098,6 +1274,15 @@ function main() {
     const newGameMap = game.getGameMap();
     if (newGameMap) {
       renderer.render(newGameMap);
+    }
+  });
+  let showCoordinates = false;
+  coordinatesBtn.addEventListener("click", () => {
+    showCoordinates = !showCoordinates;
+    renderer.setShowCoordinates(showCoordinates);
+    const gameMap2 = game.getGameMap();
+    if (gameMap2) {
+      renderer.render(gameMap2);
     }
   });
 }
