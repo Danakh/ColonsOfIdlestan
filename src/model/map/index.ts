@@ -6,3 +6,5 @@
 
 export { ResourceType } from './ResourceType';
 export { GameMap } from './GameMap';
+export { CivilizationId } from './CivilizationId';
+export { Civilization } from './Civilization';

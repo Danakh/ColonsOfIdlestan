@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { GameMap } from '../../../src/model/map/GameMap';
 import { ResourceType } from '../../../src/model/map/ResourceType';
+import { CivilizationId } from '../../../src/model/map/CivilizationId';
 import { HexGrid } from '../../../src/model/hex/HexGrid';
 import { Hex } from '../../../src/model/hex/Hex';
 import { HexCoord } from '../../../src/model/hex/HexCoord';
@@ -102,9 +103,11 @@ describe('GameMap', () => {
         new Hex(northeast),
       ]);
       const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+      map.registerCivilization(civId);
 
       const vertex = Vertex.create(center, north, northeast);
-      map.addCity(vertex);
+      map.addCity(vertex, civId);
 
       expect(map.hasCity(vertex)).toBe(true);
     });
@@ -156,9 +159,11 @@ describe('GameMap', () => {
         new Hex(north),
       ]);
       const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+      map.registerCivilization(civId);
 
       const edge = Edge.create(center, north);
-      map.addRoad(edge);
+      map.addRoad(edge, civId);
 
       expect(map.hasRoad(edge)).toBe(true);
     });
@@ -188,12 +193,14 @@ describe('GameMap', () => {
         new Hex(northeast),
       ]);
       const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+      map.registerCivilization(civId);
 
       const edge1 = Edge.create(center, north);
       const edge2 = Edge.create(center, northeast);
 
-      map.addRoad(edge1);
-      map.addRoad(edge2);
+      map.addRoad(edge1, civId);
+      map.addRoad(edge2, civId);
 
       expect(map.hasRoad(edge1)).toBe(true);
       expect(map.hasRoad(edge2)).toBe(true);
@@ -218,10 +225,12 @@ describe('GameMap', () => {
         new Hex(north),
       ]);
       const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+      map.registerCivilization(civId);
 
       // Ajouter une route sur l'arête entre center et north
       const edge = Edge.create(center, north);
-      map.addRoad(edge);
+      map.addRoad(edge, civId);
 
       // L'hexagone center devrait être visible car il a un vertex avec une route
       expect(map.isHexVisible(center)).toBe(true);
@@ -240,11 +249,13 @@ describe('GameMap', () => {
         new Hex(northeast),
       ]);
       const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+      map.registerCivilization(civId);
 
       // Ajouter une route sur l'arête entre north et northeast
       // Cela crée un vertex (center, north, northeast) avec une route
       const edge = Edge.create(north, northeast);
-      map.addRoad(edge);
+      map.addRoad(edge, civId);
 
       // L'hexagone center devrait être visible car le vertex (center, north, northeast) a une route
       expect(map.isHexVisible(center)).toBe(true);
@@ -263,10 +274,12 @@ describe('GameMap', () => {
         new Hex(north),
       ]);
       const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+      map.registerCivilization(civId);
 
       // Ajouter une route près du center
       const edge = Edge.create(center, north);
-      map.addRoad(edge);
+      map.addRoad(edge, civId);
 
       // L'hexagone isolé ne devrait pas être visible
       expect(map.isHexVisible(isolated)).toBe(false);
@@ -295,11 +308,13 @@ describe('GameMap', () => {
         new Hex(southeast),
       ]);
       const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+      map.registerCivilization(civId);
 
       // Ajouter plusieurs routes
-      map.addRoad(Edge.create(center, north));
-      map.addRoad(Edge.create(center, northeast));
-      map.addRoad(Edge.create(center, southeast));
+      map.addRoad(Edge.create(center, north), civId);
+      map.addRoad(Edge.create(center, northeast), civId);
+      map.addRoad(Edge.create(center, southeast), civId);
 
       // Tous les hexagones devraient être visibles
       expect(map.isHexVisible(center)).toBe(true);
@@ -339,6 +354,320 @@ describe('GameMap', () => {
       // Vérifier que les ressources sont toujours correctes
       expect(map.getResource(new HexCoord(0, 0))).toBe(ResourceType.Wood);
       expect(map.getResource(new HexCoord(1, 0))).toBe(ResourceType.Brick);
+    });
+  });
+
+  describe('gestion des civilisations', () => {
+    it('devrait enregistrer une civilisation', () => {
+      const grid = new HexGrid([new Hex(new HexCoord(0, 0))]);
+      const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+
+      map.registerCivilization(civId);
+
+      expect(map.isCivilizationRegistered(civId)).toBe(true);
+    });
+
+    it('devrait retourner false si une civilisation n\'est pas enregistrée', () => {
+      const grid = new HexGrid([new Hex(new HexCoord(0, 0))]);
+      const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+
+      expect(map.isCivilizationRegistered(civId)).toBe(false);
+    });
+  });
+
+  describe('propriété des villes', () => {
+    it('devrait associer une ville à une civilisation', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+      const northeast = center.neighbor(HexDirection.NE);
+
+      const grid = new HexGrid([
+        new Hex(center),
+        new Hex(north),
+        new Hex(northeast),
+      ]);
+      const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+      map.registerCivilization(civId);
+
+      const vertex = Vertex.create(center, north, northeast);
+      map.addCity(vertex, civId);
+
+      expect(map.getCityOwner(vertex)).toEqual(civId);
+    });
+
+    it('devrait retourner undefined si aucune ville n\'existe sur un sommet', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+      const northeast = center.neighbor(HexDirection.NE);
+
+      const grid = new HexGrid([
+        new Hex(center),
+        new Hex(north),
+        new Hex(northeast),
+      ]);
+      const map = new GameMap(grid);
+
+      const vertex = Vertex.create(center, north, northeast);
+
+      expect(map.getCityOwner(vertex)).toBeUndefined();
+    });
+
+    it('devrait lancer une erreur si on ajoute une ville pour une civilisation non enregistrée', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+      const northeast = center.neighbor(HexDirection.NE);
+
+      const grid = new HexGrid([
+        new Hex(center),
+        new Hex(north),
+        new Hex(northeast),
+      ]);
+      const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+
+      const vertex = Vertex.create(center, north, northeast);
+
+      expect(() => {
+        map.addCity(vertex, civId);
+      }).toThrow();
+    });
+
+    it('devrait lancer une erreur si on ajoute une ville sur un sommet déjà occupé', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+      const northeast = center.neighbor(HexDirection.NE);
+
+      const grid = new HexGrid([
+        new Hex(center),
+        new Hex(north),
+        new Hex(northeast),
+      ]);
+      const map = new GameMap(grid);
+      const civId1 = CivilizationId.create('civ1');
+      const civId2 = CivilizationId.create('civ2');
+      map.registerCivilization(civId1);
+      map.registerCivilization(civId2);
+
+      const vertex = Vertex.create(center, north, northeast);
+      map.addCity(vertex, civId1);
+
+      expect(() => {
+        map.addCity(vertex, civId2);
+      }).toThrow();
+    });
+
+    it('devrait permettre à une civilisation d\'avoir plusieurs villes', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+      const northeast = center.neighbor(HexDirection.NE);
+      const southeast = center.neighbor(HexDirection.SE);
+
+      const grid = new HexGrid([
+        new Hex(center),
+        new Hex(north),
+        new Hex(northeast),
+        new Hex(southeast),
+      ]);
+      const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+      map.registerCivilization(civId);
+
+      const vertex1 = Vertex.create(center, north, northeast);
+      const vertex2 = Vertex.create(center, northeast, southeast);
+      map.addCity(vertex1, civId);
+      map.addCity(vertex2, civId);
+
+      expect(map.getCityOwner(vertex1)).toEqual(civId);
+      expect(map.getCityOwner(vertex2)).toEqual(civId);
+    });
+  });
+
+  describe('propriété des routes', () => {
+    it('devrait associer une route à une civilisation', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+
+      const grid = new HexGrid([
+        new Hex(center),
+        new Hex(north),
+      ]);
+      const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+      map.registerCivilization(civId);
+
+      const edge = Edge.create(center, north);
+      map.addRoad(edge, civId);
+
+      expect(map.getRoadOwner(edge)).toEqual(civId);
+    });
+
+    it('devrait retourner undefined si aucune route n\'existe sur une arête', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+
+      const grid = new HexGrid([
+        new Hex(center),
+        new Hex(north),
+      ]);
+      const map = new GameMap(grid);
+
+      const edge = Edge.create(center, north);
+
+      expect(map.getRoadOwner(edge)).toBeUndefined();
+    });
+
+    it('devrait lancer une erreur si on ajoute une route pour une civilisation non enregistrée', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+
+      const grid = new HexGrid([
+        new Hex(center),
+        new Hex(north),
+      ]);
+      const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+
+      const edge = Edge.create(center, north);
+
+      expect(() => {
+        map.addRoad(edge, civId);
+      }).toThrow();
+    });
+
+    it('devrait lancer une erreur si on ajoute une route sur une arête déjà occupée', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+
+      const grid = new HexGrid([
+        new Hex(center),
+        new Hex(north),
+      ]);
+      const map = new GameMap(grid);
+      const civId1 = CivilizationId.create('civ1');
+      const civId2 = CivilizationId.create('civ2');
+      map.registerCivilization(civId1);
+      map.registerCivilization(civId2);
+
+      const edge = Edge.create(center, north);
+      map.addRoad(edge, civId1);
+
+      expect(() => {
+        map.addRoad(edge, civId2);
+      }).toThrow();
+    });
+
+    it('devrait permettre à une civilisation d\'avoir plusieurs routes', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+      const northeast = center.neighbor(HexDirection.NE);
+
+      const grid = new HexGrid([
+        new Hex(center),
+        new Hex(north),
+        new Hex(northeast),
+      ]);
+      const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+      map.registerCivilization(civId);
+
+      const edge1 = Edge.create(center, north);
+      const edge2 = Edge.create(center, northeast);
+      map.addRoad(edge1, civId);
+      map.addRoad(edge2, civId);
+
+      expect(map.getRoadOwner(edge1)).toEqual(civId);
+      expect(map.getRoadOwner(edge2)).toEqual(civId);
+    });
+  });
+
+  describe('requêtes par civilisation', () => {
+    it('devrait retourner toutes les villes d\'une civilisation', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+      const northeast = center.neighbor(HexDirection.NE);
+      const southeast = center.neighbor(HexDirection.SE);
+
+      const grid = new HexGrid([
+        new Hex(center),
+        new Hex(north),
+        new Hex(northeast),
+        new Hex(southeast),
+      ]);
+      const map = new GameMap(grid);
+      const civId1 = CivilizationId.create('civ1');
+      const civId2 = CivilizationId.create('civ2');
+      map.registerCivilization(civId1);
+      map.registerCivilization(civId2);
+
+      const vertex1 = Vertex.create(center, north, northeast);
+      const vertex2 = Vertex.create(center, northeast, southeast);
+      const vertex3 = Vertex.create(north, northeast, north.neighbor(HexDirection.NE));
+
+      map.addCity(vertex1, civId1);
+      map.addCity(vertex2, civId1);
+      map.addCity(vertex3, civId2);
+
+      const cities = map.getCitiesForCivilization(civId1);
+      expect(cities).toHaveLength(2);
+      expect(cities.some(v => v.equals(vertex1))).toBe(true);
+      expect(cities.some(v => v.equals(vertex2))).toBe(true);
+      expect(cities.some(v => v.equals(vertex3))).toBe(false);
+    });
+
+    it('devrait retourner un tableau vide si une civilisation n\'a pas de villes', () => {
+      const grid = new HexGrid([new Hex(new HexCoord(0, 0))]);
+      const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+      map.registerCivilization(civId);
+
+      const cities = map.getCitiesForCivilization(civId);
+      expect(cities).toHaveLength(0);
+    });
+
+    it('devrait retourner toutes les routes d\'une civilisation', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+      const northeast = center.neighbor(HexDirection.NE);
+      const southeast = center.neighbor(HexDirection.SE);
+
+      const grid = new HexGrid([
+        new Hex(center),
+        new Hex(north),
+        new Hex(northeast),
+        new Hex(southeast),
+      ]);
+      const map = new GameMap(grid);
+      const civId1 = CivilizationId.create('civ1');
+      const civId2 = CivilizationId.create('civ2');
+      map.registerCivilization(civId1);
+      map.registerCivilization(civId2);
+
+      const edge1 = Edge.create(center, north);
+      const edge2 = Edge.create(center, northeast);
+      const edge3 = Edge.create(center, southeast);
+
+      map.addRoad(edge1, civId1);
+      map.addRoad(edge2, civId1);
+      map.addRoad(edge3, civId2);
+
+      const roads = map.getRoadsForCivilization(civId1);
+      expect(roads.length).toBeGreaterThanOrEqual(2);
+      expect(roads.some(e => e.equals(edge1))).toBe(true);
+      expect(roads.some(e => e.equals(edge2))).toBe(true);
+      expect(roads.some(e => e.equals(edge3))).toBe(false);
+    });
+
+    it('devrait retourner un tableau vide si une civilisation n\'a pas de routes', () => {
+      const grid = new HexGrid([new Hex(new HexCoord(0, 0))]);
+      const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+      map.registerCivilization(civId);
+
+      const roads = map.getRoadsForCivilization(civId);
+      expect(roads).toHaveLength(0);
     });
   });
 });
