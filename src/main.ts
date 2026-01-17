@@ -8,7 +8,6 @@ function main(): void {
   // Récupérer les éléments DOM
   const canvas = document.getElementById('map-canvas') as HTMLCanvasElement;
   const regenerateBtn = document.getElementById('regenerate-btn') as HTMLButtonElement;
-  const coordinatesBtn = document.getElementById('coordinates-btn') as HTMLButtonElement;
 
   if (!canvas) {
     throw new Error('Canvas introuvable');
@@ -16,10 +15,6 @@ function main(): void {
 
   if (!regenerateBtn) {
     throw new Error('Bouton de régénération introuvable');
-  }
-
-  if (!coordinatesBtn) {
-    throw new Error('Bouton de coordonnées introuvable');
   }
 
   // Créer le jeu principal
@@ -51,17 +46,6 @@ function main(): void {
     const newGameMap = game.getGameMap();
     if (newGameMap) {
       renderer.render(newGameMap);
-    }
-  });
-
-  // Gérer le bouton de coordonnées (état initial: désactivé)
-  let showCoordinates = false;
-  coordinatesBtn.addEventListener('click', () => {
-    showCoordinates = !showCoordinates;
-    renderer.setShowCoordinates(showCoordinates);
-    const gameMap = game.getGameMap();
-    if (gameMap) {
-      renderer.render(gameMap);
     }
   });
 }

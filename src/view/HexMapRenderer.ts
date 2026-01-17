@@ -35,7 +35,6 @@ const RESOURCE_COLORS: Record<ResourceType, string> = {
 export class HexMapRenderer {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
-  private showCoordinates: boolean = false;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -44,13 +43,6 @@ export class HexMapRenderer {
       throw new Error('Impossible d\'obtenir le contexte 2D du canvas');
     }
     this.ctx = context;
-  }
-
-  /**
-   * Active ou désactive l'affichage des coordonnées.
-   */
-  setShowCoordinates(show: boolean): void {
-    this.showCoordinates = show;
   }
 
   /**
@@ -69,21 +61,13 @@ export class HexMapRenderer {
       return;
     }
 
-    // Filtrer uniquement les hexagones visibles
-    const visibleHexes = allHexes.filter(hex => gameMap.isHexVisible(hex.coord));
-
-    if (visibleHexes.length === 0) {
-      // Si aucun hexagone n'est visible, ne rien dessiner
-      return;
-    }
-
-    // Trouver les limites de la carte (uniquement pour les hexagones visibles)
+    // Trouver les limites de la carte
     let minQ = Infinity;
     let maxQ = -Infinity;
     let minR = Infinity;
     let maxR = -Infinity;
 
-    for (const hex of visibleHexes) {
+    for (const hex of allHexes) {
       minQ = Math.min(minQ, hex.coord.q);
       maxQ = Math.max(maxQ, hex.coord.q);
       minR = Math.min(minR, hex.coord.r);
@@ -107,16 +91,9 @@ export class HexMapRenderer {
       offsetY,
     };
 
-    // Dessiner uniquement les hexagones visibles
-    for (const hex of visibleHexes) {
+    // Dessiner tous les hexagones
+    for (const hex of allHexes) {
       this.drawHex(hex, gameMap, config);
-    }
-
-    // Dessiner les coordonnées si activé (uniquement pour les hexagones visibles)
-    if (this.showCoordinates) {
-      for (const hex of visibleHexes) {
-        this.drawCoordinates(hex, config);
-      }
     }
 
     // Dessiner les villes sur leurs sommets
@@ -182,41 +159,6 @@ export class HexMapRenderer {
     this.ctx.strokeStyle = '#000000';
     this.ctx.lineWidth = 1;
     this.ctx.stroke();
-  }
-
-  /**
-   * Dessine les coordonnées (q, r) au centre d'un hexagone.
-   */
-  private drawCoordinates(hex: Hex, config: RenderConfig): void {
-    const { hexSize, offsetX, offsetY } = config;
-    const coord = hex.coord;
-
-    // Convertir les coordonnées axiales en coordonnées pixel (centre de l'hexagone)
-    const x = offsetX + Math.sqrt(3) * (coord.q + coord.r / 2) * hexSize;
-    const y = offsetY + (3 / 2) * coord.r * hexSize;
-
-    // Dessiner le texte des coordonnées
-    const text = `(${coord.q},${coord.r})`;
-    this.ctx.fillStyle = '#000000';
-    this.ctx.font = `${Math.max(8, hexSize / 4)}px Arial`;
-    this.ctx.textAlign = 'center';
-    this.ctx.textBaseline = 'middle';
-    
-    // Dessiner un fond semi-transparent pour améliorer la lisibilité
-    const metrics = this.ctx.measureText(text);
-    const textWidth = metrics.width;
-    const textHeight = parseInt(this.ctx.font) || 12;
-    
-    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-    this.ctx.fillRect(
-      x - textWidth / 2 - 2,
-      y - textHeight / 2 - 2,
-      textWidth + 4,
-      textHeight + 4
-    );
-    
-    this.ctx.fillStyle = '#000000';
-    this.ctx.fillText(text, x, y);
   }
 
   /**

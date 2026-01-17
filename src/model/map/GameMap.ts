@@ -240,9 +240,8 @@ export class GameMap {
   /**
    * Détermine si un hexagone est visible.
    * 
-   * Un hexagone est visible si au moins un de ses sommets (vertices) a une ville ou une route connectée.
-   * Par défaut, tous les hexagones commencent non visibles.
-   * Un hexagone devient visible lorsqu'une ville ou une route est placée sur l'un de ses vertices.
+   * Un hexagone est visible si au moins un de ses sommets a une ville ou une route connectée.
+   * Un hexagone sans ville ni route adjacente n'est pas visible.
    * 
    * @param hex - L'hexagone ou sa coordonnée
    * @returns true si l'hexagone est visible, false sinon

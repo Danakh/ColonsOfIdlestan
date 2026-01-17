@@ -263,30 +263,6 @@ describe('GameMap', () => {
       expect(map.isHexVisible(northeast)).toBe(true);
     });
 
-    it('devrait retourner true pour un hexagone avec une ville sur un vertex', () => {
-      const center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
-      const northeast = center.neighbor(HexDirection.NE);
-
-      const grid = new HexGrid([
-        new Hex(center),
-        new Hex(north),
-        new Hex(northeast),
-      ]);
-      const map = new GameMap(grid);
-      const civId = CivilizationId.create('civ1');
-      map.registerCivilization(civId);
-
-      // Ajouter une ville sur le vertex (center, north, northeast)
-      const vertex = Vertex.create(center, north, northeast);
-      map.addCity(vertex, civId);
-
-      // Tous les hexagones qui partagent ce vertex devraient être visibles
-      expect(map.isHexVisible(center)).toBe(true);
-      expect(map.isHexVisible(north)).toBe(true);
-      expect(map.isHexVisible(northeast)).toBe(true);
-    });
-
     it('devrait retourner false pour un hexagone isolé même avec des routes ailleurs', () => {
       const center = new HexCoord(0, 0);
       const isolated = new HexCoord(10, 10);

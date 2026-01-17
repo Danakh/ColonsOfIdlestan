@@ -63,8 +63,6 @@ export class MapGenerator {
 
     // Ajouter la ville initiale sur le vertex bois-argile-eau pour la première civilisation
     if (config.civilizations.length > 0) {
-      console.log(`[MapGenerator] Hexagone initial Bois: (${woodCoord.q}, ${woodCoord.r})`);
-      console.log(`[MapGenerator] Hexagone initial Argile: (${brickCoord.q}, ${brickCoord.r})`);
       this.addInitialCity(gameMap, woodCoord, brickCoord, config.civilizations[0]);
     }
 
@@ -101,23 +99,26 @@ export class MapGenerator {
 
   /**
    * Génère uniquement les hexagones terrestres selon les règles de placement.
-   * - Les 2 premiers hexagones sont placés adjacents
+   * - Les 2 premiers hexagones sont placés adjacents (Bois et Argile)
    * - Chaque hexagone suivant doit être adjacent à au moins 2 hexagones déjà placés
-   * - Après génération, trouve un vertex au bord (2 hexagones + 1 emplacement eau) pour Bois et Argile
    */
   private generateTerrestrialHexes(config: MapGeneratorConfig, rng: SeededRNG): { hexes: Hex[], woodCoord: HexCoord, brickCoord: HexCoord } {
     const totalHexes = this.calculateTotalHexes(config.resourceDistribution);
     const placedCoords = new Set<string>();
     const hexes: Hex[] = [];
 
-    // Étape 1: Placer les 2 premiers hexagones adjacents
-    const firstCoord = new HexCoord(0, 0);
-    const secondCoord = firstCoord.neighbor(HexDirection.N);
+    // Étape 1: Placer les 2 premiers hexagones adjacents (Bois et Argile)
+    // Le premier sera Bois, le second Argile
+    const woodCoord = new HexCoord(0, 0);
+    const brickCoord = woodCoord.neighbor(HexDirection.N);
 
-    hexes.push(new Hex(firstCoord));
-    hexes.push(new Hex(secondCoord));
-    placedCoords.add(firstCoord.hashCode());
-    placedCoords.add(secondCoord.hashCode());
+    hexes.push(new Hex(woodCoord));
+    hexes.push(new Hex(brickCoord));
+    placedCoords.add(woodCoord.hashCode());
+    placedCoords.add(brickCoord.hashCode());
+
+    // Retourner aussi les coordonnées pour pouvoir les identifier plus tard
+    const result = { hexes, woodCoord, brickCoord };
 
     // Étape 2: Placer les hexagones restants
     while (hexes.length < totalHexes) {
@@ -137,67 +138,7 @@ export class MapGenerator {
       placedCoords.add(candidateCoord.hashCode());
     }
 
-    // Étape 3: Trouver un vertex au bord pour placer Bois et Argile
-    // Un vertex au bord = 2 hexagones terrestres adjacents qui ont un voisin commun
-    // qui n'est pas encore dans les hexagones terrestres (sera l'eau)
-    const borderVertex = this.findBorderVertex(placedCoords, rng);
-    if (!borderVertex) {
-      throw new Error('Impossible de trouver un vertex au bord pour placer Bois et Argile.');
-    }
-
-    const { woodCoord, brickCoord } = borderVertex;
-
-    return { hexes, woodCoord, brickCoord };
-  }
-
-  /**
-   * Trouve un vertex au bord de la carte terrestre.
-   * Un vertex au bord est formé par 2 hexagones terrestres adjacents
-   * qui ont un voisin commun qui n'est pas terrestre (sera l'eau).
-   */
-  private findBorderVertex(terrestrialCoords: Set<string>, rng: SeededRNG): { woodCoord: HexCoord, brickCoord: HexCoord } | null {
-    const borderCandidates: Array<{ woodCoord: HexCoord, brickCoord: HexCoord }> = [];
-
-    // Parcourir tous les hexagones terrestres
-    for (const coordHash of terrestrialCoords) {
-      const [q, r] = coordHash.split(',').map(Number);
-      const coord1 = new HexCoord(q, r);
-
-      // Vérifier tous les voisins de ce hexagone
-      for (const direction of ALL_DIRECTIONS) {
-        const coord2 = coord1.neighbor(direction);
-        
-        // Si le voisin est aussi terrestre, on a une paire adjacente
-        if (terrestrialCoords.has(coord2.hashCode())) {
-          // Vérifier si cette paire a un voisin commun qui n'est pas terrestre
-          const neighbors1 = coord1.neighbors();
-          const neighbors2 = coord2.neighbors();
-          
-          // Trouver les voisins communs
-          for (const n1 of neighbors1) {
-            if (neighbors2.some(n2 => n2.equals(n1))) {
-              // Ce voisin commun existe pour les deux hexagones
-              // Si ce voisin n'est pas terrestre, c'est un vertex au bord
-              if (!terrestrialCoords.has(n1.hashCode())) {
-                // On a trouvé un vertex au bord : coord1, coord2, et n1 (qui sera l'eau)
-                borderCandidates.push({
-                  woodCoord: coord1,
-                  brickCoord: coord2,
-                });
-                break; // Pas besoin de continuer pour cette paire
-              }
-            }
-          }
-        }
-      }
-    }
-
-    // Choisir un candidat aléatoire
-    if (borderCandidates.length === 0) {
-      return null;
-    }
-
-    return rng.pick(borderCandidates) || null;
+    return result;
   }
 
   /**
@@ -417,13 +358,10 @@ export class MapGenerator {
             // Ajouter la ville sur ce vertex (utiliser le vertex retourné par la grille)
             try {
               gameMap.addCity(vertex, civId);
-              const hexList = hexes.map(h => `(${h.q},${h.r})`).join(', ');
-              console.log(`[MapGenerator] ✓ Ville créée avec succès sur le vertex: [${hexList}]`);
               return;
             } catch (e) {
               // Ignorer les erreurs (ville déjà présente ou civilisation non enregistrée)
               // mais continuer la recherche
-              console.warn(`[MapGenerator] Échec lors de l'ajout de la ville (méthode 1): ${e}`);
             }
           }
         }
@@ -454,11 +392,9 @@ export class MapGenerator {
                   hexes.some(h => h.equals(neighborCoord))) {
                 try {
                   gameMap.addCity(vertex, civId);
-                  const hexList = hexes.map(h => `(${h.q},${h.r})`).join(', ');
-                  console.log(`[MapGenerator] ✓ Ville créée avec succès sur le vertex: [${hexList}]`);
                   return;
                 } catch (e) {
-                  console.warn(`[MapGenerator] Échec lors de l'ajout de la ville (méthode 2): ${e}`);
+                  // Ignorer les erreurs
                 }
               }
             }
@@ -466,8 +402,5 @@ export class MapGenerator {
         }
       }
     }
-
-    // Si on arrive ici, la ville n'a pas pu être créée
-    console.error(`[MapGenerator] ✗ ÉCHEC: Impossible de créer la ville initiale sur le vertex Bois(${woodCoord.q},${woodCoord.r})-Argile(${brickCoord.q},${brickCoord.r})-Eau`);
   }
 }

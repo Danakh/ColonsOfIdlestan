@@ -1301,6 +1301,11 @@ function main() {
   if (!coordinatesBtn) {
     throw new Error("Bouton de coordonn\xE9es introuvable");
   }
+  const resourcesPanel = document.getElementById("resources-panel");
+  const resourcesList = document.getElementById("resources-list");
+  if (!resourcesPanel || !resourcesList) {
+    throw new Error("Panneau de ressources introuvable");
+  }
   const game = new MainGame();
   const renderer = new HexMapRenderer(canvas);
   renderer.resize();
@@ -1311,16 +1316,90 @@ function main() {
       renderer.render(gameMap2);
     }
   });
+  function updateResourcesDisplay(gameMap2) {
+    if (!resourcesList) return;
+    const resourceCounts = /* @__PURE__ */ new Map();
+    const grid = gameMap2.getGrid();
+    const allHexes = grid.getAllHexes();
+    for (const hex of allHexes) {
+      if (gameMap2.isHexVisible(hex.coord)) {
+        const resource = gameMap2.getResource(hex.coord);
+        if (resource) {
+          const currentCount = resourceCounts.get(resource) || 0;
+          resourceCounts.set(resource, currentCount + 1);
+        }
+      }
+    }
+    const resourceNames = {
+      ["Wood" /* Wood */]: "Bois",
+      ["Brick" /* Brick */]: "Brique",
+      ["Wheat" /* Wheat */]: "Bl\xE9",
+      ["Sheep" /* Sheep */]: "Mouton",
+      ["Ore" /* Ore */]: "Minerai",
+      ["Desert" /* Desert */]: "D\xE9sert",
+      ["Water" /* Water */]: "Eau"
+    };
+    const resourceColors = {
+      ["Wood" /* Wood */]: "#8B4513",
+      ["Brick" /* Brick */]: "#CD5C5C",
+      ["Wheat" /* Wheat */]: "#FFD700",
+      ["Sheep" /* Sheep */]: "#90EE90",
+      ["Ore" /* Ore */]: "#708090",
+      ["Desert" /* Desert */]: "#F4A460",
+      ["Water" /* Water */]: "#4169E1"
+    };
+    const resourceOrder = [
+      "Wood" /* Wood */,
+      "Brick" /* Brick */,
+      "Wheat" /* Wheat */,
+      "Sheep" /* Sheep */,
+      "Ore" /* Ore */,
+      "Desert" /* Desert */,
+      "Water" /* Water */
+    ];
+    resourcesList.innerHTML = "";
+    for (const resourceType of resourceOrder) {
+      const count = resourceCounts.get(resourceType) || 0;
+      if (count > 0) {
+        const item = document.createElement("div");
+        item.className = "resource-item";
+        item.style.borderLeftColor = resourceColors[resourceType];
+        const color = document.createElement("div");
+        color.className = "resource-color";
+        color.style.backgroundColor = resourceColors[resourceType];
+        const name = document.createElement("span");
+        name.className = "resource-name";
+        name.textContent = resourceNames[resourceType];
+        const countEl = document.createElement("span");
+        countEl.className = "resource-count";
+        countEl.textContent = count.toString();
+        item.appendChild(color);
+        item.appendChild(name);
+        item.appendChild(countEl);
+        resourcesList.appendChild(item);
+      }
+    }
+    if (resourceCounts.size === 0) {
+      const emptyMessage = document.createElement("div");
+      emptyMessage.style.padding = "1rem";
+      emptyMessage.style.color = "#666";
+      emptyMessage.style.textAlign = "center";
+      emptyMessage.textContent = "Aucune ressource visible";
+      resourcesList.appendChild(emptyMessage);
+    }
+  }
   game.initialize();
   const gameMap = game.getGameMap();
   if (gameMap) {
     renderer.render(gameMap);
+    updateResourcesDisplay(gameMap);
   }
   regenerateBtn.addEventListener("click", () => {
     game.regenerate();
     const newGameMap = game.getGameMap();
     if (newGameMap) {
       renderer.render(newGameMap);
+      updateResourcesDisplay(newGameMap);
     }
   });
   let showCoordinates = false;
@@ -1330,6 +1409,7 @@ function main() {
     const gameMap2 = game.getGameMap();
     if (gameMap2) {
       renderer.render(gameMap2);
+      updateResourcesDisplay(gameMap2);
     }
   });
 }
