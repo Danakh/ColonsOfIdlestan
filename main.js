@@ -1339,8 +1339,8 @@ var HexMapRenderer = class {
     this.ctx.beginPath();
     for (let i = 0; i < 6; i++) {
       const angle = Math.PI / 3 * i + Math.PI / 6;
-      const hx = x + hexSize * Math.cos(angle) * 0.9;
-      const hy = y + hexSize * Math.sin(angle) * 0.9;
+      const hx = x + hexSize * Math.cos(angle);
+      const hy = y + hexSize * Math.sin(angle);
       if (i === 0) {
         this.ctx.moveTo(hx, hy);
       } else {
@@ -1461,21 +1461,22 @@ var HexMapRenderer = class {
     const grid = this.currentGameMap.getGrid();
     const x = pixelX - offsetX;
     const y = pixelY - offsetY;
-    const q = (Math.sqrt(3) / 3 * x - 1 / 3 * y) / hexSize;
     const r = 2 / 3 * y / hexSize;
+    const q = x / (Math.sqrt(3) * hexSize) - r / 2;
     const hexQ = Math.round(q);
     const hexR = Math.round(r);
     const candidates = [
       new HexCoord(hexQ, hexR),
       new HexCoord(hexQ + 1, hexR),
-      new HexCoord(hexQ, hexR + 1),
       new HexCoord(hexQ - 1, hexR),
+      new HexCoord(hexQ, hexR + 1),
       new HexCoord(hexQ, hexR - 1),
       new HexCoord(hexQ + 1, hexR - 1),
       new HexCoord(hexQ - 1, hexR + 1)
     ];
     let closestHex = null;
     let minDistance = Infinity;
+    const maxDistance = hexSize * 0.9;
     for (const candidate of candidates) {
       if (!grid.hasHex(candidate)) {
         continue;
@@ -1485,7 +1486,7 @@ var HexMapRenderer = class {
       const dx = pixelX - hexX;
       const dy = pixelY - hexY;
       const distance = Math.sqrt(dx * dx + dy * dy);
-      if (distance < hexSize * 0.9 && distance < minDistance) {
+      if (distance < maxDistance && distance < minDistance) {
         minDistance = distance;
         closestHex = candidate;
       }
@@ -1499,8 +1500,10 @@ var HexMapRenderer = class {
   setOnHexClick(callback) {
     this.canvas.addEventListener("click", (event) => {
       const rect = this.canvas.getBoundingClientRect();
-      const pixelX = event.clientX - rect.left;
-      const pixelY = event.clientY - rect.top;
+      const scaleX = this.canvas.width / rect.width;
+      const scaleY = this.canvas.height / rect.height;
+      const pixelX = (event.clientX - rect.left) * scaleX;
+      const pixelY = (event.clientY - rect.top) * scaleY;
       const hexCoord = this.pixelToHexCoord(pixelX, pixelY);
       if (hexCoord) {
         callback(hexCoord);
@@ -1710,7 +1713,6 @@ function main() {
         renderer.render(currentGameMap);
       }
     } catch (error) {
-      console.debug("R\xE9colte impossible:", error);
     }
   });
   regenerateBtn.addEventListener("click", () => {

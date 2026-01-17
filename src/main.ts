@@ -141,7 +141,6 @@ function main(): void {
     } catch (error) {
       // Ignorer silencieusement les erreurs de récolte (hexagone non récoltable)
       // On pourrait afficher un message à l'utilisateur si nécessaire
-      console.debug('Récolte impossible:', error);
     }
   });
 

@@ -170,8 +170,8 @@ export class HexMapRenderer {
     this.ctx.beginPath();
     for (let i = 0; i < 6; i++) {
       const angle = (Math.PI / 3) * i + Math.PI / 6;
-      const hx = x + hexSize * Math.cos(angle) * 0.9;
-      const hy = y + hexSize * Math.sin(angle) * 0.9;
+      const hx = x + hexSize * Math.cos(angle);
+      const hy = y + hexSize * Math.sin(angle);
       if (i === 0) {
         this.ctx.moveTo(hx, hy);
       } else {
@@ -330,59 +330,64 @@ export class HexMapRenderer {
     const grid = this.currentGameMap.getGrid();
 
     // Convertir les coordonnées pixel en coordonnées hexagonales
-    // Formule inverse: 
-    // q = (sqrt(3)/3 * x - 1/3 * y) / size - r/2
+    // Formule inverse de: 
+    // x = sqrt(3) * (q + r/2) * size
+    // y = 3/2 * r * size
+    // 
+    // Inverse:
     // r = (2/3 * y) / size
-    // On utilise une approche itérative pour trouver le bon hexagone
+    // q = x / (sqrt(3) * size) - r/2
     
-    // Convertir pixel -> coordonnées hexagonales approximatives
+    // Convertir pixel canvas -> coordonnées relatives au centre (après offset)
     const x = pixelX - offsetX;
     const y = pixelY - offsetY;
     
-    const q = (Math.sqrt(3) / 3 * x - 1 / 3 * y) / hexSize;
+    // Calculer r d'abord
     const r = (2 / 3 * y) / hexSize;
+    // Puis calculer q
+    const q = x / (Math.sqrt(3) * hexSize) - r / 2;
 
     // Arrondir pour obtenir les coordonnées hexagonales les plus proches
     const hexQ = Math.round(q);
     const hexR = Math.round(r);
     
-    // Vérifier les 3 hexagones les plus proches (arrondi peut donner des erreurs)
+    // Vérifier les 7 candidats possibles (hexagone calculé + ses 6 voisins)
     const candidates = [
       new HexCoord(hexQ, hexR),
       new HexCoord(hexQ + 1, hexR),
-      new HexCoord(hexQ, hexR + 1),
       new HexCoord(hexQ - 1, hexR),
+      new HexCoord(hexQ, hexR + 1),
       new HexCoord(hexQ, hexR - 1),
       new HexCoord(hexQ + 1, hexR - 1),
       new HexCoord(hexQ - 1, hexR + 1),
     ];
-
-    // Trouver le candidat le plus proche du point cliqué et qui existe dans la grille
+    
+    // Trouver le candidat le plus proche du point cliqué
     let closestHex: HexCoord | null = null;
     let minDistance = Infinity;
-
+    const maxDistance = hexSize * 0.9; // Distance maximale (rayon de l'hexagone)
+    
     for (const candidate of candidates) {
       if (!grid.hasHex(candidate)) {
         continue;
       }
-
-      // Calculer la position du centre de l'hexagone
+      
+      // Calculer la position du centre de cet hexagone avec les MÊMES formules que drawHex
       const hexX = offsetX + Math.sqrt(3) * (candidate.q + candidate.r / 2) * hexSize;
       const hexY = offsetY + (3 / 2) * candidate.r * hexSize;
-
+      
       // Calculer la distance depuis le point cliqué
       const dx = pixelX - hexX;
       const dy = pixelY - hexY;
       const distance = Math.sqrt(dx * dx + dy * dy);
-
-      // Si la distance est inférieure au rayon de l'hexagone (à peu près)
-      // L'hexagone a un rayon de hexSize
-      if (distance < hexSize * 0.9 && distance < minDistance) {
+      
+      // Si la distance est inférieure au rayon et est la plus petite
+      if (distance < maxDistance && distance < minDistance) {
         minDistance = distance;
         closestHex = candidate;
       }
     }
-
+    
     return closestHex;
   }
 
@@ -393,8 +398,14 @@ export class HexMapRenderer {
   setOnHexClick(callback: (hexCoord: HexCoord) => void): void {
     this.canvas.addEventListener('click', (event) => {
       const rect = this.canvas.getBoundingClientRect();
-      const pixelX = event.clientX - rect.left;
-      const pixelY = event.clientY - rect.top;
+      
+      // Calculer les coordonnées en tenant compte de l'échelle CSS si le canvas est redimensionné
+      // Si canvas.width/height != rect.width/height, il y a un scaling CSS
+      const scaleX = this.canvas.width / rect.width;
+      const scaleY = this.canvas.height / rect.height;
+      
+      const pixelX = (event.clientX - rect.left) * scaleX;
+      const pixelY = (event.clientY - rect.top) * scaleY;
 
       const hexCoord = this.pixelToHexCoord(pixelX, pixelY);
       if (hexCoord) {
