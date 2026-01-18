@@ -140,6 +140,7 @@ export class ResourceHarvest {
    * @param gameMap - La carte de jeu
    * @param civId - L'identifiant de la civilisation du joueur
    * @param playerResources - L'inventaire du joueur
+   * @param cityVertex - Optionnel: le vertex de la ville qui récolte. Si fourni, cette ville sera utilisée au lieu de chercher automatiquement.
    * @returns Un objet contenant la quantité récoltée et la ville qui a permis la récolte
    * @throws Error si l'hexagone ne peut pas être récolté
    */
@@ -147,20 +148,67 @@ export class ResourceHarvest {
     hexCoord: HexCoord,
     gameMap: GameMap,
     civId: CivilizationId,
-    playerResources: PlayerResources
+    playerResources: PlayerResources,
+    cityVertex?: Vertex
   ): { gain: number; cityVertex: Vertex } {
-    // Vérifier que la récolte est possible
-    if (!this.canHarvest(hexCoord, gameMap, civId)) {
+    // Si un vertex est fourni, vérifier qu'il est valide et adjacent à l'hex
+    let actualCityVertex: Vertex | null = null;
+    
+    if (cityVertex !== undefined) {
+      // Vérifier que le vertex fourni est bien adjacent à l'hex
+      const vertexHexes = cityVertex.getHexes();
+      const isAdjacent = vertexHexes.some(h => h.equals(hexCoord));
+      
+      if (!isAdjacent) {
+        throw new Error(
+          `Le vertex fourni n'est pas adjacent à l'hexagone à ${hexCoord.toString()}.`
+        );
+      }
+      
+      // Vérifier que le vertex a une ville appartenant à la civilisation
+      if (!gameMap.hasCity(cityVertex)) {
+        throw new Error(
+          `Aucune ville trouvée sur le vertex fourni pour l'hexagone à ${hexCoord.toString()}.`
+        );
+      }
+      
+      const owner = gameMap.getCityOwner(cityVertex);
+      if (!owner || !owner.equals(civId)) {
+        throw new Error(
+          `La ville sur le vertex fourni n'appartient pas à la civilisation pour l'hexagone à ${hexCoord.toString()}.`
+        );
+      }
+      
+      actualCityVertex = cityVertex;
+    } else {
+      // Comportement par défaut: chercher la première ville adjacente
+      // Vérifier que la récolte est possible
+      if (!this.canHarvest(hexCoord, gameMap, civId)) {
+        throw new Error(
+          `L'hexagone à ${hexCoord.toString()} ne peut pas être récolté.`
+        );
+      }
+
+      // Obtenir la ville adjacente qui permet la récolte
+      actualCityVertex = this.getAdjacentPlayerCity(hexCoord, gameMap, civId);
+      if (!actualCityVertex) {
+        throw new Error(
+          `Aucune ville adjacente trouvée pour l'hexagone à ${hexCoord.toString()}.`
+        );
+      }
+    }
+    
+    // Vérifier que l'hex est visible et récoltable
+    const grid = gameMap.getGrid();
+    if (!grid.hasHex(hexCoord)) {
       throw new Error(
-        `L'hexagone à ${hexCoord.toString()} ne peut pas être récolté.`
+        `L'hexagone à ${hexCoord.toString()} n'existe pas dans la grille.`
       );
     }
 
-    // Obtenir la ville adjacente qui permet la récolte
-    const cityVertex = this.getAdjacentPlayerCity(hexCoord, gameMap, civId);
-    if (!cityVertex) {
+    if (!gameMap.isHexVisible(hexCoord)) {
       throw new Error(
-        `Aucune ville adjacente trouvée pour l'hexagone à ${hexCoord.toString()}.`
+        `L'hexagone à ${hexCoord.toString()} n'est pas visible.`
       );
     }
 
@@ -188,6 +236,6 @@ export class ResourceHarvest {
       playerResources.addResource(resourceType, gain);
     }
 
-    return { gain, cityVertex };
+    return { gain, cityVertex: actualCityVertex };
   }
 }

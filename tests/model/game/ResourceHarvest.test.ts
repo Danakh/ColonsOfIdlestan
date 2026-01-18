@@ -486,5 +486,82 @@ describe('ResourceHarvest', () => {
         ResourceHarvest.harvest(center, map, civId, playerResources);
       }).toThrow();
     });
+
+    it('devrait permettre à une ville spécifique de récolter un hex même si plusieurs villes sont adjacentes', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+      const northeast = center.neighbor(HexDirection.NE);
+      const southeast = center.neighbor(HexDirection.SE);
+
+      const grid = new HexGrid([
+        new Hex(center),
+        new Hex(north),
+        new Hex(northeast),
+        new Hex(southeast),
+      ]);
+      const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+      map.registerCivilization(civId);
+
+      // Créer deux vertices différents qui partagent l'hex center
+      const vertex1 = Vertex.create(center, north, northeast);
+      const vertex2 = Vertex.create(center, northeast, southeast);
+
+      // Ajouter les deux villes
+      map.addCity(vertex1, civId);
+      map.addCity(vertex2, civId);
+      map.setHexType(center, HexType.Wood);
+
+      const playerResources = new PlayerResources();
+
+      // Récolter avec la première ville
+      const result1 = ResourceHarvest.harvest(center, map, civId, playerResources, vertex1);
+      expect(result1.cityVertex.equals(vertex1)).toBe(true);
+      expect(playerResources.getResource(ResourceType.Wood)).toBe(1);
+
+      // Récolter avec la deuxième ville (même hex)
+      const result2 = ResourceHarvest.harvest(center, map, civId, playerResources, vertex2);
+      expect(result2.cityVertex.equals(vertex2)).toBe(true);
+      expect(playerResources.getResource(ResourceType.Wood)).toBe(2);
+    });
+
+    it('devrait lancer une erreur si le vertex fourni n\'est pas adjacent à l\'hex', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+      const northeast = center.neighbor(HexDirection.NE);
+      
+      // Créer un hex loin de center et un vertex valide autour de cet hex
+      const distantHex = new HexCoord(3, 0);
+      const distantNorth = distantHex.neighbor(HexDirection.N);
+      const distantNortheast = distantHex.neighbor(HexDirection.NE);
+
+      const grid = new HexGrid([
+        new Hex(center),
+        new Hex(north),
+        new Hex(northeast),
+        new Hex(distantHex),
+        new Hex(distantNorth),
+        new Hex(distantNortheast),
+      ]);
+      const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+      map.registerCivilization(civId);
+
+      // Créer une ville sur un vertex qui n'est pas adjacent à center
+      const distantVertex = Vertex.create(distantHex, distantNorth, distantNortheast);
+      map.addCity(distantVertex, civId);
+      map.setHexType(center, HexType.Wood);
+
+      // Créer un vertex adjacent à center pour la ville
+      const adjacentVertex = Vertex.create(center, north, northeast);
+      map.addCity(adjacentVertex, civId);
+
+      const playerResources = new PlayerResources();
+
+      // Essayer de récolter center avec le vertex distant (devrait échouer)
+      expect(() => {
+        ResourceHarvest.harvest(center, map, civId, playerResources, distantVertex);
+      }).toThrow();
+    });
   });
 });

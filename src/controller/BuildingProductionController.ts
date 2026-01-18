@@ -139,8 +139,9 @@ export class BuildingProductionController {
         }
         
         // Effectuer la récolte directement (sans passer par ResourceHarvestController pour éviter le cooldown)
+        // Passer le vertex de la ville pour permettre à plusieurs villes de récolter le même hex
         try {
-          const harvestResult = ResourceHarvest.harvest(hexCoord, map, civId, resources);
+          const harvestResult = ResourceHarvest.harvest(hexCoord, map, civId, resources, city.vertex);
           
           // Convertir le type d'hex en type de ressource
           const resourceType = ResourceHarvest.hexTypeToResourceType(hexType);

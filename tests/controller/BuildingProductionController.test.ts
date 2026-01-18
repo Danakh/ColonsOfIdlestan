@@ -11,6 +11,9 @@ import { HexDirection } from '../../src/model/hex/HexDirection';
 import { City } from '../../src/model/city/City';
 import { BuildingType } from '../../src/model/city/BuildingType';
 import { CityLevel } from '../../src/model/city/CityLevel';
+import { PlayerResources } from '../../src/model/game/PlayerResources';
+import { GameClock } from '../../src/model/game/GameClock';
+import { ResourceType } from '../../src/model/map/ResourceType';
 
 describe('BuildingProductionController', () => {
   describe('isHexAutoHarvested', () => {
@@ -240,6 +243,124 @@ describe('BuildingProductionController', () => {
       // L'hex devrait toujours être récolté (par au moins une ville)
       const result2 = BuildingProductionController.isHexAutoHarvested(center, civId, map);
       expect(result2).toBe(true);
+    });
+  });
+
+  describe('processAutomaticProduction - récolte par deux villes', () => {
+    let map: GameMap;
+    let civId: CivilizationId;
+    let resources: PlayerResources;
+    let gameClock: GameClock;
+    let center: HexCoord;
+    let vertex1: Vertex;
+    let vertex2: Vertex;
+
+    beforeEach(() => {
+      // Créer une grille avec un hex central et deux villes adjacentes
+      center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+      const northeast = center.neighbor(HexDirection.NE);
+      const southeast = center.neighbor(HexDirection.SE);
+
+      const grid = new HexGrid([
+        new Hex(center),
+        new Hex(north),
+        new Hex(northeast),
+        new Hex(southeast),
+      ]);
+      
+      map = new GameMap(grid);
+      civId = CivilizationId.create('civ1');
+      map.registerCivilization(civId);
+
+      // Créer deux vertices différents qui partagent l'hex center
+      vertex1 = Vertex.create(center, north, northeast);
+      vertex2 = Vertex.create(center, northeast, southeast);
+
+      // Ajouter les deux villes
+      map.addCity(vertex1, civId, CityLevel.Colony);
+      map.addCity(vertex2, civId, CityLevel.Colony);
+
+      // Ajouter des bâtiments Sawmill dans les deux villes
+      const city1 = map.getCity(vertex1)!;
+      const city2 = map.getCity(vertex2)!;
+      city1.addBuilding(BuildingType.Sawmill);
+      city2.addBuilding(BuildingType.Sawmill);
+
+      // Définir le type d'hex central comme Wood
+      map.setHexType(center, HexType.Wood);
+
+      resources = new PlayerResources();
+      gameClock = new GameClock();
+    });
+
+    it('devrait permettre à deux villes de récolter automatiquement le même hex', () => {
+      // Initialiser les temps de production pour les deux villes
+      const city1 = map.getCity(vertex1)!;
+      const city2 = map.getCity(vertex2)!;
+      
+      // Définir un temps de production dans le passé pour que les deux villes soient prêtes
+      gameClock.updateTime(2.0);
+      city1.setBuildingProductionTime(BuildingType.Sawmill, 0.5);
+      city2.setBuildingProductionTime(BuildingType.Sawmill, 0.5);
+
+      // Traiter la production automatique
+      const results = BuildingProductionController.processAutomaticProduction(
+        civId,
+        map,
+        resources,
+        gameClock
+      );
+
+      // Les deux villes devraient avoir récolté le même hex
+      expect(results.length).toBe(2);
+      
+      // Vérifier que les deux résultats concernent le même hex
+      expect(results[0].hexCoord.equals(center)).toBe(true);
+      expect(results[1].hexCoord.equals(center)).toBe(true);
+      
+      // Vérifier que les deux villes ont produit
+      const cityVertices = results.map(r => r.cityVertex);
+      expect(cityVertices.some(v => v.equals(vertex1))).toBe(true);
+      expect(cityVertices.some(v => v.equals(vertex2))).toBe(true);
+      
+      // Vérifier que les ressources ont été ajoutées (2 récoltes = 2 bois)
+      expect(resources.getResource(ResourceType.Wood)).toBe(2);
+    });
+
+    it('devrait permettre à deux villes de récolter le même hex à des moments différents', () => {
+      const city1 = map.getCity(vertex1)!;
+      const city2 = map.getCity(vertex2)!;
+      
+      // Première ville prête à t=1.0
+      gameClock.updateTime(1.0);
+      city1.setBuildingProductionTime(BuildingType.Sawmill, 0.0);
+      city2.setBuildingProductionTime(BuildingType.Sawmill, 0.5); // Pas encore prête
+
+      // Première récolte
+      let results = BuildingProductionController.processAutomaticProduction(
+        civId,
+        map,
+        resources,
+        gameClock
+      );
+
+      expect(results.length).toBe(1);
+      expect(results[0].cityVertex.equals(vertex1)).toBe(true);
+      expect(resources.getResource(ResourceType.Wood)).toBe(1);
+
+      // Deuxième ville prête à t=1.5
+      gameClock.updateTime(1.5);
+      results = BuildingProductionController.processAutomaticProduction(
+        civId,
+        map,
+        resources,
+        gameClock
+      );
+
+      expect(results.length).toBe(1);
+      expect(results[0].cityVertex.equals(vertex2)).toBe(true);
+      expect(resources.getResource(ResourceType.Wood)).toBe(2);
     });
   });
 });
