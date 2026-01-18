@@ -1,0 +1,245 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+import { BuildingProductionController } from '../../src/controller/BuildingProductionController';
+import { HexCoord } from '../../src/model/hex/HexCoord';
+import { Vertex } from '../../src/model/hex/Vertex';
+import { GameMap } from '../../src/model/map/GameMap';
+import { CivilizationId } from '../../src/model/map/CivilizationId';
+import { HexType } from '../../src/model/map/HexType';
+import { HexGrid } from '../../src/model/hex/HexGrid';
+import { Hex } from '../../src/model/hex/Hex';
+import { HexDirection } from '../../src/model/hex/HexDirection';
+import { City } from '../../src/model/city/City';
+import { BuildingType } from '../../src/model/city/BuildingType';
+import { CityLevel } from '../../src/model/city/CityLevel';
+
+describe('BuildingProductionController', () => {
+  describe('isHexAutoHarvested', () => {
+    let map: GameMap;
+    let civId: CivilizationId;
+    let otherCivId: CivilizationId;
+    let hexCoord: HexCoord;
+    let vertex: Vertex;
+
+    beforeEach(() => {
+      // Créer une grille avec plusieurs hexagones
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+      const northeast = center.neighbor(HexDirection.NE);
+      const northwest = center.neighbor(HexDirection.NW);
+      const south = center.neighbor(HexDirection.S);
+      const southeast = center.neighbor(HexDirection.SE);
+      const southwest = center.neighbor(HexDirection.SW);
+
+      const grid = new HexGrid([
+        new Hex(center),
+        new Hex(north),
+        new Hex(northeast),
+        new Hex(northwest),
+        new Hex(south),
+        new Hex(southeast),
+        new Hex(southwest),
+      ]);
+      
+      map = new GameMap(grid);
+      civId = CivilizationId.create('civ1');
+      otherCivId = CivilizationId.create('civ2');
+      map.registerCivilization(civId);
+      map.registerCivilization(otherCivId);
+
+      hexCoord = center;
+      vertex = Vertex.create(center, north, northeast);
+    });
+
+    it('devrait retourner false si l\'hex n\'a pas de type', () => {
+      // Pas de type assigné à l'hex
+      const result = BuildingProductionController.isHexAutoHarvested(hexCoord, civId, map);
+      expect(result).toBe(false);
+    });
+
+    it('devrait retourner false si aucune ville n\'est adjacente', () => {
+      map.setHexType(hexCoord, HexType.Wood);
+      
+      const result = BuildingProductionController.isHexAutoHarvested(hexCoord, civId, map);
+      expect(result).toBe(false);
+    });
+
+    it('devrait retourner false si la ville adjacente n\'appartient pas à la civilisation', () => {
+      map.setHexType(hexCoord, HexType.Wood);
+      map.addCity(vertex, otherCivId);
+      
+      const result = BuildingProductionController.isHexAutoHarvested(hexCoord, civId, map);
+      expect(result).toBe(false);
+    });
+
+    it('devrait retourner false si la ville n\'a pas de bâtiment de production de ressources', () => {
+      map.setHexType(hexCoord, HexType.Wood);
+      map.addCity(vertex, civId);
+      
+      // La ville n'a pas de bâtiments
+      const result = BuildingProductionController.isHexAutoHarvested(hexCoord, civId, map);
+      expect(result).toBe(false);
+    });
+
+    it('devrait retourner false si la ville a un bâtiment qui ne récolte pas ce type d\'hex', () => {
+      map.setHexType(hexCoord, HexType.Wood);
+      map.addCity(vertex, civId, CityLevel.Colony);
+      const city = map.getCity(vertex)!;
+      
+      // Ajouter un bâtiment qui récolte un autre type (ex: Mine pour Ore)
+      city.addBuilding(BuildingType.Mine);
+      
+      const result = BuildingProductionController.isHexAutoHarvested(hexCoord, civId, map);
+      expect(result).toBe(false);
+    });
+
+    it('devrait retourner false si la ville a un bâtiment non-producteur (ex: Seaport)', () => {
+      map.setHexType(hexCoord, HexType.Wood);
+      map.addCity(vertex, civId);
+      const city = map.getCity(vertex)!;
+      
+      // Ajouter un bâtiment non-producteur
+      city.addBuilding(BuildingType.Seaport);
+      
+      const result = BuildingProductionController.isHexAutoHarvested(hexCoord, civId, map);
+      expect(result).toBe(false);
+    });
+
+    it('devrait retourner true si la ville a un bâtiment Sawmill adjacent à un hex Wood', () => {
+      map.setHexType(hexCoord, HexType.Wood);
+      map.addCity(vertex, civId, CityLevel.Colony);
+      const city = map.getCity(vertex)!;
+      
+      // Ajouter un Sawmill (qui récolte Wood)
+      city.addBuilding(BuildingType.Sawmill);
+      
+      const result = BuildingProductionController.isHexAutoHarvested(hexCoord, civId, map);
+      expect(result).toBe(true);
+    });
+
+    it('devrait retourner true si la ville a un bâtiment Brickworks adjacent à un hex Brick', () => {
+      map.setHexType(hexCoord, HexType.Brick);
+      map.addCity(vertex, civId, CityLevel.Colony);
+      const city = map.getCity(vertex)!;
+      
+      // Ajouter un Brickworks (qui récolte Brick)
+      city.addBuilding(BuildingType.Brickworks);
+      
+      const result = BuildingProductionController.isHexAutoHarvested(hexCoord, civId, map);
+      expect(result).toBe(true);
+    });
+
+    it('devrait retourner true si la ville a un bâtiment Mill adjacent à un hex Wheat', () => {
+      map.setHexType(hexCoord, HexType.Wheat);
+      map.addCity(vertex, civId, CityLevel.Colony);
+      const city = map.getCity(vertex)!;
+      
+      // Ajouter un Mill (qui récolte Wheat)
+      city.addBuilding(BuildingType.Mill);
+      
+      const result = BuildingProductionController.isHexAutoHarvested(hexCoord, civId, map);
+      expect(result).toBe(true);
+    });
+
+    it('devrait retourner true si la ville a un bâtiment Sheepfold adjacent à un hex Sheep', () => {
+      map.setHexType(hexCoord, HexType.Sheep);
+      map.addCity(vertex, civId, CityLevel.Colony);
+      const city = map.getCity(vertex)!;
+      
+      // Ajouter un Sheepfold (qui récolte Sheep)
+      city.addBuilding(BuildingType.Sheepfold);
+      
+      const result = BuildingProductionController.isHexAutoHarvested(hexCoord, civId, map);
+      expect(result).toBe(true);
+    });
+
+    it('devrait retourner true si la ville a un bâtiment Mine adjacent à un hex Ore', () => {
+      map.setHexType(hexCoord, HexType.Ore);
+      map.addCity(vertex, civId, CityLevel.Colony);
+      const city = map.getCity(vertex)!;
+      
+      // Ajouter un Mine (qui récolte Ore)
+      city.addBuilding(BuildingType.Mine);
+      
+      const result = BuildingProductionController.isHexAutoHarvested(hexCoord, civId, map);
+      expect(result).toBe(true);
+    });
+
+    it('devrait retourner false si l\'hex n\'est pas adjacent au vertex de la ville', () => {
+      // Créer une ville sur un vertex différent
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+      const northeast = center.neighbor(HexDirection.NE);
+      const cityVertex = Vertex.create(center, north, northeast);
+      
+      // Créer un hex loin de la ville
+      const south = center.neighbor(HexDirection.S);
+      const distantHex = south.neighbor(HexDirection.S);
+      
+      // Ajouter l'hex distant à la grille
+      const grid = map.getGrid();
+      const allHexes = [
+        ...Array.from(grid.getAllHexes()),
+        new Hex(distantHex),
+      ];
+      const newGrid = new HexGrid(allHexes);
+      // Note: On ne peut pas modifier la grille directement, donc on recrée la map
+      // Pour ce test, utilisons un hex qui existe déjà mais qui n'est pas adjacent
+      const southeast = center.neighbor(HexDirection.SE);
+      map.setHexType(southeast, HexType.Wood);
+      
+      map.addCity(cityVertex, civId, CityLevel.Colony);
+      const city = map.getCity(cityVertex)!;
+      city.addBuilding(BuildingType.Sawmill);
+      
+      // L'hex southeast n'est pas adjacent au vertex cityVertex (qui utilise center, north, northeast)
+      const result = BuildingProductionController.isHexAutoHarvested(southeast, civId, map);
+      expect(result).toBe(false);
+      
+    });
+
+    it('devrait retourner true même si la ville a plusieurs bâtiments dont un qui correspond', () => {
+      map.setHexType(hexCoord, HexType.Wood);
+      map.addCity(vertex, civId, CityLevel.Colony);
+      const city = map.getCity(vertex)!;
+      
+      // Ajouter plusieurs bâtiments
+      city.addBuilding(BuildingType.Sawmill); // Récolte Wood - correspond !
+      city.addBuilding(BuildingType.Mine);    // Récolte Ore - ne correspond pas
+      city.addBuilding(BuildingType.Seaport); // Ne récolte rien
+      
+      const result = BuildingProductionController.isHexAutoHarvested(hexCoord, civId, map);
+      expect(result).toBe(true);
+    });
+
+    it('devrait fonctionner avec des villes sur différents vertices adjacents au même hex', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+      const northeast = center.neighbor(HexDirection.NE);
+      const southeast = center.neighbor(HexDirection.SE);
+      
+      map.setHexType(center, HexType.Wood);
+      
+      // Créer deux vertices différents qui partagent l'hex center
+      const vertex1 = Vertex.create(center, north, northeast);
+      // Pour vertex2, utilisons center avec deux autres hexagones adjacents valides
+      const vertex2 = Vertex.create(center, northeast, southeast);
+      
+      map.addCity(vertex1, civId, CityLevel.Colony);
+      const city1 = map.getCity(vertex1)!;
+      city1.addBuilding(BuildingType.Sawmill);
+      
+      // Vérifier que l'hex center est récolté par city1
+      const result1 = BuildingProductionController.isHexAutoHarvested(center, civId, map);
+      expect(result1).toBe(true);
+      
+      // Créer une autre ville sur vertex2 (même civilisation)
+      map.addCity(vertex2, civId, CityLevel.Colony);
+      const city2 = map.getCity(vertex2)!;
+      city2.addBuilding(BuildingType.Sawmill);
+      
+      // L'hex devrait toujours être récolté (par au moins une ville)
+      const result2 = BuildingProductionController.isHexAutoHarvested(center, civId, map);
+      expect(result2).toBe(true);
+    });
+  });
+});

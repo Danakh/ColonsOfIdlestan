@@ -232,7 +232,7 @@ export class BuildingProductionController {
     for (const vertex of vertices) {
       // Vérifier si une ville existe sur ce vertex
       const city = map.getCity(vertex);
-      if (!city || city.owner !== civId) {
+      if (!city || !city.owner.equals(civId)) {
         continue;
       }
 
