@@ -128,6 +128,10 @@ export class GameMap {
     // Créer la ville
     const city = new City(vertex, civId, level);
     this.cityMap.set(vertexKey, city);
+    
+    // Recalculer les distances des routes après l'ajout d'une ville
+    // Cela permet de mettre à jour les distances pour tenir compte de la nouvelle ville
+    this.updateRoadDistances(civId);
   }
 
   /**
