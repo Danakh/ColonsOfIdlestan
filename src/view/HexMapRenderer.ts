@@ -83,19 +83,6 @@ export class HexMapRenderer {
     let loadedCount = 0;
     const totalSprites = Object.keys(spriteFiles).length;
 
-    const checkAllLoaded = (): void => {
-      loadedCount++;
-      console.log(`Sprites chargés: ${loadedCount}/${totalSprites}`);
-      if (loadedCount === totalSprites) {
-        this.citySpritesLoaded = true;
-        console.log('Tous les sprites sont chargés !');
-        // Re-rendre si nécessaire
-        if (this.renderCallback) {
-          this.renderCallback();
-        }
-      }
-    };
-
     for (const [level, filename] of Object.entries(spriteFiles)) {
       const levelNum = Number(level) as CityLevel;
       
@@ -104,9 +91,7 @@ export class HexMapRenderer {
         const fullPath = "/assets/sprites/" + filename;
         
         img.onload = () => {
-          console.log(`Sprite chargé avec succès: ${fullPath} pour le niveau ${levelNum}`);
           this.citySprites.set(levelNum, img);
-          checkAllLoaded();
         };
         
         img.onerror = () => {
