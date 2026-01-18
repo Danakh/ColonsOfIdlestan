@@ -6,6 +6,7 @@ import { Edge } from '../model/hex/Edge';
 import { HexType } from '../model/map/HexType';
 import { CivilizationId } from '../model/map/CivilizationId';
 import { City } from '../model/city/City';
+import { CityLevel } from '../model/city/CityLevel';
 
 /**
  * Configuration pour le rendu des hexagones.
@@ -50,6 +51,8 @@ export class HexMapRenderer {
   private currentCivilizationId: CivilizationId | null = null;
   private renderCallback: (() => void) | null = null;
   private harvestedHexes: Map<string, number> = new Map(); // Map<hexCoord.hashCode(), timestamp>
+  private citySprites: Map<CityLevel, HTMLImageElement> = new Map();
+  private citySpritesLoaded: boolean = false;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -59,6 +62,62 @@ export class HexMapRenderer {
     }
     this.ctx = context;
     this.setupMouseMoveHandler();
+    this.loadCitySprites();
+  }
+
+  /**
+   * Charge les sprites SVG des villes.
+   */
+  private loadCitySprites(): void {
+    // Le serveur sert les fichiers depuis la racine du projet
+    // Les sprites sont accessibles via /assets/sprites/ (depuis la racine)
+
+    const spriteFiles: Record<CityLevel, string> = {
+      [CityLevel.Outpost]: 'city-outpost.svg',
+      [CityLevel.Colony]: 'city-colony.svg',
+      [CityLevel.Town]: 'city-town.svg',
+      [CityLevel.Metropolis]: 'city-metropolis.svg',
+      [CityLevel.Capital]: 'city-capital.svg',
+    };
+
+    let loadedCount = 0;
+    const totalSprites = Object.keys(spriteFiles).length;
+
+    const checkAllLoaded = (): void => {
+      loadedCount++;
+      console.log(`Sprites chargés: ${loadedCount}/${totalSprites}`);
+      if (loadedCount === totalSprites) {
+        this.citySpritesLoaded = true;
+        console.log('Tous les sprites sont chargés !');
+        // Re-rendre si nécessaire
+        if (this.renderCallback) {
+          this.renderCallback();
+        }
+      }
+    };
+
+    for (const [level, filename] of Object.entries(spriteFiles)) {
+      const levelNum = Number(level) as CityLevel;
+      
+      const tryLoad = (): void => {
+        const img = new Image();
+        const fullPath = "/assets/sprites/" + filename;
+        
+        img.onload = () => {
+          console.log(`Sprite chargé avec succès: ${fullPath} pour le niveau ${levelNum}`);
+          this.citySprites.set(levelNum, img);
+          checkAllLoaded();
+        };
+        
+        img.onerror = () => {
+          console.warn(`Échec du chargement avec ${fullPath}`);
+        };
+        
+        img.src = fullPath;
+      };
+
+      tryLoad();
+    }
   }
 
   /**
@@ -320,9 +379,12 @@ export class HexMapRenderer {
           // Vérifier si ce vertex a une ville en utilisant le même vertex retourné par la grille
           // Cela garantit que le hashCode correspond
           if (gameMap.hasCity(vertex)) {
+            const city = gameMap.getCity(vertex);
             const isHovered = this.hoveredVertex !== null && this.hoveredVertex.equals(vertex);
             const isSelected = this.selectedVertex !== null && this.selectedVertex.equals(vertex);
-            this.drawCity(vertex, config, isHovered, isSelected);
+            if (city) {
+              this.drawCity(vertex, city, config, isHovered, isSelected);
+            }
           }
         }
       }
@@ -337,22 +399,26 @@ export class HexMapRenderer {
         // Si on trouve une ville dans getAllVertices mais pas dans drawCities,
         // on la dessine quand même
         if (!processedVertices.has(vertexKey)) {
+          const city = gameMap.getCity(vertex);
           const isHovered = this.hoveredVertex !== null && this.hoveredVertex.equals(vertex);
           const isSelected = this.selectedVertex !== null && this.selectedVertex.equals(vertex);
-          this.drawCity(vertex, config, isHovered, isSelected);
+          if (city) {
+            this.drawCity(vertex, city, config, isHovered, isSelected);
+          }
         }
       }
     }
   }
 
   /**
-   * Dessine une ville sur un sommet (petit carré noir).
+   * Dessine une ville sur un sommet avec un sprite correspondant à son niveau.
    * @param vertex - Le sommet où se trouve la ville
+   * @param city - La ville à dessiner
    * @param config - La configuration de rendu
    * @param isHovered - true si la ville est survolée par la souris
    * @param isSelected - true si la ville est sélectionnée
    */
-  private drawCity(vertex: Vertex, config: RenderConfig, isHovered: boolean = false, isSelected: boolean = false): void {
+  private drawCity(vertex: Vertex, city: City, config: RenderConfig, isHovered: boolean = false, isSelected: boolean = false): void {
     const { hexSize, offsetX, offsetY } = config;
     const hexes = vertex.getHexes();
 
@@ -370,53 +436,87 @@ export class HexMapRenderer {
     const centerX = sumX / 3;
     const centerY = sumY / 3;
 
-    // Taille de base de la ville
-    let citySize = 12;
+    // Taille de base du sprite selon le niveau
+    let baseSize = 8 + city.level * 2; // 8, 10, 12, 14, 16 pour les niveaux 0-4
     
     // Agrandir si survolée ou sélectionnée
+    let scale = 1.0;
     if (isHovered || isSelected) {
-      citySize = 16;
+      scale = 1.3;
+    }
+    
+    const citySize = baseSize * scale;
+
+    // Sauvegarder le contexte pour restaurer après le dessin
+    this.ctx.save();
+
+    // Obtenir le sprite correspondant au niveau
+    const sprite = this.citySprites.get(city.level);
+    
+    // Vérifier que le sprite est chargé et prêt
+    const isSpriteReady = sprite && 
+                          this.citySpritesLoaded && 
+                          sprite.complete && 
+                          sprite.naturalWidth > 0;
+    
+    if (isSpriteReady) {
+      // Calculer les dimensions de l'image
+      const spriteWidth = baseSize * scale;
+      const spriteHeight = baseSize * scale;
+
+      // Appliquer la transformation pour le scale et la position
+      this.ctx.translate(centerX, centerY);
+      this.ctx.scale(scale, scale);
+
+      // Dessiner le sprite
+      this.ctx.drawImage(
+        sprite,
+        -baseSize / 2,
+        -baseSize / 2,
+        baseSize,
+        baseSize
+      );
+
+      // Appliquer une teinte de couleur selon l'état (survol ou sélection)
+      if (isSelected) {
+        // Orange pour la sélection : overlay coloré
+        this.ctx.globalCompositeOperation = 'multiply';
+        this.ctx.fillStyle = 'rgba(255, 165, 0, 0.4)'; // Orange semi-transparent
+        this.ctx.fillRect(-baseSize / 2, -baseSize / 2, baseSize, baseSize);
+        this.ctx.globalCompositeOperation = 'source-over';
+      } else if (isHovered) {
+        // Jaune doré pour le survol : overlay coloré
+        this.ctx.globalCompositeOperation = 'multiply';
+        this.ctx.fillStyle = 'rgba(255, 215, 0, 0.3)'; // Jaune doré semi-transparent
+        this.ctx.fillRect(-baseSize / 2, -baseSize / 2, baseSize, baseSize);
+        this.ctx.globalCompositeOperation = 'source-over';
+      }
+    } else {
+      // Fallback : dessiner un carré simple si les sprites ne sont pas encore chargés
+      const fallbackSize = baseSize * scale;
+      let baseColor = '#2C2C2C';
+      if (isSelected) {
+        baseColor = '#FFA500';
+      } else if (isHovered) {
+        baseColor = '#FFD700';
+      }
+      this.ctx.fillStyle = baseColor;
+      this.ctx.fillRect(centerX - fallbackSize / 2, centerY - fallbackSize / 2, fallbackSize, fallbackSize);
     }
 
-    // Couleur selon l'état
+    // Restaurer le contexte
+    this.ctx.restore();
+
+    // Dessiner une bordure si sélectionnée (après le restore pour la taille normale)
     if (isSelected) {
-      // Ville sélectionnée : carré orange avec bordure
-      this.ctx.fillStyle = '#FFA500'; // Orange
-      this.ctx.fillRect(
-        centerX - citySize / 2,
-        centerY - citySize / 2,
-        citySize,
-        citySize
-      );
-      // Bordure noire pour la sélection
       this.ctx.strokeStyle = '#000000';
       this.ctx.lineWidth = 2;
-      this.ctx.strokeRect(
-        centerX - citySize / 2,
-        centerY - citySize / 2,
-        citySize,
-        citySize
-      );
-    } else if (isHovered) {
-      // Ville survolée : carré jaune
-      this.ctx.fillStyle = '#FFFF00'; // Jaune
-      this.ctx.fillRect(
-        centerX - citySize / 2,
-        centerY - citySize / 2,
-        citySize,
-        citySize
-      );
-    } else {
-      // Ville normale : carré noir
-      this.ctx.fillStyle = '#000000';
-      this.ctx.fillRect(
-        centerX - citySize / 2,
-        centerY - citySize / 2,
-        citySize,
-        citySize
-      );
+      this.ctx.beginPath();
+      this.ctx.arc(centerX, centerY, citySize / 2 + 3, 0, Math.PI * 2);
+      this.ctx.stroke();
     }
   }
+
 
   /**
    * Dessine les routes construites sur la carte.
