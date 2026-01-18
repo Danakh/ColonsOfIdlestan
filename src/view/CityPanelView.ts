@@ -1,6 +1,6 @@
 import { City } from '../model/city/City';
 import { CityLevel } from '../model/city/CityLevel';
-import { BuildingType, getBuildingTypeName, getBuildingAction, BUILDING_ACTION_NAMES, BuildingAction } from '../model/city/BuildingType';
+import { BuildingType, getBuildingTypeName, getBuildingAction, BUILDING_ACTION_NAMES, BuildingAction, getAllBuildingTypes, getBuildingCost, getRequiredHexType } from '../model/city/BuildingType';
 import { ResourceType } from '../model/map/ResourceType';
 import { Vertex } from '../model/hex/Vertex';
 import { GameMap } from '../model/map/GameMap';
@@ -261,6 +261,7 @@ export class CityPanelView {
 
   /**
    * Met à jour la liste des bâtiments dans le panneau.
+   * Affiche tous les bâtiments dans un ordre fixe, sans séparer les constructibles des construits.
    */
   private updateBuildingsList(city: City, gameMap: GameMap, vertex: Vertex, playerResources: PlayerResources): void {
     // Mettre à jour le titre avec le nombre de bâtiments construits / maximum
@@ -279,13 +280,29 @@ export class CityPanelView {
       [ResourceType.Ore]: 'Minerai',
     };
 
-    // Obtenir les bâtiments constructibles avec leur statut
-    const buildableBuildings = BuildingController.getBuildableBuildingsWithStatus(city, gameMap, vertex, playerResources);
+    // Obtenir tous les bâtiments possibles dans un ordre fixe
+    const allBuildingTypes = getAllBuildingTypes();
+    const builtBuildings = new Set(city.getBuildings());
 
-    // Afficher d'abord les bâtiments constructibles
-    for (const buildingStatus of buildableBuildings) {
+    // Obtenir les bâtiments constructibles avec leur statut pour vérifier si on peut les construire
+    const buildableBuildingsMap = new Map<BuildingType, { canBuild: boolean; cost: Map<ResourceType, number> }>();
+    const buildableBuildings = BuildingController.getBuildableBuildingsWithStatus(city, gameMap, vertex, playerResources);
+    for (const status of buildableBuildings) {
+      buildableBuildingsMap.set(status.buildingType, { canBuild: status.canBuild, cost: status.cost });
+    }
+
+    // Afficher tous les bâtiments dans l'ordre fixe (seulement ceux qui sont construits ou constructibles)
+    for (const buildingType of allBuildingTypes) {
+      const isBuilt = builtBuildings.has(buildingType);
+      const buildableStatus = buildableBuildingsMap.get(buildingType);
+
+      // Ne pas afficher les bâtiments qui ne sont ni construits ni constructibles
+      if (!isBuilt && !buildableStatus) {
+        continue;
+      }
+
       const item = document.createElement('li');
-      item.className = 'buildable-building';
+      item.className = isBuilt ? 'built-building' : 'buildable-building';
 
       // Conteneur pour le nom et le coût
       const infoContainer = document.createElement('div');
@@ -294,54 +311,25 @@ export class CityPanelView {
       // Nom du bâtiment
       const nameSpan = document.createElement('span');
       nameSpan.className = 'building-name';
-      nameSpan.textContent = getBuildingTypeName(buildingStatus.buildingType);
+      nameSpan.textContent = getBuildingTypeName(buildingType);
       infoContainer.appendChild(nameSpan);
 
-      // Coût affiché en dessous en plus petit
-      const costSpan = document.createElement('span');
-      costSpan.className = 'building-cost';
-      const costParts: string[] = [];
-      for (const [resource, amount] of buildingStatus.cost.entries()) {
-        costParts.push(`${amount} ${resourceNames[resource]}`);
+      // Si le bâtiment n'est pas construit et est constructible, afficher le coût
+      if (!isBuilt && buildableStatus) {
+        const costSpan = document.createElement('span');
+        costSpan.className = 'building-cost';
+        const costParts: string[] = [];
+        for (const [resource, amount] of buildableStatus.cost.entries()) {
+          costParts.push(`${amount} ${resourceNames[resource]}`);
+        }
+        costSpan.textContent = costParts.join(', ');
+        infoContainer.appendChild(costSpan);
       }
-      costSpan.textContent = costParts.join(', ');
-      infoContainer.appendChild(costSpan);
 
       item.appendChild(infoContainer);
 
-      // Bouton de construction
-      const buildBtn = document.createElement('button');
-      buildBtn.className = 'build-btn';
-      buildBtn.textContent = 'Construire';
-      buildBtn.disabled = !buildingStatus.canBuild;
-
-      // Stocker le buildingType dans le bouton pour le gestionnaire d'événement
-      buildBtn.dataset.buildingType = buildingStatus.buildingType;
-
-      item.appendChild(buildBtn);
-      this.cityBuildingsList.appendChild(item);
-    }
-
-    // Afficher ensuite les bâtiments déjà construits
-    const buildings = city.getBuildings();
-    if (buildings.length > 0) {
-      for (const buildingType of buildings) {
-        const item = document.createElement('li');
-        item.className = 'built-building';
-
-        // Conteneur pour le nom
-        const infoContainer = document.createElement('div');
-        infoContainer.className = 'building-info';
-
-        // Nom du bâtiment
-        const nameSpan = document.createElement('span');
-        nameSpan.className = 'building-name';
-        nameSpan.textContent = getBuildingTypeName(buildingType);
-        infoContainer.appendChild(nameSpan);
-
-        item.appendChild(infoContainer);
-
-        // Bouton d'action si le bâtiment en a une
+      // Si le bâtiment est construit, afficher les boutons d'action
+      if (isBuilt) {
         const buildingAction = getBuildingAction(buildingType);
         if (buildingAction !== null) {
           const actionBtn = document.createElement('button');
@@ -362,17 +350,22 @@ export class CityPanelView {
 
           item.appendChild(actionBtn);
         }
+      } else {
+        // Si le bâtiment n'est pas construit, afficher le bouton de construction s'il est constructible
+        if (buildableStatus) {
+          const buildBtn = document.createElement('button');
+          buildBtn.className = 'build-btn';
+          buildBtn.textContent = 'Construire';
+          buildBtn.disabled = !buildableStatus.canBuild;
 
-        this.cityBuildingsList.appendChild(item);
+          // Stocker le buildingType dans le bouton pour le gestionnaire d'événement
+          buildBtn.dataset.buildingType = buildingType;
+
+          item.appendChild(buildBtn);
+        }
       }
-    }
 
-    // Si aucun bâtiment constructible et aucun construit
-    if (buildableBuildings.length === 0 && buildings.length === 0) {
-      const emptyItem = document.createElement('li');
-      emptyItem.className = 'empty';
-      emptyItem.textContent = 'Aucun bâtiment disponible';
-      this.cityBuildingsList.appendChild(emptyItem);
+      this.cityBuildingsList.appendChild(item);
     }
   }
 
