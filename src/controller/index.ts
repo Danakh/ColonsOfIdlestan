@@ -9,3 +9,4 @@ export { RoadController } from './RoadController';
 export { ResourceHarvestController } from './ResourceHarvestController';
 export { BuildingController, type BuildableBuildingStatus } from './BuildingController';
 export { TradeController } from './TradeController';
+export { BuildingProductionController, type BuildingProductionResult } from './BuildingProductionController';

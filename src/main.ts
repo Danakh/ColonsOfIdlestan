@@ -9,12 +9,14 @@ import { RoadController } from './controller/RoadController';
 import { ResourceHarvestController } from './controller/ResourceHarvestController';
 import { BuildingController } from './controller/BuildingController';
 import { TradeController } from './controller/TradeController';
+import { BuildingProductionController } from './controller/BuildingProductionController';
 import { ResourceType } from './model/map/ResourceType';
 import { HexCoord } from './model/hex/HexCoord';
 import { Edge } from './model/hex/Edge';
 import { Vertex } from './model/hex/Vertex';
 import { BuildingType, BuildingAction } from './model/city/BuildingType';
 import { City } from './model/city/City';
+import { GameMap } from './model/map/GameMap';
 import { APP_VERSION, APP_NAME } from './config/version';
 
 /**
@@ -276,7 +278,7 @@ function main(): void {
     },
   });
 
-  // Gérer les événements personnalisés du panneau
+  // Gérer les événements personnalisés du panneau de ville
   const panelElement = cityPanelView.getPanelElement();
   
   panelElement.addEventListener('buildBuilding', ((e: CustomEvent) => {
@@ -289,9 +291,7 @@ function main(): void {
     if (!city) {
       return;
     }
-    if (cityPanelView.callbacks.onBuildBuilding) {
-      cityPanelView.callbacks.onBuildBuilding(e.detail.buildingType, city, currentGameMap, selectedVertex);
-    }
+    cityPanelView.handleBuildBuilding(e.detail.buildingType, city, currentGameMap, selectedVertex);
   }) as EventListener);
 
   panelElement.addEventListener('buildingAction', ((e: CustomEvent) => {
@@ -304,9 +304,7 @@ function main(): void {
     if (!city) {
       return;
     }
-    if (cityPanelView.callbacks.onBuildingAction) {
-      cityPanelView.callbacks.onBuildingAction(e.detail.buildingAction, e.detail.buildingType, city);
-    }
+    cityPanelView.handleBuildingAction(e.detail.buildingAction, e.detail.buildingType, city);
   }) as EventListener);
 
   // Configurer le callback de rendu pour la surbrillance au survol et la mise à jour du panneau
@@ -429,6 +427,56 @@ function main(): void {
 
   // Initialiser le panneau (masqué par défaut)
   updateCityPanel();
+
+  // Gérer la production automatique des bâtiments de ressources
+  let productionIntervalId: number | null = null;
+
+  /**
+   * Traite la production automatique des bâtiments et déclenche les animations.
+   */
+  function processAutomaticBuildingProduction(): void {
+    const currentGameMap = game.getGameMap();
+    if (!currentGameMap) {
+      return;
+    }
+
+    const civId = game.getPlayerCivilizationId();
+    const playerResources = game.getPlayerResources();
+
+    // Traiter la production automatique via le contrôleur
+    const productionResults = BuildingProductionController.processAutomaticProduction(
+      civId,
+      currentGameMap,
+      playerResources
+    );
+
+    // Si des productions ont eu lieu, déclencher les animations et mettre à jour l'affichage
+    if (productionResults.length > 0) {
+      // Déclencher les animations pour chaque production
+      for (const result of productionResults) {
+        // Effet visuel sur l'hex récolté
+        renderer.triggerHarvestEffect(result.hexCoord);
+        
+        // Animation de la particule de ressource vers la ville
+        renderer.triggerResourceHarvestAnimation(
+          result.hexCoord,
+          result.resourceType,
+          result.cityVertex
+        );
+      }
+
+      // Mettre à jour l'affichage des ressources
+      updateResourcesDisplay();
+    }
+  }
+
+  // Démarrer la boucle de production automatique (vérifie toutes les 500ms)
+  productionIntervalId = window.setInterval(() => {
+    processAutomaticBuildingProduction();
+  }, 500);
+
+  // Nettoyer l'intervalle si nécessaire (par exemple lors de la régénération)
+  // Note: pour l'instant, on garde l'intervalle actif pendant toute la session
 }
 
 // Lancer l'application quand le DOM est prêt

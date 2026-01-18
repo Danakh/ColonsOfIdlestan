@@ -74,6 +74,31 @@ export class CityPanelView {
   }
 
   /**
+   * Traite un événement de construction de bâtiment.
+   * @param buildingType - Le type de bâtiment à construire
+   * @param city - La ville
+   * @param gameMap - La carte de jeu
+   * @param vertex - Le sommet de la ville
+   */
+  handleBuildBuilding(buildingType: BuildingType, city: City, gameMap: GameMap, vertex: Vertex): void {
+    if (this.callbacks.onBuildBuilding) {
+      this.callbacks.onBuildBuilding(buildingType, city, gameMap, vertex);
+    }
+  }
+
+  /**
+   * Traite un événement d'action sur un bâtiment.
+   * @param action - L'action à effectuer
+   * @param buildingType - Le type de bâtiment
+   * @param city - La ville
+   */
+  handleBuildingAction(action: BuildingAction, buildingType: BuildingType, city: City): void {
+    if (this.callbacks.onBuildingAction) {
+      this.callbacks.onBuildingAction(action, buildingType, city);
+    }
+  }
+
+  /**
    * Configure les gestionnaires d'événements pour les boutons.
    */
   private setupEventListeners(): void {
