@@ -83,6 +83,7 @@ export class HexMapRenderer {
   private hexTexturesLoaded: boolean = false;
   private resourceParticles: ResourceParticle[] = [];
   private animationFrameId: number | null = null;
+  private cooldownAnimationFrameId: number | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -296,6 +297,74 @@ export class HexMapRenderer {
 
     // Dessiner les particules de ressources animées (par-dessus tout le reste)
     this.drawResourceParticles();
+    
+    // Vérifier s'il y a des cooldowns actifs et programmer un nouveau rendu si nécessaire
+    this.scheduleCooldownAnimation(gameMap);
+  }
+
+  /**
+   * Vérifie s'il y a des cooldowns actifs sur la carte et programme un nouveau rendu si nécessaire.
+   * Cette méthode continue à programmer des frames jusqu'à ce qu'il n'y ait plus de cooldowns actifs.
+   */
+  private scheduleCooldownAnimation(gameMap: GameMap): void {
+    // Vérifier s'il y a des cooldowns actifs
+    const grid = gameMap.getGrid();
+    const allHexes = grid.getAllHexes();
+    const visibleHexes = allHexes.filter(hex => gameMap.isHexVisible(hex.coord));
+    
+    const hasActiveCooldown = visibleHexes.some(hex => {
+      const remainingCooldown = ResourceHarvestController.getRemainingCooldown(hex.coord);
+      return remainingCooldown > 0;
+    });
+    
+    if (hasActiveCooldown) {
+      // Il y a des cooldowns actifs, programmer un nouveau rendu
+      // Ne programmer qu'une seule fois pour éviter les multiples animations en parallèle
+      if (this.cooldownAnimationFrameId === null) {
+        const animate = () => {
+          // Vérifier à nouveau s'il y a encore des cooldowns actifs en recalculant les hexagones visibles
+          if (!this.currentGameMap) {
+            this.cooldownAnimationFrameId = null;
+            return;
+          }
+          
+          const currentGrid = this.currentGameMap.getGrid();
+          const currentAllHexes = currentGrid.getAllHexes();
+          const currentVisibleHexes = currentAllHexes.filter(hex => this.currentGameMap!.isHexVisible(hex.coord));
+          
+          // Toujours re-rendre avant de vérifier si on continue, pour mettre à jour les timers
+          if (this.currentCivilizationId !== null) {
+            if (this.renderCallback) {
+              this.renderCallback();
+            } else {
+              this.render(this.currentGameMap, this.currentCivilizationId);
+            }
+          }
+          
+          // Vérifier s'il y a encore des cooldowns actifs après le rendu
+          const stillHasActiveCooldown = currentVisibleHexes.some(hex => {
+            const remainingCooldown = ResourceHarvestController.getRemainingCooldown(hex.coord);
+            return remainingCooldown > 0;
+          });
+          
+          if (stillHasActiveCooldown) {
+            // Programmer le prochain frame
+            this.cooldownAnimationFrameId = requestAnimationFrame(animate);
+          } else {
+            // Plus de cooldowns actifs, arrêter l'animation
+            // (le dernier rendu a déjà été fait juste avant)
+            this.cooldownAnimationFrameId = null;
+          }
+        };
+        this.cooldownAnimationFrameId = requestAnimationFrame(animate);
+      }
+    } else {
+      // Plus de cooldowns actifs, annuler l'animation si elle existe
+      if (this.cooldownAnimationFrameId !== null) {
+        cancelAnimationFrame(this.cooldownAnimationFrameId);
+        this.cooldownAnimationFrameId = null;
+      }
+    }
   }
 
   /**
