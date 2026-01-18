@@ -27,6 +27,7 @@ export class CityPanelView {
   private cityPanel: HTMLElement;
   private cityPanelTitle: HTMLHeadingElement;
   private cityBuildingsList: HTMLUListElement;
+  private cityBuildingsTitle: HTMLHeadingElement;
   private callbacks: CityPanelCallbacks = {};
   private renderer: HexMapRenderer | null = null;
 
@@ -34,6 +35,7 @@ export class CityPanelView {
     const panel = document.getElementById(cityPanelId);
     const title = document.getElementById('city-panel-title') as HTMLHeadingElement;
     const buildingsList = document.getElementById('city-buildings-list') as HTMLUListElement;
+    const buildingsTitle = document.querySelector('#city-buildings-section h3') as HTMLHeadingElement;
 
     if (!panel) {
       throw new Error(`Élément avec l'id "${cityPanelId}" introuvable`);
@@ -44,10 +46,14 @@ export class CityPanelView {
     if (!buildingsList) {
       throw new Error('Élément avec l\'id "city-buildings-list" introuvable');
     }
+    if (!buildingsTitle) {
+      throw new Error('Titre "Bâtiments" introuvable');
+    }
 
     this.cityPanel = panel;
     this.cityPanelTitle = title;
     this.cityBuildingsList = buildingsList;
+    this.cityBuildingsTitle = buildingsTitle;
 
     // Configurer les gestionnaires d'événements
     this.setupEventListeners();
@@ -186,6 +192,11 @@ export class CityPanelView {
    * Met à jour la liste des bâtiments dans le panneau.
    */
   private updateBuildingsList(city: City, playerResources: PlayerResources): void {
+    // Mettre à jour le titre avec le nombre de bâtiments construits / maximum
+    const buildingCount = city.getBuildingCount();
+    const maxBuildings = city.getMaxBuildings();
+    this.cityBuildingsTitle.textContent = `Bâtiments ${buildingCount}/${maxBuildings}`;
+
     this.cityBuildingsList.innerHTML = '';
 
     // Noms des ressources en français pour l'affichage

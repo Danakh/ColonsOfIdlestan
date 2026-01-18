@@ -35,6 +35,7 @@ function main(): void {
   const settingsBtn = document.getElementById('settings-btn') as HTMLButtonElement;
   const settingsMenu = document.getElementById('settings-menu') as HTMLElement;
   const regenerateBtn = document.getElementById('regenerate-btn') as HTMLButtonElement;
+  const cheatBtn = document.getElementById('cheat-btn') as HTMLButtonElement;
   const resourcesList = document.getElementById('resources-list') as HTMLDivElement;
   // Créer la vue du panneau de ville
   const cityPanelView = new CityPanelView('city-panel');
@@ -56,6 +57,10 @@ function main(): void {
 
   if (!regenerateBtn) {
     throw new Error('Bouton de régénération introuvable');
+  }
+
+  if (!cheatBtn) {
+    throw new Error('Bouton cheat introuvable');
   }
 
   if (!resourcesList) {
@@ -399,6 +404,24 @@ function main(): void {
       updateResourcesDisplay(); // Réinitialiser l'affichage des ressources
       updateCityPanel(); // Masquer le panneau de la ville
     }
+    // Fermer le menu après l'action
+    settingsMenu.classList.add('hidden');
+  });
+
+  // Gérer le bouton cheat dans le menu
+  cheatBtn.addEventListener('click', () => {
+    const playerResources = game.getPlayerResources();
+    
+    // Ajouter 100 ressources de chaque type
+    playerResources.addResource(ResourceType.Wood, 100);
+    playerResources.addResource(ResourceType.Brick, 100);
+    playerResources.addResource(ResourceType.Wheat, 100);
+    playerResources.addResource(ResourceType.Sheep, 100);
+    playerResources.addResource(ResourceType.Ore, 100);
+    
+    // Mettre à jour l'affichage des ressources
+    updateResourcesDisplay();
+    
     // Fermer le menu après l'action
     settingsMenu.classList.add('hidden');
   });
