@@ -347,6 +347,74 @@ describe('GameMap', () => {
       expect(map.isHexVisible(northeast)).toBe(true);
       expect(map.isHexVisible(southeast)).toBe(true);
     });
+
+    it('devrait rendre un hexagone d\'eau visible s\'il touche un hexagone terrestre visible', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+      const northeast = center.neighbor(HexDirection.NE);
+      const waterHex = center.neighbor(HexDirection.SE);
+
+      const grid = new HexGrid([
+        new Hex(center),
+        new Hex(north),
+        new Hex(northeast),
+        new Hex(waterHex),
+      ]);
+      const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+      map.registerCivilization(civId);
+
+      // Définir le type des hexagones
+      map.setHexType(center, HexType.Wood);
+      map.setHexType(north, HexType.Brick);
+      map.setHexType(northeast, HexType.Wheat);
+      map.setHexType(waterHex, HexType.Water);
+
+      // Ajouter une ville sur le vertex (center, north, northeast) pour rendre center visible
+      const vertex = Vertex.create(center, north, northeast);
+      map.addCity(vertex, civId);
+
+      // L'hexagone terrestre (center) devrait être visible grâce à la ville
+      expect(map.isHexVisible(center)).toBe(true);
+      
+      // L'hexagone d'eau (waterHex) devrait être visible car il touche center qui est visible
+      expect(map.isHexVisible(waterHex)).toBe(true);
+    });
+
+    it('ne devrait pas rendre un hexagone d\'eau visible s\'il ne touche pas d\'hexagone terrestre visible', () => {
+      const center = new HexCoord(0, 0);
+      const isolated = new HexCoord(10, 10);
+      const waterHex = isolated.neighbor(HexDirection.N);
+
+      const grid = new HexGrid([
+        new Hex(center),
+        new Hex(isolated),
+        new Hex(waterHex),
+      ]);
+      const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+      map.registerCivilization(civId);
+
+      // Définir le type des hexagones
+      map.setHexType(center, HexType.Wood);
+      map.setHexType(isolated, HexType.Desert);
+      map.setHexType(waterHex, HexType.Water);
+
+      // Ajouter une ville sur center pour le rendre visible
+      const north = center.neighbor(HexDirection.N);
+      const northeast = center.neighbor(HexDirection.NE);
+      const vertex = Vertex.create(center, north, northeast);
+      map.addCity(vertex, civId);
+
+      // Center devrait être visible
+      expect(map.isHexVisible(center)).toBe(true);
+      
+      // Isolated ne devrait pas être visible (pas de ville ni route)
+      expect(map.isHexVisible(isolated)).toBe(false);
+      
+      // L'hexagone d'eau ne devrait pas être visible car il touche isolated qui n'est pas visible
+      expect(map.isHexVisible(waterHex)).toBe(false);
+    });
   });
 
   describe('isolation des mutations', () => {

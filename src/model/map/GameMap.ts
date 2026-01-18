@@ -495,8 +495,8 @@ export class GameMap {
   /**
    * Détermine si un hexagone est visible.
    * 
-   * Un hexagone est visible si au moins un de ses sommets a une ville ou une route connectée.
-   * Un hexagone sans ville ni route adjacente n'est pas visible.
+   * Un hexagone terrestre est visible si au moins un de ses sommets a une ville ou une route connectée.
+   * Un hexagone d'eau est visible s'il touche au moins un hexagone terrestre visible.
    * 
    * @param hex - L'hexagone ou sa coordonnée
    * @returns true si l'hexagone est visible, false sinon
@@ -509,6 +509,40 @@ export class GameMap {
       return false;
     }
 
+    const hexType = this.getHexType(coord);
+    
+    // Si c'est un hexagone d'eau, vérifier si un voisin terrestre est visible
+    if (hexType === HexType.Water) {
+      // Obtenir tous les voisins de cet hexagone
+      const neighbors = this.grid.getNeighbors(coord);
+      
+      // Vérifier si au moins un voisin terrestre (non-Water) est visible
+      for (const neighbor of neighbors) {
+        const neighborType = this.getHexType(neighbor.coord);
+        // Ignorer les hexagones d'eau
+        if (neighborType !== HexType.Water && neighborType !== undefined) {
+          // Vérifier récursivement si ce voisin terrestre est visible
+          // Mais éviter la récursion infinie en vérifiant directement
+          if (this.isTerrestrialHexVisible(neighbor.coord)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    // Pour les hexagones terrestres, utiliser la logique classique
+    return this.isTerrestrialHexVisible(coord);
+  }
+
+  /**
+   * Détermine si un hexagone terrestre est visible.
+   * Un hexagone terrestre est visible si au moins un de ses sommets a une ville ou une route connectée.
+   * 
+   * @param coord - La coordonnée de l'hexagone
+   * @returns true si l'hexagone terrestre est visible, false sinon
+   */
+  private isTerrestrialHexVisible(coord: HexCoord): boolean {
     // Obtenir tous les sommets de cet hexagone
     const vertices = this.grid.getVerticesForHex(coord);
     
