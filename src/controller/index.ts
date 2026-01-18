@@ -8,3 +8,4 @@ export { MapGenerator, type MapGeneratorConfig } from './MapGenerator';
 export { RoadController } from './RoadController';
 export { ResourceHarvestController } from './ResourceHarvestController';
 export { BuildingController, type BuildableBuildingStatus } from './BuildingController';
+export { TradeController } from './TradeController';

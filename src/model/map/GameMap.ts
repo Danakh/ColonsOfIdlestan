@@ -195,6 +195,21 @@ export class GameMap {
   }
 
   /**
+   * Retourne toutes les villes appartenant à une civilisation donnée.
+   * @param civId - L'identifiant de la civilisation
+   * @returns Un tableau des villes appartenant à cette civilisation
+   */
+  getCitiesByCivilization(civId: CivilizationId): City[] {
+    const cities: City[] = [];
+    for (const city of this.cityMap.values()) {
+      if (city.owner.equals(civId)) {
+        cities.push(city);
+      }
+    }
+    return cities;
+  }
+
+  /**
    * Améliore une ville au niveau suivant.
    * @param vertex - Le sommet où se trouve la ville à améliorer
    * @throws Error si aucune ville n'existe sur ce sommet

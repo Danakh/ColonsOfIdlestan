@@ -1,5 +1,6 @@
 import { MainGame } from './application/MainGame';
 import { HexMapRenderer } from './view/HexMapRenderer';
+import { CityPanelView } from './view/CityPanelView';
 import { ResourceHarvest } from './model/game/ResourceHarvest';
 import { RoadConstruction } from './model/game/RoadConstruction';
 import { RoadController } from './controller/RoadController';
@@ -9,9 +10,8 @@ import { ResourceType } from './model/map/ResourceType';
 import { HexCoord } from './model/hex/HexCoord';
 import { Edge } from './model/hex/Edge';
 import { Vertex } from './model/hex/Vertex';
+import { BuildingType, BuildingAction } from './model/city/BuildingType';
 import { City } from './model/city/City';
-import { BuildingType, getBuildingTypeName, getBuildingAction, BUILDING_ACTION_NAMES, BuildingAction } from './model/city/BuildingType';
-import { CityLevel } from './model/city/CityLevel';
 import { APP_VERSION, APP_NAME } from './config/version';
 
 /**
@@ -33,9 +33,8 @@ function main(): void {
   const settingsMenu = document.getElementById('settings-menu') as HTMLElement;
   const regenerateBtn = document.getElementById('regenerate-btn') as HTMLButtonElement;
   const resourcesList = document.getElementById('resources-list') as HTMLDivElement;
-  const cityPanel = document.getElementById('city-panel') as HTMLElement;
-  const cityPanelTitle = document.getElementById('city-panel-title') as HTMLHeadingElement;
-  const cityBuildingsList = document.getElementById('city-buildings-list') as HTMLUListElement;
+  // Créer la vue du panneau de ville
+  const cityPanelView = new CityPanelView('city-panel');
 
   if (!canvas) {
     throw new Error('Canvas introuvable');
@@ -62,6 +61,9 @@ function main(): void {
 
   // Créer le renderer
   const renderer = new HexMapRenderer(canvas);
+  
+  // Configurer le renderer pour le panneau de ville
+  cityPanelView.setRenderer(renderer);
   
   // Redimensionner le canvas au chargement et au redimensionnement
   renderer.resize();
@@ -152,181 +154,84 @@ function main(): void {
   function updateCityPanel(): void {
     const selectedVertex = renderer.getSelectedVertex();
     const currentGameMap = game.getGameMap();
+    const city = selectedVertex && currentGameMap && currentGameMap.hasCity(selectedVertex)
+      ? currentGameMap.getCity(selectedVertex) || null
+      : null;
+    const playerResources = game.getPlayerResources();
 
+    cityPanelView.update(selectedVertex, currentGameMap, city, playerResources);
+  }
+
+  // Configurer les callbacks du panneau de ville
+  cityPanelView.setCallbacks({
+    onBuildBuilding: (buildingType: BuildingType, city: City, gameMap: GameMap, vertex: Vertex) => {
+      const playerResources = game.getPlayerResources();
+      try {
+        BuildingController.buildBuilding(buildingType, city, gameMap, vertex, playerResources);
+        updateResourcesDisplay();
+        updateCityPanel();
+        const civId = game.getPlayerCivilizationId();
+        renderer.render(gameMap, civId);
+      } catch (error) {
+        console.error('Erreur lors de la construction du bâtiment:', error);
+      }
+    },
+    onBuildingAction: (action: BuildingAction, buildingType: BuildingType, city: City) => {
+      try {
+        if (action === BuildingAction.Upgrade) {
+          if (!city.canUpgrade()) {
+            return;
+          }
+          city.upgrade();
+        } else if (action === BuildingAction.Trade) {
+          // TODO: Implémenter la logique de commerce
+          console.log('Commerce - à implémenter');
+          return;
+        }
+        updateCityPanel();
+        const currentGameMap = game.getGameMap();
+        if (currentGameMap) {
+          const civId = game.getPlayerCivilizationId();
+          renderer.render(currentGameMap, civId);
+        }
+      } catch (error) {
+        console.error(`Erreur lors de l'action ${action}:`, error);
+      }
+    },
+  });
+
+  // Gérer les événements personnalisés du panneau
+  const panelElement = cityPanelView.getPanelElement();
+  
+  panelElement.addEventListener('buildBuilding', ((e: CustomEvent) => {
+    const selectedVertex = renderer.getSelectedVertex();
+    const currentGameMap = game.getGameMap();
     if (!selectedVertex || !currentGameMap || !currentGameMap.hasCity(selectedVertex)) {
-      // Masquer le panneau si aucune ville n'est sélectionnée
-      cityPanel.classList.add('hidden');
       return;
     }
-
-    // Afficher le panneau (l'animation CSS gère la transition)
-    cityPanel.classList.remove('hidden');
-
-    // Obtenir la ville
     const city = currentGameMap.getCity(selectedVertex);
     if (!city) {
-      cityPanel.classList.add('hidden');
       return;
     }
+    if (cityPanelView.callbacks.onBuildBuilding) {
+      cityPanelView.callbacks.onBuildBuilding(e.detail.buildingType, city, currentGameMap, selectedVertex);
+    }
+  }) as EventListener);
 
-    // Noms des niveaux de ville en français
-    const cityLevelNames: Record<CityLevel, string> = {
-      [CityLevel.Outpost]: 'Avant-poste',
-      [CityLevel.Colony]: 'Colonie',
-      [CityLevel.Town]: 'Ville',
-      [CityLevel.Metropolis]: 'Métropole',
-      [CityLevel.Capital]: 'Capitale',
-    };
-
-    // Mettre à jour le titre avec le sprite
-    const levelName = cityLevelNames[city.level] || `Niveau ${city.level}`;
-    
-    // Vider le titre
-    cityPanelTitle.innerHTML = '';
-    
-    // Ajouter le sprite si disponible
-    const sprite = renderer.getCitySprite(city.level);
-    console.log(`Sprite pour niveau ${city.level}:`, sprite ? 'trouvé' : 'non trouvé');
-    console.log(`Sprites chargés: ${renderer.areCitySpritesLoaded()}`);
-    if (sprite) {
-      console.log(`Sprite complete: ${sprite.complete}, naturalWidth: ${sprite.naturalWidth}, src: ${sprite.src}`);
+  panelElement.addEventListener('buildingAction', ((e: CustomEvent) => {
+    const selectedVertex = renderer.getSelectedVertex();
+    const currentGameMap = game.getGameMap();
+    if (!selectedVertex || !currentGameMap || !currentGameMap.hasCity(selectedVertex)) {
+      return;
     }
-    
-    if (sprite && sprite.complete && sprite.naturalWidth > 0) {
-      const spriteImg = document.createElement('img');
-      spriteImg.src = sprite.src;
-      spriteImg.style.width = '32px';
-      spriteImg.style.height = '32px';
-      spriteImg.style.marginRight = '8px';
-      spriteImg.style.verticalAlign = 'middle';
-      spriteImg.style.display = 'inline-block';
-      spriteImg.alt = levelName;
-      cityPanelTitle.appendChild(spriteImg);
-      console.log('Sprite ajouté au panneau');
-    } else {
-      console.warn(`Impossible d'afficher le sprite pour le niveau ${city.level}`, {
-        sprite: !!sprite,
-        complete: sprite?.complete,
-        naturalWidth: sprite?.naturalWidth,
-        src: sprite?.src
-      });
+    const city = currentGameMap.getCity(selectedVertex);
+    if (!city) {
+      return;
     }
-    
-    // Ajouter le nom de la ville
-    const nameSpan = document.createElement('span');
-    nameSpan.textContent = levelName;
-    cityPanelTitle.appendChild(nameSpan);
-
-    // Mettre à jour la liste des bâtiments
-    cityBuildingsList.innerHTML = '';
-    
-    const playerResources = game.getPlayerResources();
-    
-    // Noms des ressources en français pour l'affichage
-    const resourceNames: Record<ResourceType, string> = {
-      [ResourceType.Wood]: 'Bois',
-      [ResourceType.Brick]: 'Brique',
-      [ResourceType.Wheat]: 'Blé',
-      [ResourceType.Sheep]: 'Mouton',
-      [ResourceType.Ore]: 'Minerai',
-    };
-
-    // Obtenir les bâtiments constructibles avec leur statut
-    const buildableBuildings = BuildingController.getBuildableBuildingsWithStatus(city, playerResources);
-    
-    // Afficher d'abord les bâtiments constructibles
-    for (const buildingStatus of buildableBuildings) {
-      const item = document.createElement('li');
-      item.className = 'buildable-building';
-      
-      // Conteneur pour le nom et le coût
-      const infoContainer = document.createElement('div');
-      infoContainer.className = 'building-info';
-      
-      // Nom du bâtiment
-      const nameSpan = document.createElement('span');
-      nameSpan.className = 'building-name';
-      nameSpan.textContent = getBuildingTypeName(buildingStatus.buildingType);
-      infoContainer.appendChild(nameSpan);
-      
-      // Coût affiché en dessous en plus petit
-      const costSpan = document.createElement('span');
-      costSpan.className = 'building-cost';
-      const costParts: string[] = [];
-      for (const [resource, amount] of buildingStatus.cost.entries()) {
-        costParts.push(`${amount} ${resourceNames[resource]}`);
-      }
-      costSpan.textContent = costParts.join(', ');
-      infoContainer.appendChild(costSpan);
-      
-      item.appendChild(infoContainer);
-      
-      // Bouton de construction
-      const buildBtn = document.createElement('button');
-      buildBtn.className = 'build-btn';
-      buildBtn.textContent = 'Construire';
-      buildBtn.disabled = !buildingStatus.canBuild;
-      
-      // Stocker le buildingType dans le bouton pour le gestionnaire d'événement
-      buildBtn.dataset.buildingType = buildingStatus.buildingType;
-      
-      item.appendChild(buildBtn);
-      cityBuildingsList.appendChild(item);
+    if (cityPanelView.callbacks.onBuildingAction) {
+      cityPanelView.callbacks.onBuildingAction(e.detail.buildingAction, e.detail.buildingType, city);
     }
-    
-    // Afficher ensuite les bâtiments déjà construits
-    const buildings = city.getBuildings();
-    if (buildings.length > 0) {
-      for (const buildingType of buildings) {
-        const item = document.createElement('li');
-        item.className = 'built-building';
-        
-        // Conteneur pour le nom
-        const infoContainer = document.createElement('div');
-        infoContainer.className = 'building-info';
-        
-        // Nom du bâtiment
-        const nameSpan = document.createElement('span');
-        nameSpan.className = 'building-name';
-        nameSpan.textContent = getBuildingTypeName(buildingType);
-        infoContainer.appendChild(nameSpan);
-        
-        item.appendChild(infoContainer);
-        
-        // Bouton d'action si le bâtiment en a une
-        const buildingAction = getBuildingAction(buildingType);
-        if (buildingAction !== null) {
-          const actionBtn = document.createElement('button');
-          actionBtn.className = 'building-action-btn';
-          actionBtn.textContent = BUILDING_ACTION_NAMES[buildingAction];
-          
-          // Désactiver le bouton d'amélioration si la ville ne peut pas être améliorée
-          if (buildingAction === BuildingAction.Upgrade) {
-            actionBtn.disabled = !city.canUpgrade();
-          } else {
-            // Pour l'instant, le bouton Trade est toujours activé (à implémenter plus tard)
-            actionBtn.disabled = false;
-          }
-          
-          // Stocker l'action et le type de bâtiment dans le bouton
-          actionBtn.dataset.buildingAction = buildingAction;
-          actionBtn.dataset.buildingType = buildingType;
-          
-          item.appendChild(actionBtn);
-        }
-        
-        cityBuildingsList.appendChild(item);
-      }
-    }
-    
-    // Si aucun bâtiment constructible et aucun construit
-    if (buildableBuildings.length === 0 && buildings.length === 0) {
-      const emptyItem = document.createElement('li');
-      emptyItem.className = 'empty';
-      emptyItem.textContent = 'Aucun bâtiment disponible';
-      cityBuildingsList.appendChild(emptyItem);
-    }
-  }
+  }) as EventListener);
 
   // Configurer le callback de rendu pour la surbrillance au survol et la mise à jour du panneau
   renderer.setRenderCallback(() => {
@@ -427,103 +332,6 @@ function main(): void {
     settingsMenu.classList.add('hidden');
   });
 
-  // Gérer les clics sur les boutons de la liste des bâtiments (construction et actions)
-  // Utiliser la délégation d'événements pour gérer les boutons créés dynamiquement
-  cityBuildingsList.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement;
-    
-    // Gérer les boutons de construction
-    if (target.classList.contains('build-btn')) {
-      const button = target as HTMLButtonElement;
-      if (button.disabled) {
-        return;
-      }
-      const buildingType = button.dataset.buildingType as BuildingType;
-      if (!buildingType) {
-        return;
-      }
-
-      const selectedVertex = renderer.getSelectedVertex();
-      const currentGameMap = game.getGameMap();
-
-      if (!selectedVertex || !currentGameMap || !currentGameMap.hasCity(selectedVertex)) {
-        return;
-      }
-
-      const city = currentGameMap.getCity(selectedVertex);
-      if (!city) {
-        return;
-      }
-
-      const playerResources = game.getPlayerResources();
-
-      try {
-        // Construire le bâtiment (le contrôleur vérifie les conditions et consomme les ressources)
-        BuildingController.buildBuilding(buildingType, city, currentGameMap, selectedVertex, playerResources);
-
-        // Mettre à jour l'affichage des ressources
-        updateResourcesDisplay();
-
-        // Mettre à jour le panneau de la ville
-        updateCityPanel();
-
-        // Re-rendre la carte si nécessaire
-        const civId = game.getPlayerCivilizationId();
-        renderer.render(currentGameMap, civId);
-      } catch (error) {
-        // Ignorer silencieusement les erreurs de construction
-        // On pourrait afficher un message à l'utilisateur si nécessaire
-        console.error('Erreur lors de la construction du bâtiment:', error);
-      }
-    }
-    
-    // Gérer les actions des bâtiments construits (Améliorer, Commerce)
-    if (target.classList.contains('building-action-btn')) {
-      const button = target as HTMLButtonElement;
-      if (button.disabled) {
-        return;
-      }
-
-      const buildingAction = button.dataset.buildingAction as BuildingAction;
-      if (!buildingAction) {
-        return;
-      }
-
-      const selectedVertex = renderer.getSelectedVertex();
-      const currentGameMap = game.getGameMap();
-
-      if (!selectedVertex || !currentGameMap || !currentGameMap.hasCity(selectedVertex)) {
-        return;
-      }
-
-      const city = currentGameMap.getCity(selectedVertex);
-      if (!city) {
-        return;
-      }
-
-      try {
-        if (buildingAction === BuildingAction.Upgrade) {
-          // Améliorer la ville
-          if (!city.canUpgrade()) {
-            return;
-          }
-          city.upgrade();
-        } else if (buildingAction === BuildingAction.Trade) {
-          // TODO: Implémenter la logique de commerce
-          console.log('Commerce - à implémenter');
-          return; // Ne pas mettre à jour si l'action n'est pas implémentée
-        }
-        
-        // Mettre à jour l'affichage
-        updateCityPanel();
-        const civId = game.getPlayerCivilizationId();
-        renderer.render(currentGameMap, civId);
-      } catch (error) {
-        console.error(`Erreur lors de l'action ${buildingAction}:`, error);
-        // On pourrait afficher un message à l'utilisateur si nécessaire
-      }
-    }
-  });
 
   // Initialiser le panneau (masqué par défaut)
   updateCityPanel();
