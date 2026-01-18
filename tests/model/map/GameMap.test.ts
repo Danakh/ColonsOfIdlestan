@@ -917,4 +917,137 @@ describe('GameMap', () => {
       expect(map.getRoadDistanceToCity(edge1)).toBe(2);
     });
   });
+
+  describe('cohérence vertex-hex', () => {
+    it('devrait vérifier que chaque vertex est bien voisin de ses trois hexagones', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+      const northeast = center.neighbor(HexDirection.NE);
+      const northwest = center.neighbor(HexDirection.NW);
+      const southeast = center.neighbor(HexDirection.SE);
+
+      const hexes = [
+        new Hex(center),
+        new Hex(north),
+        new Hex(northeast),
+        new Hex(northwest),
+        new Hex(southeast),
+      ];
+      const grid = new HexGrid(hexes);
+      const map = new GameMap(grid);
+
+      // Obtenir tous les vertices de la grille
+      const allVertices = grid.getAllVertices();
+
+      // Pour chaque vertex, vérifier que chaque hex du vertex le contient dans sa liste de vertices
+      for (const vertex of allVertices) {
+        const vertexHexes = vertex.getHexes();
+
+        // Pour chaque hexagone du vertex
+        for (const hexCoord of vertexHexes) {
+          // Vérifier seulement si l'hexagone existe dans la grille
+          if (grid.hasHex(hexCoord)) {
+            const hexVertices = grid.getVerticesForHex(hexCoord);
+
+            // Le vertex devrait être dans la liste des vertices de cet hexagone
+            const found = hexVertices.some(v => v.equals(vertex));
+            expect(found).toBe(true);
+          }
+        }
+      }
+    });
+
+    it('devrait vérifier que chaque hexagone a bien tous ses vertices dans sa liste', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+      const northeast = center.neighbor(HexDirection.NE);
+      const northwest = center.neighbor(HexDirection.NW);
+      const southeast = center.neighbor(HexDirection.SE);
+
+      const hexes = [
+        new Hex(center),
+        new Hex(north),
+        new Hex(northeast),
+        new Hex(northwest),
+        new Hex(southeast),
+      ];
+      const grid = new HexGrid(hexes);
+      const map = new GameMap(grid);
+
+      // Obtenir tous les hexagones de la grille
+      const allHexes = grid.getAllHexes();
+
+      // Pour chaque hexagone, vérifier que chaque vertex retourné a bien cet hex dans sa liste
+      for (const hex of allHexes) {
+        const hexVertices = grid.getVerticesForHex(hex.coord);
+
+        // Pour chaque vertex adjacent à cet hexagone
+        for (const vertex of hexVertices) {
+          const vertexHexes = vertex.getHexes();
+
+          // Cet hexagone devrait être dans la liste des hexagones du vertex
+          const found = vertexHexes.some(h => h.equals(hex.coord));
+          expect(found).toBe(true);
+        }
+      }
+    });
+
+    it('devrait vérifier la cohérence bidirectionnelle pour une grille complexe', () => {
+      // Créer une grille plus complexe avec plusieurs hexagones connectés
+      const center = new HexCoord(0, 0);
+      const neighbors = [
+        center.neighbor(HexDirection.N),
+        center.neighbor(HexDirection.NE),
+        center.neighbor(HexDirection.SE),
+        center.neighbor(HexDirection.S),
+        center.neighbor(HexDirection.SW),
+        center.neighbor(HexDirection.NW),
+      ];
+
+      const hexes = [new Hex(center), ...neighbors.map(coord => new Hex(coord))];
+      const grid = new HexGrid(hexes);
+      const map = new GameMap(grid);
+
+      // Test 1: Pour chaque vertex, vérifier qu'il est dans la liste de vertices de ses hexagones
+      const allVertices = grid.getAllVertices();
+      for (const vertex of allVertices) {
+        const vertexHexes = vertex.getHexes();
+        for (const hexCoord of vertexHexes) {
+          if (grid.hasHex(hexCoord)) {
+            const hexVertices = grid.getVerticesForHex(hexCoord);
+            const found = hexVertices.some(v => v.equals(vertex));
+            expect(found).toBe(true);
+          }
+        }
+      }
+
+      // Test 2: Pour chaque hexagone, vérifier que ses vertices ont bien cet hex dans leur liste
+      const allHexes = grid.getAllHexes();
+      for (const hex of allHexes) {
+        const hexVertices = grid.getVerticesForHex(hex.coord);
+        for (const vertex of hexVertices) {
+          const vertexHexes = vertex.getHexes();
+          const found = vertexHexes.some(h => h.equals(hex.coord));
+          expect(found).toBe(true);
+        }
+      }
+    });
+
+    it('devrait vérifier la cohérence avec un hexagone isolé', () => {
+      const center = new HexCoord(0, 0);
+      const grid = new HexGrid([new Hex(center)]);
+      const map = new GameMap(grid);
+
+      // Un hexagone isolé devrait avoir 6 vertices
+      const hexVertices = grid.getVerticesForHex(center);
+      expect(hexVertices.length).toBe(6);
+
+      // Chaque vertex devrait contenir center dans ses hexagones
+      for (const vertex of hexVertices) {
+        const vertexHexes = vertex.getHexes();
+        const found = vertexHexes.some(h => h.equals(center));
+        expect(found).toBe(true);
+      }
+    });
+  });
 });
