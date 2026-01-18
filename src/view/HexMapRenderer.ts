@@ -9,6 +9,7 @@ import { CivilizationId } from '../model/map/CivilizationId';
 import { City } from '../model/city/City';
 import { CityLevel } from '../model/city/CityLevel';
 import { ResourceHarvestController } from '../controller/ResourceHarvestController';
+import { ResourceHarvest } from '../model/game/ResourceHarvest';
 
 /**
  * Configuration pour le rendu des hexagones.
@@ -81,6 +82,8 @@ export class HexMapRenderer {
   private citySpritesLoaded: boolean = false;
   private hexTextures: Map<HexType, HTMLImageElement> = new Map();
   private hexTexturesLoaded: boolean = false;
+  private lockSprite: HTMLImageElement | null = null;
+  private lockSpriteLoaded: boolean = false;
   private resourceParticles: ResourceParticle[] = [];
   private animationFrameId: number | null = null;
   private cooldownAnimationFrameId: number | null = null;
@@ -95,6 +98,7 @@ export class HexMapRenderer {
     this.setupMouseMoveHandler();
     this.loadCitySprites();
     this.loadHexTextures();
+    this.loadLockSprite();
   }
 
   /**
@@ -149,6 +153,29 @@ export class HexMapRenderer {
 
       tryLoad();
     }
+  }
+
+  /**
+   * Charge le sprite SVG du cadenas.
+   */
+  private loadLockSprite(): void {
+    const img = new Image();
+    const fullPath = "/assets/sprites/lock.svg";
+    
+    img.onload = () => {
+      this.lockSprite = img;
+      this.lockSpriteLoaded = true;
+      // Re-rendre si nécessaire pour mettre à jour la carte
+      if (this.renderCallback) {
+        this.renderCallback();
+      }
+    };
+    
+    img.onerror = () => {
+      console.warn(`Échec du chargement du sprite de cadenas ${fullPath}`);
+    };
+    
+    img.src = fullPath;
   }
 
   /**
@@ -274,7 +301,7 @@ export class HexMapRenderer {
 
     // Dessiner uniquement les hexagones visibles
     for (const hex of visibleHexes) {
-      this.drawHex(hex, gameMap, config);
+      this.drawHex(hex, gameMap, config, civId);
     }
 
     // Dessiner les coordonnées si activé (uniquement pour les hexagones visibles)
@@ -568,7 +595,7 @@ export class HexMapRenderer {
   /**
    * Dessine un hexagone sur le canvas.
    */
-  private drawHex(hex: Hex, gameMap: GameMap, config: RenderConfig): void {
+  private drawHex(hex: Hex, gameMap: GameMap, config: RenderConfig, civId?: CivilizationId): void {
     const { hexSize, offsetX, offsetY } = config;
     const coord = hex.coord;
 
@@ -642,6 +669,41 @@ export class HexMapRenderer {
 
     // Dessiner le timer de cooldown si l'hex est en cooldown
     this.drawCooldownTimer(coord, x, y, currentHexSize);
+    
+    // Dessiner un cadenas si l'hex est terrestre mais non récoltable
+    if (civId && hexType !== HexType.Water) {
+      const isHarvestable = ResourceHarvest.canHarvest(coord, gameMap, civId);
+      if (!isHarvestable) {
+        this.drawLockIcon(x, y, currentHexSize);
+      }
+    }
+  }
+
+  /**
+   * Dessine une icône de cadenas au centre d'un hexagone pour indiquer qu'il n'est pas récoltable.
+   * Utilise le sprite SVG chargé depuis les assets.
+   */
+  private drawLockIcon(centerX: number, centerY: number, hexSize: number): void {
+    // Si le sprite n'est pas encore chargé, ne rien dessiner
+    if (!this.lockSprite || !this.lockSpriteLoaded) {
+      return;
+    }
+    
+    const iconSize = hexSize * 0.5; // Taille de l'icône proportionnelle à l'hexagone
+    
+    this.ctx.save();
+    
+    // Centrer l'image sur le point (centerX, centerY)
+    // Largeur augmentée de 87.5% au total (1.5 * 1.25)
+    const spriteWidth = iconSize * 1.875;
+    const spriteHeight = iconSize;
+    const x = centerX - spriteWidth / 2;
+    const y = centerY - spriteHeight / 2;
+    
+    // Dessiner le sprite
+    this.ctx.drawImage(this.lockSprite, x, y, spriteWidth, spriteHeight);
+    
+    this.ctx.restore();
   }
 
   /**
