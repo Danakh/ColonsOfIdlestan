@@ -4,6 +4,7 @@ import { ResourceHarvest } from './model/game/ResourceHarvest';
 import { RoadConstruction } from './model/game/RoadConstruction';
 import { RoadController } from './controller/RoadController';
 import { ResourceHarvestController } from './controller/ResourceHarvestController';
+import { BuildingController } from './controller/BuildingController';
 import { ResourceType } from './model/map/ResourceType';
 import { HexCoord } from './model/hex/HexCoord';
 import { Edge } from './model/hex/Edge';
@@ -220,19 +221,78 @@ function main(): void {
 
     // Mettre à jour la liste des bâtiments
     cityBuildingsList.innerHTML = '';
-    const buildings = city.getBuildings();
+    
+    const playerResources = game.getPlayerResources();
+    
+    // Noms des ressources en français pour l'affichage
+    const resourceNames: Record<ResourceType, string> = {
+      [ResourceType.Wood]: 'Bois',
+      [ResourceType.Brick]: 'Brique',
+      [ResourceType.Wheat]: 'Blé',
+      [ResourceType.Sheep]: 'Mouton',
+      [ResourceType.Ore]: 'Minerai',
+    };
 
-    if (buildings.length === 0) {
-      const emptyItem = document.createElement('li');
-      emptyItem.className = 'empty';
-      emptyItem.textContent = 'Aucun bâtiment construit';
-      cityBuildingsList.appendChild(emptyItem);
-    } else {
+    // Obtenir les bâtiments constructibles avec leur statut
+    const buildableBuildings = BuildingController.getBuildableBuildingsWithStatus(city, playerResources);
+    
+    // Afficher d'abord les bâtiments constructibles
+    for (const buildingStatus of buildableBuildings) {
+      const item = document.createElement('li');
+      item.className = 'buildable-building';
+      
+      // Conteneur pour le nom et le coût
+      const infoContainer = document.createElement('div');
+      infoContainer.className = 'building-info';
+      
+      // Nom du bâtiment
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'building-name';
+      nameSpan.textContent = getBuildingTypeName(buildingStatus.buildingType);
+      infoContainer.appendChild(nameSpan);
+      
+      // Coût affiché en dessous en plus petit
+      const costSpan = document.createElement('span');
+      costSpan.className = 'building-cost';
+      const costParts: string[] = [];
+      for (const [resource, amount] of buildingStatus.cost.entries()) {
+        costParts.push(`${amount} ${resourceNames[resource]}`);
+      }
+      costSpan.textContent = costParts.join(', ');
+      infoContainer.appendChild(costSpan);
+      
+      item.appendChild(infoContainer);
+      
+      // Bouton de construction
+      const buildBtn = document.createElement('button');
+      buildBtn.className = 'build-btn';
+      buildBtn.textContent = 'Construire';
+      buildBtn.disabled = !buildingStatus.canBuild;
+      
+      // Stocker le buildingType dans le bouton pour le gestionnaire d'événement
+      buildBtn.dataset.buildingType = buildingStatus.buildingType;
+      
+      item.appendChild(buildBtn);
+      cityBuildingsList.appendChild(item);
+    }
+    
+    // Afficher ensuite les bâtiments déjà construits
+    const buildings = city.getBuildings();
+    if (buildings.length > 0) {
       for (const buildingType of buildings) {
         const item = document.createElement('li');
+        item.className = 'built-building';
         item.textContent = getBuildingTypeName(buildingType);
         cityBuildingsList.appendChild(item);
       }
+    }
+    
+    // Si aucun bâtiment constructible et aucun construit
+    if (buildableBuildings.length === 0 && buildings.length === 0) {
+      const emptyItem = document.createElement('li');
+      emptyItem.className = 'empty';
+      emptyItem.textContent = 'Aucun bâtiment disponible';
+      cityBuildingsList.appendChild(emptyItem);
     }
 
     // Mettre à jour les boutons d'actions
@@ -372,6 +432,55 @@ function main(): void {
   cityTradeBtn.addEventListener('click', () => {
     // TODO: Implémenter la logique de commerce
     console.log('Commerce - à implémenter');
+  });
+
+  // Gérer les clics sur les boutons de construction de bâtiments
+  // Utiliser la délégation d'événements pour gérer les boutons créés dynamiquement
+  cityBuildingsList.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    if (target.classList.contains('build-btn')) {
+      const button = target as HTMLButtonElement;
+      if (button.disabled) {
+        return;
+      }
+      const buildingType = button.dataset.buildingType as BuildingType;
+      if (!buildingType) {
+        return;
+      }
+
+      const selectedVertex = renderer.getSelectedVertex();
+      const currentGameMap = game.getGameMap();
+
+      if (!selectedVertex || !currentGameMap || !currentGameMap.hasCity(selectedVertex)) {
+        return;
+      }
+
+      const city = currentGameMap.getCity(selectedVertex);
+      if (!city) {
+        return;
+      }
+
+      const playerResources = game.getPlayerResources();
+
+      try {
+        // Construire le bâtiment (le contrôleur vérifie les conditions et consomme les ressources)
+        BuildingController.buildBuilding(buildingType, city, currentGameMap, selectedVertex, playerResources);
+
+        // Mettre à jour l'affichage des ressources
+        updateResourcesDisplay();
+
+        // Mettre à jour le panneau de la ville
+        updateCityPanel();
+
+        // Re-rendre la carte si nécessaire
+        const civId = game.getPlayerCivilizationId();
+        renderer.render(currentGameMap, civId);
+      } catch (error) {
+        // Ignorer silencieusement les erreurs de construction
+        // On pourrait afficher un message à l'utilisateur si nécessaire
+        console.error('Erreur lors de la construction du bâtiment:', error);
+      }
+    }
   });
 
   // Initialiser le panneau (masqué par défaut)

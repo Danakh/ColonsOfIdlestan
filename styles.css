@@ -236,12 +236,69 @@ main {
     border-left: 4px solid #667eea;
     color: #333;
     font-size: 0.95rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 #city-buildings-list li.empty {
     color: #999;
     font-style: italic;
     border-left-color: #ccc;
+}
+
+#city-buildings-list li.buildable-building {
+    border-left-color: #4CAF50;
+}
+
+#city-buildings-list li.built-building {
+    border-left-color: #2196F3;
+}
+
+.building-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+}
+
+.building-name {
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.building-cost {
+    font-size: 0.75rem;
+    color: #666;
+    font-style: italic;
+}
+
+.build-btn {
+    padding: 0.5rem 1rem;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+}
+
+.build-btn:hover:not(:disabled) {
+    background: #5568d3;
+}
+
+.build-btn:active:not(:disabled) {
+    background: #4a5bbf;
+}
+
+.build-btn:disabled {
+    background: #ccc;
+    color: #999;
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 
 .city-actions {
