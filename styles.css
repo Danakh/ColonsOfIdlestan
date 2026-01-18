@@ -4,10 +4,16 @@
     box-sizing: border-box;
 }
 
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden; /* Pas de scroll sur la page */
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh;
     display: flex;
     flex-direction: column;
 }
@@ -15,7 +21,8 @@ body {
 #app {
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
+    height: 100vh; /* Utiliser height au lieu de min-height pour éviter le débordement */
+    overflow: hidden;
 }
 
 header.top-bar {
@@ -138,7 +145,7 @@ button:active {
 }
 
 main {
-    flex: 1 1 auto;
+    flex: 1 1 0; /* Prend tout l'espace restant */
     display: flex;
     padding: 2rem;
     overflow: hidden; /* Pas de scroll vertical */
@@ -146,6 +153,7 @@ main {
     align-items: center;
     gap: 1rem;
     min-height: 0; /* Permet au flex de rétrécir si nécessaire */
+    max-height: 100%; /* Ne pas dépasser la hauteur disponible */
 }
 
 #map-canvas {
@@ -163,7 +171,7 @@ main {
     padding: 1.5rem;
     width: 350px;
     flex-shrink: 0;
-    max-height: 100%;
+    max-height: calc(100vh - 120px); /* Hauteur max en tenant compte du header */
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -285,11 +293,7 @@ main {
 }
 
 footer {
-    background: rgba(255, 255, 255, 0.95);
-    padding: 0;
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-    flex-shrink: 0; /* Empêche le footer de se rétrécir */
-    min-height: 0;
+    display: none; /* Footer masqué car vide */
 }
 
 @media (max-width: 768px) {
