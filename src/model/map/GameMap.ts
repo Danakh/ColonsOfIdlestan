@@ -601,6 +601,67 @@ export class GameMap {
   }
 
   /**
+   * Calcule la distance d'une route constructible à la ville la plus proche.
+   * Cette méthode simule la construction de la route et calcule sa distance basée sur les routes existantes.
+   * @param edge - L'arête constructible à vérifier
+   * @param civId - L'identifiant de la civilisation
+   * @returns La distance calculée (distance minimale + 1), ou undefined si la route ne peut pas être construite
+   */
+  calculateBuildableRoadDistance(edge: Edge, civId: CivilizationId): number | undefined {
+    const civKey = civId.hashCode();
+    
+    // Si l'edge touche directement une ville, la distance est 1
+    const vertices = this.getVerticesForEdge(edge);
+    for (const vertex of vertices) {
+      const vertexHexes = vertex.getHexes();
+      const allVertexHexesExist = vertexHexes.every(h => this.grid.hasHex(h));
+      if (!allVertexHexesExist) {
+        continue;
+      }
+      
+      if (this.hasCity(vertex)) {
+        const owner = this.getCityOwner(vertex);
+        if (owner && owner.hashCode() === civKey) {
+          return 1; // Distance = 1 si la route touche directement une ville
+        }
+      }
+    }
+    
+    // Si l'edge touche une route existante, calculer la distance minimale + 1
+    const adjacentEdges = this.getAdjacentEdges(edge);
+    let minDistance: number | undefined = undefined;
+    
+    for (const adjacentEdge of adjacentEdges) {
+      const [adjHex1, adjHex2] = adjacentEdge.getHexes();
+      if (!this.grid.hasHex(adjHex1) || !this.grid.hasHex(adjHex2)) {
+        continue;
+      }
+      
+      // Ignorer les edges entre deux hexagones d'eau
+      const adjHex1Type = this.getHexType(adjHex1);
+      const adjHex2Type = this.getHexType(adjHex2);
+      if (adjHex1Type === HexType.Water && adjHex2Type === HexType.Water) {
+        continue;
+      }
+      
+      if (this.hasRoad(adjacentEdge)) {
+        const owner = this.getRoadOwner(adjacentEdge);
+        if (owner && owner.hashCode() === civKey) {
+          const adjacentDistance = this.getRoadDistanceToCity(adjacentEdge);
+          if (adjacentDistance !== undefined) {
+            const newDistance = adjacentDistance + 1;
+            if (minDistance === undefined || newDistance < minDistance) {
+              minDistance = newDistance;
+            }
+          }
+        }
+      }
+    }
+    
+    return minDistance;
+  }
+
+  /**
    * Met à jour les distances de toutes les routes à la ville la plus proche pour une civilisation donnée.
    * Utilise un algorithme BFS pour calculer les distances depuis les villes.
    * @param civId - L'identifiant de la civilisation

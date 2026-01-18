@@ -172,12 +172,20 @@ describe('RoadConstruction', () => {
   });
 
   describe('canAfford', () => {
-    it('devrait retourner true si le joueur a assez de ressources', () => {
+    it('devrait retourner true si le joueur a assez de ressources (distance par défaut)', () => {
       const resources = new PlayerResources();
       resources.addResource(ResourceType.Brick, 1);
       resources.addResource(ResourceType.Wood, 1);
 
       expect(RoadConstruction.canAfford(resources)).toBe(true);
+    });
+
+    it('devrait retourner true si le joueur a assez de ressources pour distance 1', () => {
+      const resources = new PlayerResources();
+      resources.addResource(ResourceType.Brick, 2);
+      resources.addResource(ResourceType.Wood, 2);
+
+      expect(RoadConstruction.canAfford(resources, 1)).toBe(true);
     });
 
     it('devrait retourner true si le joueur a plus de ressources que nécessaire', () => {
@@ -229,8 +237,9 @@ describe('RoadConstruction', () => {
       map.addCity(vertex, civId);
 
       const resources = new PlayerResources();
-      resources.addResource(ResourceType.Brick, 1);
-      resources.addResource(ResourceType.Wood, 1);
+      // Le coût est multiplié par 2^distance, donc distance 1 = coût × 2
+      resources.addResource(ResourceType.Brick, 2);
+      resources.addResource(ResourceType.Wood, 2);
 
       const edge = Edge.create(center, north);
 
@@ -315,18 +324,18 @@ describe('RoadConstruction', () => {
       const vertex = Vertex.create(center, north, northeast);
       map.addCity(vertex, civId);
 
-      // Construire une première route (connectée à la ville)
+      // Construire une première route (connectée à la ville, distance = 1, coût × 2^1 = 2)
       const edge1 = Edge.create(center, north);
       const resources1 = new PlayerResources();
-      resources1.addResource(ResourceType.Brick, 1);
-      resources1.addResource(ResourceType.Wood, 1);
+      resources1.addResource(ResourceType.Brick, 2);
+      resources1.addResource(ResourceType.Wood, 2);
       RoadController.buildRoad(edge1, civId, map, resources1);
 
-      // Construire une deuxième route connectée à la première
+      // Construire une deuxième route connectée à la première (distance = 2, coût × 2^2 = 4)
       const edge2 = Edge.create(center, northeast);
       const resources2 = new PlayerResources();
-      resources2.addResource(ResourceType.Brick, 1);
-      resources2.addResource(ResourceType.Wood, 1);
+      resources2.addResource(ResourceType.Brick, 4);
+      resources2.addResource(ResourceType.Wood, 4);
 
       RoadController.buildRoad(edge2, civId, map, resources2);
 
@@ -353,6 +362,7 @@ describe('RoadConstruction', () => {
       map.addCity(vertex, civId);
 
       const resources = new PlayerResources();
+      // Route à distance 1, donc coût = 2^1 × (1 Brick + 1 Wood) = 2 Brick + 2 Wood
       resources.addResource(ResourceType.Brick, 3);
       resources.addResource(ResourceType.Wood, 5);
       resources.addResource(ResourceType.Ore, 10); // Ressource qui ne devrait pas être affectée
@@ -361,18 +371,43 @@ describe('RoadConstruction', () => {
 
       RoadController.buildRoad(edge, civId, map, resources);
 
-      expect(resources.getResource(ResourceType.Brick)).toBe(2);
-      expect(resources.getResource(ResourceType.Wood)).toBe(4);
+      // 3 - 2 = 1, 5 - 2 = 3
+      expect(resources.getResource(ResourceType.Brick)).toBe(1);
+      expect(resources.getResource(ResourceType.Wood)).toBe(3);
       expect(resources.getResource(ResourceType.Ore)).toBe(10);
     });
   });
 
   describe('getCost', () => {
-    it('devrait retourner le coût correct', () => {
+    it('devrait retourner le coût de base (distance undefined = 0)', () => {
       const cost = RoadConstruction.getCost();
 
       expect(cost.get(ResourceType.Brick)).toBe(1);
       expect(cost.get(ResourceType.Wood)).toBe(1);
+      expect(cost.size).toBe(2);
+    });
+
+    it('devrait retourner le coût multiplié par 2^distance pour distance 1', () => {
+      const cost = RoadConstruction.getCost(1);
+
+      expect(cost.get(ResourceType.Brick)).toBe(2);
+      expect(cost.get(ResourceType.Wood)).toBe(2);
+      expect(cost.size).toBe(2);
+    });
+
+    it('devrait retourner le coût multiplié par 2^distance pour distance 2', () => {
+      const cost = RoadConstruction.getCost(2);
+
+      expect(cost.get(ResourceType.Brick)).toBe(4);
+      expect(cost.get(ResourceType.Wood)).toBe(4);
+      expect(cost.size).toBe(2);
+    });
+
+    it('devrait retourner le coût multiplié par 2^distance pour distance 3', () => {
+      const cost = RoadConstruction.getCost(3);
+
+      expect(cost.get(ResourceType.Brick)).toBe(8);
+      expect(cost.get(ResourceType.Wood)).toBe(8);
       expect(cost.size).toBe(2);
     });
   });

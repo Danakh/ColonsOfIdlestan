@@ -36,16 +36,27 @@ export class RoadController {
       );
     }
 
-    // Vérifier que le joueur a assez de ressources
-    if (!RoadConstruction.canAfford(resources)) {
+    // Calculer la distance à la ville la plus proche pour cette route constructible
+    const distance = map.calculateBuildableRoadDistance(edge, civId);
+    if (distance === undefined) {
       throw new Error(
-        `Pas assez de ressources pour construire une route. ` +
-        `Requis: 1 ${ResourceType.Brick} et 1 ${ResourceType.Wood}.`
+        `Impossible de calculer la distance pour la route sur l'arête ${edge.toString()}.`
       );
     }
 
-    // Retirer les ressources
-    const cost = RoadConstruction.getCost();
+    // Vérifier que le joueur a assez de ressources (avec le coût multiplié par distance + 1)
+    if (!RoadConstruction.canAfford(resources, distance)) {
+      const cost = RoadConstruction.getCost(distance);
+      const brickCost = cost.get(ResourceType.Brick) || 0;
+      const woodCost = cost.get(ResourceType.Wood) || 0;
+      throw new Error(
+        `Pas assez de ressources pour construire une route. ` +
+        `Requis: ${brickCost} ${ResourceType.Brick} et ${woodCost} ${ResourceType.Wood} (distance: ${distance}).`
+      );
+    }
+
+    // Retirer les ressources (coût multiplié par distance + 1)
+    const cost = RoadConstruction.getCost(distance);
     resources.payCost(cost);
 
     // Ajouter la route sur la carte

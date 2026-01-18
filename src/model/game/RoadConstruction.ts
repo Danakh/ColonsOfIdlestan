@@ -65,18 +65,29 @@ export class RoadConstruction {
   /**
    * Vérifie si le joueur a assez de ressources pour construire une route.
    * @param resources - Les ressources du joueur
+   * @param distance - La distance à la ville (optionnel, pour vérifier le coût réel)
    * @returns true si le joueur a assez de ressources
    */
-  static canAfford(resources: PlayerResources): boolean {
-    return resources.canAfford(RoadConstruction.COST);
+  static canAfford(resources: PlayerResources, distance?: number): boolean {
+    const cost = RoadConstruction.getCost(distance);
+    return resources.canAfford(cost);
   }
 
   /**
    * Retourne le coût de construction d'une route.
+   * Le coût de base est multiplié par 2^distance.
+   * @param distance - La distance à la ville la plus proche (optionnel, défaut = 0 pour coût de base)
    * @returns Le coût sous forme de Map
    */
-  static getCost(): Map<ResourceType, number> {
-    return new Map(RoadConstruction.COST);
+  static getCost(distance?: number): Map<ResourceType, number> {
+    const multiplier = distance !== undefined ? Math.pow(2, distance) : 1;
+    const cost = new Map<ResourceType, number>();
+    
+    for (const [resourceType, baseAmount] of RoadConstruction.COST.entries()) {
+      cost.set(resourceType, baseAmount * multiplier);
+    }
+    
+    return cost;
   }
 
   /**

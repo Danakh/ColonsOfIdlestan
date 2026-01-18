@@ -11,6 +11,7 @@ import { CityLevel } from '../model/city/CityLevel';
 import { ResourceHarvestController } from '../controller/ResourceHarvestController';
 import { ResourceHarvest } from '../model/game/ResourceHarvest';
 import { BuildingProductionController } from '../controller/BuildingProductionController';
+import { RoadConstruction } from '../model/game/RoadConstruction';
 
 /**
  * Configuration pour le rendu des hexagones.
@@ -88,6 +89,8 @@ export class HexMapRenderer {
   private resourceParticles: ResourceParticle[] = [];
   private animationFrameId: number | null = null;
   private cooldownAnimationFrameId: number | null = null;
+  private tooltipElement: HTMLDivElement | null = null;
+  private tooltipEdge: Edge | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -97,6 +100,7 @@ export class HexMapRenderer {
     }
     this.ctx = context;
     this.setupMouseMoveHandler();
+    this.setupTooltip();
     this.loadCitySprites();
     this.loadHexTextures();
     this.loadLockSprite();
@@ -1459,6 +1463,73 @@ export class HexMapRenderer {
   }
 
   /**
+   * Configure le tooltip pour afficher les informations des routes constructibles.
+   */
+  private setupTooltip(): void {
+    // Créer l'élément tooltip s'il n'existe pas
+    if (!this.tooltipElement) {
+      this.tooltipElement = document.createElement('div');
+      this.tooltipElement.className = 'road-tooltip';
+      this.tooltipElement.style.cssText = `
+        position: absolute;
+        pointer-events: none;
+        background-color: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-family: Arial, sans-serif;
+        z-index: 1000;
+        white-space: nowrap;
+        display: none;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      `;
+      document.body.appendChild(this.tooltipElement);
+    }
+  }
+
+  /**
+   * Met à jour le tooltip avec les informations de coût d'une route constructible.
+   */
+  private updateTooltip(edge: Edge, event: MouseEvent): void {
+    if (!this.tooltipElement || !this.currentGameMap || !this.currentCivilizationId) {
+      return;
+    }
+
+    // Calculer la distance
+    const distance = this.currentGameMap.calculateBuildableRoadDistance(edge, this.currentCivilizationId);
+    if (distance === undefined) {
+      this.hideTooltip();
+      return;
+    }
+
+    // Calculer le coût
+    const cost = RoadConstruction.getCost(distance);
+    const brickCost = cost.get(ResourceType.Brick) || 0;
+    const woodCost = cost.get(ResourceType.Wood) || 0;
+
+    // Mettre à jour le contenu
+    this.tooltipElement.textContent = `${brickCost} Brique${brickCost > 1 ? 's' : ''}, ${woodCost} Bois (distance: ${distance})`;
+
+    // Positionner le tooltip près du curseur
+    this.tooltipElement.style.left = `${event.clientX + 15}px`;
+    this.tooltipElement.style.top = `${event.clientY + 15}px`;
+    this.tooltipElement.style.display = 'block';
+
+    this.tooltipEdge = edge;
+  }
+
+  /**
+   * Masque le tooltip.
+   */
+  private hideTooltip(): void {
+    if (this.tooltipElement) {
+      this.tooltipElement.style.display = 'none';
+      this.tooltipEdge = null;
+    }
+  }
+
+  /**
    * Gestionnaire de mouvement de souris pour mettre en surbrillance les routes constructibles et les villes.
    */
   private handleMouseMove = (event: MouseEvent): void => {
@@ -1487,6 +1558,8 @@ export class HexMapRenderer {
         if (this.hoveredEdge !== null) {
           this.hoveredEdge = null;
         }
+        // Masquer le tooltip
+        this.hideTooltip();
         needsRender = true;
       }
     } else {
@@ -1503,12 +1576,16 @@ export class HexMapRenderer {
               this.hoveredEdge = edge;
               needsRender = true;
             }
+            // Afficher le tooltip avec le coût
+            this.updateTooltip(edge, event);
           } else {
             // Route non constructible, retirer la surbrillance
             if (this.hoveredEdge !== null) {
               this.hoveredEdge = null;
               needsRender = true;
             }
+            // Masquer le tooltip
+            this.hideTooltip();
           }
         } else {
           // Pas d'arête constructible, retirer la surbrillance
@@ -1516,6 +1593,8 @@ export class HexMapRenderer {
             this.hoveredEdge = null;
             needsRender = true;
           }
+          // Masquer le tooltip
+          this.hideTooltip();
         }
       }
 
@@ -1547,6 +1626,9 @@ export class HexMapRenderer {
       this.hoveredVertex = null;
       needsRender = true;
     }
+    
+    // Masquer le tooltip
+    this.hideTooltip();
 
     if (needsRender && this.renderCallback) {
       this.renderCallback();
