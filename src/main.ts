@@ -1,6 +1,7 @@
 import { MainGame } from './application/MainGame';
 import { HexMapRenderer } from './view/HexMapRenderer';
 import { CityPanelView } from './view/CityPanelView';
+import { ResourceSprites } from './view/ResourceSprites';
 import { ResourceHarvest } from './model/game/ResourceHarvest';
 import { RoadConstruction } from './model/game/RoadConstruction';
 import { RoadController } from './controller/RoadController';
@@ -65,6 +66,14 @@ function main(): void {
   // Configurer le renderer pour le panneau de ville
   cityPanelView.setRenderer(renderer);
   
+  // Charger les sprites de ressources
+  const resourceSprites = new ResourceSprites();
+  resourceSprites.onAllLoaded(() => {
+    // Mettre à jour l'affichage des ressources une fois les sprites chargés
+    updateResourcesDisplay();
+  });
+  resourceSprites.load();
+  
   // Redimensionner le canvas au chargement et au redimensionnement
   renderer.resize();
   window.addEventListener('resize', () => {
@@ -93,15 +102,6 @@ function main(): void {
       [ResourceType.Ore]: 'Minerai',
     };
 
-    // Couleurs des ressources
-    const resourceColors: Record<ResourceType, string> = {
-      [ResourceType.Wood]: '#8B4513',
-      [ResourceType.Brick]: '#CD5C5C',
-      [ResourceType.Wheat]: '#FFD700',
-      [ResourceType.Sheep]: '#90EE90',
-      [ResourceType.Ore]: '#708090',
-    };
-
     // Ordre d'affichage des ressources
     const resourceOrder: ResourceType[] = [
       ResourceType.Wood,
@@ -121,9 +121,34 @@ function main(): void {
       const item = document.createElement('div');
       item.className = 'resource-item';
 
-      const color = document.createElement('div');
-      color.className = 'resource-color';
-      color.style.backgroundColor = resourceColors[resourceType];
+      // Utiliser le sprite si disponible, sinon fallback sur la couleur
+      const sprite = resourceSprites.getSprite(resourceType);
+      const spriteReady = resourceSprites.isSpriteReady(resourceType);
+      
+      if (spriteReady && sprite) {
+        const spriteImg = document.createElement('img');
+        spriteImg.src = sprite.src;
+        spriteImg.className = 'resource-sprite';
+        spriteImg.alt = resourceNames[resourceType];
+        spriteImg.style.width = '24px';
+        spriteImg.style.height = '24px';
+        spriteImg.style.objectFit = 'contain';
+        item.appendChild(spriteImg);
+      } else {
+        // Fallback : carré de couleur si le sprite n'est pas encore chargé
+        const color = document.createElement('div');
+        color.className = 'resource-color';
+        // Couleurs de fallback
+        const resourceColors: Record<ResourceType, string> = {
+          [ResourceType.Wood]: '#8B4513',
+          [ResourceType.Brick]: '#CD5C5C',
+          [ResourceType.Wheat]: '#FFD700',
+          [ResourceType.Sheep]: '#90EE90',
+          [ResourceType.Ore]: '#708090',
+        };
+        color.style.backgroundColor = resourceColors[resourceType];
+        item.appendChild(color);
+      }
 
       const name = document.createElement('span');
       name.className = 'resource-name';
@@ -132,8 +157,7 @@ function main(): void {
       const countEl = document.createElement('span');
       countEl.className = 'resource-count';
       countEl.textContent = count.toString();
-
-      item.appendChild(color);
+      
       item.appendChild(name);
       item.appendChild(countEl);
       resourcesList.appendChild(item);
