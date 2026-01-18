@@ -190,7 +190,13 @@ function main(): void {
     
     // Ajouter le sprite si disponible
     const sprite = renderer.getCitySprite(city.level);
-    if (sprite && renderer.areCitySpritesLoaded() && sprite.complete && sprite.naturalWidth > 0) {
+    console.log(`Sprite pour niveau ${city.level}:`, sprite ? 'trouvé' : 'non trouvé');
+    console.log(`Sprites chargés: ${renderer.areCitySpritesLoaded()}`);
+    if (sprite) {
+      console.log(`Sprite complete: ${sprite.complete}, naturalWidth: ${sprite.naturalWidth}, src: ${sprite.src}`);
+    }
+    
+    if (sprite && sprite.complete && sprite.naturalWidth > 0) {
       const spriteImg = document.createElement('img');
       spriteImg.src = sprite.src;
       spriteImg.style.width = '32px';
@@ -198,7 +204,16 @@ function main(): void {
       spriteImg.style.marginRight = '8px';
       spriteImg.style.verticalAlign = 'middle';
       spriteImg.style.display = 'inline-block';
+      spriteImg.alt = levelName;
       cityPanelTitle.appendChild(spriteImg);
+      console.log('Sprite ajouté au panneau');
+    } else {
+      console.warn(`Impossible d'afficher le sprite pour le niveau ${city.level}`, {
+        sprite: !!sprite,
+        complete: sprite?.complete,
+        naturalWidth: sprite?.naturalWidth,
+        src: sprite?.src
+      });
     }
     
     // Ajouter le nom de la ville

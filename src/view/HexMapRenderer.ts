@@ -83,6 +83,17 @@ export class HexMapRenderer {
     let loadedCount = 0;
     const totalSprites = Object.keys(spriteFiles).length;
 
+    const checkAllLoaded = (): void => {
+      loadedCount++;
+      if (loadedCount === totalSprites) {
+        this.citySpritesLoaded = true;
+        // Re-rendre si nécessaire pour mettre à jour le panneau
+        if (this.renderCallback) {
+          this.renderCallback();
+        }
+      }
+    };
+
     for (const [level, filename] of Object.entries(spriteFiles)) {
       const levelNum = Number(level) as CityLevel;
       
@@ -92,10 +103,13 @@ export class HexMapRenderer {
         
         img.onload = () => {
           this.citySprites.set(levelNum, img);
+          checkAllLoaded();
         };
         
         img.onerror = () => {
           console.warn(`Échec du chargement avec ${fullPath}`);
+          // Compter quand même pour ne pas bloquer
+          checkAllLoaded();
         };
         
         img.src = fullPath;
