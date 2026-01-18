@@ -1,12 +1,12 @@
 import { GameMap } from '../model/map/GameMap';
 import { CivilizationId } from '../model/map/CivilizationId';
 import { PlayerResources } from '../model/game/PlayerResources';
+import { GameClock } from '../model/game/GameClock';
 import { City } from '../model/city/City';
 import { BuildingType, getRequiredHexType, getResourceProductionBuildings } from '../model/city/BuildingType';
 import { HexType } from '../model/map/HexType';
 import { HexCoord } from '../model/hex/HexCoord';
 import { Vertex } from '../model/hex/Vertex';
-import { ResourceHarvestController, HarvestResult } from './ResourceHarvestController';
 import { ResourceHarvest } from '../model/game/ResourceHarvest';
 import { ResourceType } from '../model/map/ResourceType';
 
@@ -28,23 +28,31 @@ export interface BuildingProductionResult {
  * Contrôleur pour gérer la production automatique des bâtiments de ressources.
  * 
  * Les bâtiments de ressources produisent automatiquement des ressources
- * en récoltant les hexagones adjacents du bon type lorsque le cooldown est passé.
+ * en récoltant les hexagones adjacents du bon type lorsque l'intervalle de production est écoulé.
+ * Utilise GameClock pour gérer le temps de manière indépendante de la vitesse d'exécution.
  */
 export class BuildingProductionController {
   /**
+   * Intervalle entre deux productions pour un bâtiment (en secondes).
+   */
+  private static readonly PRODUCTION_INTERVAL_SECONDS = 1.0;
+
+  /**
    * Traite la production automatique pour toutes les villes d'une civilisation.
    * Pour chaque bâtiment de ressource, vérifie les hexagones adjacents et récolte
-   * ceux qui sont prêts (cooldown passé + conditions de récolte).
+   * ceux qui sont prêts (intervalle de production écoulé + conditions de récolte).
    * 
    * @param civId - L'identifiant de la civilisation
    * @param map - La carte de jeu
    * @param resources - Les ressources du joueur
+   * @param gameClock - L'horloge de jeu pour gérer le temps
    * @returns Liste des productions effectuées (pour notifier la vue)
    */
   static processAutomaticProduction(
     civId: CivilizationId,
     map: GameMap,
-    resources: PlayerResources
+    resources: PlayerResources,
+    gameClock: GameClock
   ): BuildingProductionResult[] {
     const results: BuildingProductionResult[] = [];
     
@@ -53,7 +61,7 @@ export class BuildingProductionController {
     
     // Pour chaque ville
     for (const city of cities) {
-      const cityResults = this.processCityProduction(city, civId, map, resources);
+      const cityResults = this.processCityProduction(city, civId, map, resources, gameClock);
       results.push(...cityResults);
     }
     
@@ -67,13 +75,15 @@ export class BuildingProductionController {
    * @param civId - L'identifiant de la civilisation
    * @param map - La carte de jeu
    * @param resources - Les ressources du joueur
+   * @param gameClock - L'horloge de jeu pour gérer le temps
    * @returns Liste des productions effectuées pour cette ville
    */
   private static processCityProduction(
     city: City,
     civId: CivilizationId,
     map: GameMap,
-    resources: PlayerResources
+    resources: PlayerResources,
+    gameClock: GameClock
   ): BuildingProductionResult[] {
     const results: BuildingProductionResult[] = [];
     
@@ -93,18 +103,30 @@ export class BuildingProductionController {
         continue; // Ne devrait pas arriver pour les bâtiments de ressources
       }
       
+      // Vérifier si le temps de production est écoulé
+      const currentTime = gameClock.getCurrentTime();
+      const lastProductionTime = city.getBuildingProductionTime(buildingType);
+      
+      // Si le bâtiment n'a jamais produit, initialiser son temps de production au temps actuel
+      if (lastProductionTime === undefined) {
+        city.setBuildingProductionTime(buildingType, currentTime);
+        continue; // Ne pas produire immédiatement à la construction
+      }
+      
+      // Calculer le temps écoulé depuis la dernière production
+      const timeElapsed = currentTime - lastProductionTime;
+      
+      // Vérifier si l'intervalle de production est écoulé
+      if (timeElapsed < this.PRODUCTION_INTERVAL_SECONDS) {
+        // Pas encore le temps de produire
+        continue;
+      }
+      
       // Trouver les hexagones adjacents du bon type
       const adjacentHexes = this.getAdjacentHexesOfType(city.vertex, requiredHexType, map);
       
       // Pour chaque hex adjacent, vérifier s'il peut être récolté automatiquement
       for (const hexCoord of adjacentHexes) {
-        // Vérifier si le cooldown est passé (ou n'existe pas)
-        const remainingCooldown = ResourceHarvestController.getRemainingCooldown(hexCoord);
-        if (remainingCooldown > 0) {
-          // Le cooldown n'est pas encore passé, passer au suivant
-          continue;
-        }
-        
         // Vérifier que la récolte est possible (visible, etc.)
         if (!ResourceHarvest.canHarvest(hexCoord, map, civId)) {
           continue;
@@ -116,18 +138,18 @@ export class BuildingProductionController {
           continue;
         }
         
-        // Effectuer la récolte via le contrôleur (qui gère le cooldown)
-        const harvestResult: HarvestResult = ResourceHarvestController.harvest(
-          hexCoord,
-          civId,
-          map,
-          resources
-        );
-        
-        if (harvestResult.success && harvestResult.cityVertex) {
+        // Effectuer la récolte directement (sans passer par ResourceHarvestController pour éviter le cooldown)
+        try {
+          const harvestResult = ResourceHarvest.harvest(hexCoord, map, civId, resources);
+          
           // Convertir le type d'hex en type de ressource
           const resourceType = ResourceHarvest.hexTypeToResourceType(hexType);
           if (resourceType) {
+            // Calculer le nouveau temps de production : ancien temps + intervalle
+            // Cela garantit qu'une production par seconde est bien faite une fois par seconde
+            const newProductionTime = lastProductionTime + this.PRODUCTION_INTERVAL_SECONDS;
+            city.updateBuildingProductionTime(buildingType, newProductionTime);
+            
             results.push({
               cityVertex: harvestResult.cityVertex,
               buildingType,
@@ -135,6 +157,9 @@ export class BuildingProductionController {
               resourceType,
             });
           }
+        } catch (error) {
+          // Si la récolte échoue (par exemple hex non visible), continuer avec le suivant
+          continue;
         }
         
         // On arrête après la première récolte réussie pour ce bâtiment
@@ -180,5 +205,59 @@ export class BuildingProductionController {
     }
     
     return matchingHexes;
+  }
+
+  /**
+   * Vérifie si un hexagone est automatiquement récolté par un bâtiment.
+   * Un hex est automatiquement récolté s'il est adjacent à une ville qui a un bâtiment
+   * de production de ressources capable de récolter ce type d'hex.
+   * 
+   * @param hexCoord - L'hexagone à vérifier
+   * @param civId - L'identifiant de la civilisation
+   * @param map - La carte de jeu
+   * @returns true si l'hex est automatiquement récolté
+   */
+  static isHexAutoHarvested(hexCoord: HexCoord, civId: CivilizationId, map: GameMap): boolean {
+    // Obtenir le type de l'hex
+    const hexType = map.getHexType(hexCoord);
+    if (!hexType) {
+      return false;
+    }
+
+    // Obtenir les vertices adjacents à cet hex
+    const grid = map.getGrid();
+    const vertices = grid.getVertices(hexCoord);
+    
+    // Vérifier chaque vertex adjacent
+    for (const vertex of vertices) {
+      // Vérifier si une ville existe sur ce vertex
+      const city = map.getCity(vertex);
+      if (!city || city.owner !== civId) {
+        continue;
+      }
+
+      // Obtenir les bâtiments de production de ressources de cette ville
+      const resourceBuildings = getResourceProductionBuildings();
+      const cityBuildings = city.getBuildings();
+      
+      // Vérifier si un bâtiment peut récolter cet hex
+      for (const buildingType of cityBuildings) {
+        if (!resourceBuildings.includes(buildingType)) {
+          continue;
+        }
+        
+        // Vérifier si ce bâtiment récolte ce type d'hex
+        const requiredHexType = getRequiredHexType(buildingType);
+        if (requiredHexType === hexType) {
+          // Vérifier que l'hex est bien adjacent au vertex de la ville
+          const vertexHexes = vertex.getHexes();
+          if (vertexHexes.some(h => h.equals(hexCoord))) {
+            return true;
+          }
+        }
+      }
+    }
+    
+    return false;
   }
 }

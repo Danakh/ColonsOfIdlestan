@@ -10,6 +10,7 @@ import { City } from '../model/city/City';
 import { CityLevel } from '../model/city/CityLevel';
 import { ResourceHarvestController } from '../controller/ResourceHarvestController';
 import { ResourceHarvest } from '../model/game/ResourceHarvest';
+import { BuildingProductionController } from '../controller/BuildingProductionController';
 
 /**
  * Configuration pour le rendu des hexagones.
@@ -84,6 +85,8 @@ export class HexMapRenderer {
   private hexTexturesLoaded: boolean = false;
   private lockSprite: HTMLImageElement | null = null;
   private lockSpriteLoaded: boolean = false;
+  private autoSprite: HTMLImageElement | null = null;
+  private autoSpriteLoaded: boolean = false;
   private resourceParticles: ResourceParticle[] = [];
   private animationFrameId: number | null = null;
   private cooldownAnimationFrameId: number | null = null;
@@ -99,6 +102,7 @@ export class HexMapRenderer {
     this.loadCitySprites();
     this.loadHexTextures();
     this.loadLockSprite();
+    this.loadAutoSprite();
   }
 
   /**
@@ -173,6 +177,29 @@ export class HexMapRenderer {
     
     img.onerror = () => {
       console.warn(`Échec du chargement du sprite de cadenas ${fullPath}`);
+    };
+    
+    img.src = fullPath;
+  }
+
+  /**
+   * Charge le sprite SVG "auto" pour indiquer les hexes récoltés automatiquement.
+   */
+  private loadAutoSprite(): void {
+    const img = new Image();
+    const fullPath = "/assets/sprites/auto.svg";
+    
+    img.onload = () => {
+      this.autoSprite = img;
+      this.autoSpriteLoaded = true;
+      // Re-rendre si nécessaire pour mettre à jour la carte
+      if (this.renderCallback) {
+        this.renderCallback();
+      }
+    };
+    
+    img.onerror = () => {
+      console.warn(`Échec du chargement du sprite auto ${fullPath}`);
     };
     
     img.src = fullPath;
@@ -677,6 +704,11 @@ export class HexMapRenderer {
         this.drawLockIcon(x, y, currentHexSize);
       }
     }
+
+    // Dessiner l'icône "auto" si l'hex est récolté automatiquement
+    if (civId && BuildingProductionController.isHexAutoHarvested(coord, civId, gameMap)) {
+      this.drawAutoIcon(x, y, currentHexSize);
+    }
   }
 
   /**
@@ -702,6 +734,32 @@ export class HexMapRenderer {
     
     // Dessiner le sprite
     this.ctx.drawImage(this.lockSprite, x, y, spriteWidth, spriteHeight);
+    
+    this.ctx.restore();
+  }
+
+  /**
+   * Dessine une icône "auto" au centre d'un hexagone pour indiquer qu'il est récolté automatiquement.
+   * Utilise le sprite SVG chargé depuis les assets.
+   */
+  private drawAutoIcon(centerX: number, centerY: number, hexSize: number): void {
+    // Si le sprite n'est pas encore chargé, ne rien dessiner
+    if (!this.autoSprite || !this.autoSpriteLoaded) {
+      return;
+    }
+    
+    const iconSize = hexSize * 0.5; // Taille de l'icône proportionnelle à l'hexagone
+    
+    this.ctx.save();
+    
+    // Centrer l'image sur le point (centerX, centerY)
+    const spriteWidth = iconSize;
+    const spriteHeight = iconSize;
+    const x = centerX - spriteWidth / 2;
+    const y = centerY - spriteHeight / 2;
+    
+    // Dessiner le sprite
+    this.ctx.drawImage(this.autoSprite, x, y, spriteWidth, spriteHeight);
     
     this.ctx.restore();
   }
@@ -1576,7 +1634,11 @@ export class HexMapRenderer {
     // PRIORITÉ 3: Vérifier si on a cliqué sur un hexagone
     if (this.onHexClickCallback) {
       const hexCoord = this.pixelToHexCoord(pixelX, pixelY);
-      if (hexCoord) {
+      if (hexCoord && this.currentGameMap && this.currentCivilizationId) {
+        // Bloquer les clics sur les hexes automatiquement récoltés
+        if (BuildingProductionController.isHexAutoHarvested(hexCoord, this.currentCivilizationId, this.currentGameMap)) {
+          return; // Ne pas traiter le clic si l'hex est auto-récolté
+        }
         this.onHexClickCallback(hexCoord);
       }
     }

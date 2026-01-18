@@ -3,6 +3,7 @@ import { GameMap } from '../model/map/GameMap';
 import { HexType } from '../model/map/HexType';
 import { CivilizationId } from '../model/map/CivilizationId';
 import { PlayerResources } from '../model/game/PlayerResources';
+import { GameClock } from '../model/game/GameClock';
 
 /**
  * Classe principale de l'application de jeu.
@@ -15,11 +16,13 @@ export class MainGame {
   private readonly mapGenerator: MapGenerator;
   private readonly playerResources: PlayerResources;
   private readonly playerCivilizationId: CivilizationId;
+  private readonly gameClock: GameClock;
 
   constructor() {
     this.mapGenerator = new MapGenerator();
     this.playerResources = new PlayerResources();
     this.playerCivilizationId = CivilizationId.create('player1');
+    this.gameClock = new GameClock();
   }
 
   /**
@@ -52,6 +55,9 @@ export class MainGame {
     
     // Réinitialiser l'inventaire du joueur à chaque nouvelle partie
     this.playerResources.clear();
+    
+    // Réinitialiser l'horloge de jeu
+    this.gameClock.reset();
   }
 
   /**
@@ -83,5 +89,22 @@ export class MainGame {
    */
   regenerate(): void {
     this.initialize();
+  }
+
+  /**
+   * Retourne l'horloge de jeu.
+   * @returns L'horloge de jeu
+   */
+  getGameClock(): GameClock {
+    return this.gameClock;
+  }
+
+  /**
+   * Met à jour le temps de l'horloge de jeu.
+   * Doit être appelée par la couche applicative à chaque frame.
+   * @param timeSeconds - Le temps actuel en secondes
+   */
+  updateGameTime(timeSeconds: number): void {
+    this.gameClock.updateTime(timeSeconds);
   }
 }

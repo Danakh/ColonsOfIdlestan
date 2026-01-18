@@ -14,7 +14,7 @@ import { ResourceType } from './model/map/ResourceType';
 import { HexCoord } from './model/hex/HexCoord';
 import { Edge } from './model/hex/Edge';
 import { Vertex } from './model/hex/Vertex';
-import { BuildingType, BuildingAction } from './model/city/BuildingType';
+import { BuildingType, BuildingAction, getResourceProductionBuildings } from './model/city/BuildingType';
 import { City } from './model/city/City';
 import { GameMap } from './model/map/GameMap';
 import { APP_VERSION, APP_NAME } from './config/version';
@@ -205,8 +205,17 @@ function main(): void {
   cityPanelView.setCallbacks({
     onBuildBuilding: (buildingType: BuildingType, city: City, gameMap: GameMap, vertex: Vertex) => {
       const playerResources = game.getPlayerResources();
+      const gameClock = game.getGameClock();
       try {
         BuildingController.buildBuilding(buildingType, city, gameMap, vertex, playerResources);
+        
+        // Si c'est un bâtiment de ressource, initialiser son temps de production
+        const resourceBuildings = getResourceProductionBuildings();
+        if (resourceBuildings.includes(buildingType)) {
+          const currentTime = gameClock.getCurrentTime();
+          city.setBuildingProductionTime(buildingType, currentTime);
+        }
+        
         updateResourcesDisplay();
         updateCityPanel();
         const civId = game.getPlayerCivilizationId();
@@ -395,6 +404,9 @@ function main(): void {
   // Gérer le bouton de régénération dans le menu
   regenerateBtn.addEventListener('click', () => {
     game.regenerate();
+    // Réinitialiser le temps de référence pour la boucle d'animation
+    gameStartTime = null;
+    
     const newGameMap = game.getGameMap();
     if (newGameMap) {
       const civId = game.getPlayerCivilizationId();
@@ -428,9 +440,6 @@ function main(): void {
   // Initialiser le panneau (masqué par défaut)
   updateCityPanel();
 
-  // Gérer la production automatique des bâtiments de ressources
-  let productionIntervalId: number | null = null;
-
   /**
    * Traite la production automatique des bâtiments et déclenche les animations.
    */
@@ -442,12 +451,14 @@ function main(): void {
 
     const civId = game.getPlayerCivilizationId();
     const playerResources = game.getPlayerResources();
+    const gameClock = game.getGameClock();
 
     // Traiter la production automatique via le contrôleur
     const productionResults = BuildingProductionController.processAutomaticProduction(
       civId,
       currentGameMap,
-      playerResources
+      playerResources,
+      gameClock
     );
 
     // Si des productions ont eu lieu, déclencher les animations et mettre à jour l'affichage
@@ -470,13 +481,34 @@ function main(): void {
     }
   }
 
-  // Démarrer la boucle de production automatique (vérifie toutes les 500ms)
-  productionIntervalId = window.setInterval(() => {
-    processAutomaticBuildingProduction();
-  }, 500);
+  // Boucle principale d'animation pour gérer le temps et la production automatique
+  let lastAnimationFrame: number | null = null;
+  let gameStartTime: number | null = null;
 
-  // Nettoyer l'intervalle si nécessaire (par exemple lors de la régénération)
-  // Note: pour l'instant, on garde l'intervalle actif pendant toute la session
+  /**
+   * Boucle d'animation principale qui gère le temps et la production automatique.
+   */
+  function gameLoop(timestamp: number): void {
+    // Initialiser le temps de référence au premier appel
+    if (gameStartTime === null) {
+      gameStartTime = timestamp;
+    }
+
+    // Calculer le temps écoulé depuis le début en secondes
+    const timeSeconds = (timestamp - gameStartTime) / 1000;
+
+    // Mettre à jour l'horloge de jeu
+    game.updateGameTime(timeSeconds);
+
+    // Traiter la production automatique
+    processAutomaticBuildingProduction();
+
+    // Continuer la boucle
+    lastAnimationFrame = requestAnimationFrame(gameLoop);
+  }
+
+  // Démarrer la boucle d'animation
+  lastAnimationFrame = requestAnimationFrame(gameLoop);
 }
 
 // Lancer l'application quand le DOM est prêt

@@ -1,7 +1,7 @@
 import { Vertex } from '../hex/Vertex';
 import { CivilizationId } from '../map/CivilizationId';
 import { CityLevel, isValidCityLevel } from './CityLevel';
-import { BuildingType, getAllBuildingTypes } from './BuildingType';
+import { BuildingType, getAllBuildingTypes, getResourceProductionBuildings } from './BuildingType';
 
 /**
  * Représente une ville sur la carte de jeu.
@@ -11,6 +11,8 @@ import { BuildingType, getAllBuildingTypes } from './BuildingType';
  */
 export class City {
   private readonly buildings: BuildingType[] = [];
+  /** Temps de dernière production pour chaque bâtiment de ressource (en secondes depuis le début) */
+  private readonly buildingProductionTimes: Map<BuildingType, number> = new Map();
 
   /**
    * Crée une nouvelle ville.
@@ -83,6 +85,9 @@ export class City {
     }
 
     this.buildings.push(buildingType);
+    
+    // Si c'est un bâtiment de ressource, initialiser son temps de production
+    // Le temps initial sera défini lors de la construction via setBuildingProductionTime
   }
 
   /**
@@ -181,6 +186,45 @@ export class City {
    */
   hasCityHall(): boolean {
     return this.hasBuilding(BuildingType.TownHall);
+  }
+
+  /**
+   * Enregistre le temps de dernière production pour un bâtiment de ressource.
+   * @param buildingType - Le type de bâtiment
+   * @param timeSeconds - Le temps en secondes
+   */
+  setBuildingProductionTime(buildingType: BuildingType, timeSeconds: number): void {
+    // Vérifier que c'est un bâtiment de ressource
+    const resourceBuildings = getResourceProductionBuildings();
+    if (!resourceBuildings.includes(buildingType)) {
+      throw new Error(`Le bâtiment ${buildingType} n'est pas un bâtiment de production de ressources.`);
+    }
+    
+    // Vérifier que le bâtiment est construit
+    if (!this.hasBuilding(buildingType)) {
+      throw new Error(`Le bâtiment ${buildingType} n'est pas construit dans cette ville.`);
+    }
+    
+    this.buildingProductionTimes.set(buildingType, timeSeconds);
+  }
+
+  /**
+   * Retourne le temps de dernière production d'un bâtiment de ressource.
+   * @param buildingType - Le type de bâtiment
+   * @returns Le temps de dernière production en secondes, ou undefined si jamais produit
+   */
+  getBuildingProductionTime(buildingType: BuildingType): number | undefined {
+    return this.buildingProductionTimes.get(buildingType);
+  }
+
+  /**
+   * Met à jour le temps de dernière production après une production réussie.
+   * Le nouveau temps est calculé comme : ancien temps + intervalle de production.
+   * @param buildingType - Le type de bâtiment
+   * @param newTimeSeconds - Le nouveau temps (ancien temps + intervalle)
+   */
+  updateBuildingProductionTime(buildingType: BuildingType, newTimeSeconds: number): void {
+    this.setBuildingProductionTime(buildingType, newTimeSeconds);
   }
 
   /**
