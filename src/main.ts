@@ -1,12 +1,14 @@
 import { MainGame } from './application/MainGame';
 import { HexMapRenderer } from './view/HexMapRenderer';
 import { CityPanelView } from './view/CityPanelView';
+import { TradePanelView } from './view/TradePanelView';
 import { ResourceSprites } from './view/ResourceSprites';
 import { ResourceHarvest } from './model/game/ResourceHarvest';
 import { RoadConstruction } from './model/game/RoadConstruction';
 import { RoadController } from './controller/RoadController';
 import { ResourceHarvestController } from './controller/ResourceHarvestController';
 import { BuildingController } from './controller/BuildingController';
+import { TradeController } from './controller/TradeController';
 import { ResourceType } from './model/map/ResourceType';
 import { HexCoord } from './model/hex/HexCoord';
 import { Edge } from './model/hex/Edge';
@@ -36,6 +38,9 @@ function main(): void {
   const resourcesList = document.getElementById('resources-list') as HTMLDivElement;
   // Créer la vue du panneau de ville
   const cityPanelView = new CityPanelView('city-panel');
+
+  // Créer la vue du panneau de commerce
+  const tradePanelView = new TradePanelView('trade-panel');
 
   if (!canvas) {
     throw new Error('Canvas introuvable');
@@ -73,6 +78,9 @@ function main(): void {
     updateResourcesDisplay();
   });
   resourceSprites.load();
+
+  // Configurer les sprites de ressources pour le panneau de commerce
+  tradePanelView.setResourceSprites(resourceSprites);
   
   // Redimensionner le canvas au chargement et au redimensionnement
   renderer.resize();
@@ -208,9 +216,17 @@ function main(): void {
           }
           city.upgrade();
         } else if (action === BuildingAction.Trade) {
-          // TODO: Implémenter la logique de commerce
-          console.log('Commerce - à implémenter');
-          return;
+          // Mettre à jour le contexte de jeu pour le panneau de commerce
+          const currentGameMap = game.getGameMap();
+          if (currentGameMap) {
+            const civId = game.getPlayerCivilizationId();
+            tradePanelView.setGameContext(currentGameMap, civId);
+          }
+          
+          // Ouvrir le panneau de commerce
+          const playerResources = game.getPlayerResources();
+          tradePanelView.show(playerResources);
+          return; // Ne pas mettre à jour le panneau de ville ni re-rendre
         }
         updateCityPanel();
         const currentGameMap = game.getGameMap();
@@ -221,6 +237,37 @@ function main(): void {
       } catch (error) {
         console.error(`Erreur lors de l'action ${action}:`, error);
       }
+    },
+  });
+
+  // Configurer les callbacks du panneau de commerce
+  tradePanelView.setCallbacks({
+    onTrade: (offered: Map<ResourceType, number>, requested: Map<ResourceType, number>) => {
+      const currentGameMap = game.getGameMap();
+      if (!currentGameMap) {
+        return;
+      }
+
+      const civId = game.getPlayerCivilizationId();
+      const playerResources = game.getPlayerResources();
+
+      try {
+        // Effectuer l'échange batch via le contrôleur
+        TradeController.performBatchTrade(offered, requested, civId, currentGameMap, playerResources);
+
+        // Mettre à jour l'affichage des ressources
+        updateResourcesDisplay();
+
+        // Fermer le panneau de commerce
+        tradePanelView.hide();
+      } catch (error) {
+        console.error('Erreur lors de l\'échange:', error);
+        // On pourrait afficher un message à l'utilisateur si nécessaire
+        // Pour l'instant, on garde le panneau ouvert pour que l'utilisateur puisse corriger
+      }
+    },
+    onCancel: () => {
+      tradePanelView.hide();
     },
   });
 

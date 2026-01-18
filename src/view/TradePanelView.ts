@@ -1,0 +1,320 @@
+import { ResourceType } from '../model/map/ResourceType';
+import { PlayerResources } from '../model/game/PlayerResources';
+import { ResourceSprites } from './ResourceSprites';
+import { TradeController } from '../controller/TradeController';
+import { GameMap } from '../model/map/GameMap';
+import { CivilizationId } from '../model/map/CivilizationId';
+
+/**
+ * Callbacks pour les actions du panneau de commerce.
+ */
+export interface TradePanelCallbacks {
+  /** Callback appelé lorsqu'un échange doit être effectué */
+  onTrade?: (offered: Map<ResourceType, number>, requested: Map<ResourceType, number>) => void;
+  /** Callback appelé lorsque l'utilisateur annule */
+  onCancel?: () => void;
+}
+
+/**
+ * Vue pour le panneau de commerce.
+ * Permet de composer un échange en sélectionnant les ressources données et reçues.
+ */
+export class TradePanelView {
+  private tradePanel: HTMLElement;
+  private offeredList: HTMLUListElement;
+  private requestedList: HTMLUListElement;
+  private cancelBtn: HTMLButtonElement;
+  private confirmBtn: HTMLButtonElement;
+  
+  private offeredResources: Map<ResourceType, number> = new Map();
+  private requestedResources: Map<ResourceType, number> = new Map();
+  private playerResources: PlayerResources | null = null;
+  private resourceSprites: ResourceSprites | null = null;
+  private callbacks: TradePanelCallbacks = {};
+  private gameMap: GameMap | null = null;
+  private civId: CivilizationId | null = null;
+
+  // Noms des ressources en français
+  private readonly resourceNames: Record<ResourceType, string> = {
+    [ResourceType.Wood]: 'Bois',
+    [ResourceType.Brick]: 'Brique',
+    [ResourceType.Wheat]: 'Blé',
+    [ResourceType.Sheep]: 'Mouton',
+    [ResourceType.Ore]: 'Minerai',
+  };
+
+  // Ordre d'affichage des ressources
+  private readonly resourceOrder: ResourceType[] = [
+    ResourceType.Wood,
+    ResourceType.Brick,
+    ResourceType.Wheat,
+    ResourceType.Sheep,
+    ResourceType.Ore,
+  ];
+
+  constructor(tradePanelId: string = 'trade-panel') {
+    const panel = document.getElementById(tradePanelId);
+    const offeredListEl = document.getElementById('trade-offered-list') as HTMLUListElement;
+    const requestedListEl = document.getElementById('trade-requested-list') as HTMLUListElement;
+    const cancelBtnEl = document.getElementById('trade-cancel-btn') as HTMLButtonElement;
+    const confirmBtnEl = document.getElementById('trade-confirm-btn') as HTMLButtonElement;
+
+    if (!panel) {
+      throw new Error(`Élément avec l'id "${tradePanelId}" introuvable`);
+    }
+    if (!offeredListEl) {
+      throw new Error('Élément avec l\'id "trade-offered-list" introuvable');
+    }
+    if (!requestedListEl) {
+      throw new Error('Élément avec l\'id "trade-requested-list" introuvable');
+    }
+    if (!cancelBtnEl) {
+      throw new Error('Élément avec l\'id "trade-cancel-btn" introuvable');
+    }
+    if (!confirmBtnEl) {
+      throw new Error('Élément avec l\'id "trade-confirm-btn" introuvable');
+    }
+
+    this.tradePanel = panel;
+    this.offeredList = offeredListEl;
+    this.requestedList = requestedListEl;
+    this.cancelBtn = cancelBtnEl;
+    this.confirmBtn = confirmBtnEl;
+
+    // Configurer les gestionnaires d'événements
+    this.setupEventListeners();
+  }
+
+  /**
+   * Configure le gestionnaire de sprites de ressources.
+   */
+  setResourceSprites(resourceSprites: ResourceSprites): void {
+    this.resourceSprites = resourceSprites;
+  }
+
+  /**
+   * Définit les callbacks pour les actions du panneau.
+   */
+  setCallbacks(callbacks: TradePanelCallbacks): void {
+    this.callbacks = callbacks;
+  }
+
+  /**
+   * Configure les gestionnaires d'événements.
+   */
+  private setupEventListeners(): void {
+    // Bouton Annuler
+    this.cancelBtn.addEventListener('click', () => {
+      this.hide();
+      if (this.callbacks.onCancel) {
+        this.callbacks.onCancel();
+      }
+    });
+
+    // Bouton Échanger
+    this.confirmBtn.addEventListener('click', () => {
+      if (this.callbacks.onTrade) {
+        this.callbacks.onTrade(
+          new Map(this.offeredResources),
+          new Map(this.requestedResources)
+        );
+      }
+    });
+  }
+
+  /**
+   * Configure la carte de jeu et la civilisation pour vérifier l'accès au commerce.
+   */
+  setGameContext(gameMap: GameMap, civId: CivilizationId): void {
+    this.gameMap = gameMap;
+    this.civId = civId;
+  }
+
+  /**
+   * Affiche le panneau de commerce et initialise les listes.
+   */
+  show(playerResources: PlayerResources): void {
+    this.playerResources = playerResources;
+    this.offeredResources.clear();
+    this.requestedResources.clear();
+    
+    // Initialiser toutes les ressources à 0
+    for (const resourceType of this.resourceOrder) {
+      this.offeredResources.set(resourceType, 0);
+      this.requestedResources.set(resourceType, 0);
+    }
+
+    this.update();
+    this.tradePanel.classList.remove('hidden');
+  }
+
+  /**
+   * Cache le panneau de commerce.
+   */
+  hide(): void {
+    this.tradePanel.classList.add('hidden');
+    this.offeredResources.clear();
+    this.requestedResources.clear();
+  }
+
+  /**
+   * Met à jour l'affichage des listes et du bouton Échanger.
+   */
+  private update(): void {
+    if (!this.playerResources) {
+      return;
+    }
+
+    // Mettre à jour la liste des ressources offertes (gauche)
+    this.updateResourceList(this.offeredList, this.offeredResources, true);
+
+    // Mettre à jour la liste des ressources demandées (droite)
+    this.updateResourceList(this.requestedList, this.requestedResources, false);
+
+    // Mettre à jour le bouton Échanger
+    this.updateConfirmButton();
+  }
+
+  /**
+   * Met à jour une liste de ressources.
+   */
+  private updateResourceList(
+    listElement: HTMLUListElement,
+    resourceMap: Map<ResourceType, number>,
+    isOffered: boolean
+  ): void {
+    listElement.innerHTML = '';
+
+    for (const resourceType of this.resourceOrder) {
+      const quantity = resourceMap.get(resourceType) || 0;
+      const available = this.playerResources?.getResource(resourceType) || 0;
+
+      const item = document.createElement('li');
+      item.className = 'trade-resource-item';
+      
+      // Désactiver visuellement si c'est la liste offerte et qu'il n'y a plus de ressources disponibles
+      if (isOffered && quantity >= available) {
+        item.classList.add('disabled');
+      }
+
+      // Conteneur pour le sprite et le nom
+      const resourceInfo = document.createElement('div');
+      resourceInfo.className = 'trade-resource-info';
+
+      // Sprite de ressource
+      if (this.resourceSprites) {
+        const sprite = this.resourceSprites.getSprite(resourceType);
+        const spriteReady = this.resourceSprites.isSpriteReady(resourceType);
+        
+        if (spriteReady && sprite) {
+          const spriteImg = document.createElement('img');
+          spriteImg.src = sprite.src;
+          spriteImg.className = 'trade-resource-sprite';
+          spriteImg.alt = this.resourceNames[resourceType];
+          spriteImg.style.width = '32px';
+          spriteImg.style.height = '32px';
+          spriteImg.style.objectFit = 'contain';
+          resourceInfo.appendChild(spriteImg);
+        } else {
+          // Fallback : carré de couleur
+          const color = document.createElement('div');
+          color.className = 'trade-resource-color';
+          const resourceColors: Record<ResourceType, string> = {
+            [ResourceType.Wood]: '#8B4513',
+            [ResourceType.Brick]: '#CD5C5C',
+            [ResourceType.Wheat]: '#FFD700',
+            [ResourceType.Sheep]: '#90EE90',
+            [ResourceType.Ore]: '#708090',
+          };
+          color.style.backgroundColor = resourceColors[resourceType];
+          resourceInfo.appendChild(color);
+        }
+      }
+
+      // Nom de la ressource
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'trade-resource-name';
+      nameSpan.textContent = this.resourceNames[resourceType];
+      resourceInfo.appendChild(nameSpan);
+
+      item.appendChild(resourceInfo);
+
+      // Quantité
+      const quantitySpan = document.createElement('span');
+      quantitySpan.className = 'trade-resource-quantity';
+      quantitySpan.textContent = quantity > 0 ? `×${quantity}` : '';
+      item.appendChild(quantitySpan);
+
+      // Gestionnaire de clic
+      if (isOffered) {
+        item.addEventListener('click', () => {
+          this.handleOfferedClick(resourceType);
+        });
+      } else {
+        item.addEventListener('click', () => {
+          this.handleRequestedClick(resourceType);
+        });
+      }
+
+      listElement.appendChild(item);
+    }
+  }
+
+  /**
+   * Gère le clic sur une ressource dans la liste des ressources offertes.
+   */
+  private handleOfferedClick(resourceType: ResourceType): void {
+    if (!this.playerResources) {
+      return;
+    }
+
+    const current = this.offeredResources.get(resourceType) || 0;
+    const available = this.playerResources.getResource(resourceType);
+    const newQuantity = current + 4;
+
+    // Vérifier qu'on ne dépasse pas les ressources disponibles
+    if (newQuantity <= available) {
+      this.offeredResources.set(resourceType, newQuantity);
+      this.update();
+    }
+  }
+
+  /**
+   * Gère le clic sur une ressource dans la liste des ressources demandées.
+   */
+  private handleRequestedClick(resourceType: ResourceType): void {
+    const current = this.requestedResources.get(resourceType) || 0;
+    this.requestedResources.set(resourceType, current + 1);
+    this.update();
+  }
+
+  /**
+   * Met à jour l'état du bouton Échanger.
+   */
+  private updateConfirmButton(): void {
+    // Vérifier s'il y a des ressources proposées et demandées
+    const hasOffered = Array.from(this.offeredResources.values()).some(qty => qty > 0);
+    const hasRequested = Array.from(this.requestedResources.values()).some(qty => qty > 0);
+
+    // Vérifier l'accès au commerce
+    let canTrade = true;
+    if (this.gameMap && this.civId) {
+      canTrade = TradeController.canTrade(this.civId, this.gameMap);
+    }
+
+    // Vérifier que le joueur a assez de ressources pour toutes les offres
+    let hasEnoughResources = true;
+    if (this.playerResources) {
+      for (const [resourceType, quantity] of this.offeredResources.entries()) {
+        if (quantity > 0 && !this.playerResources.hasEnough(resourceType, quantity)) {
+          hasEnoughResources = false;
+          break;
+        }
+      }
+    }
+
+    // Le bouton est désactivé s'il n'y a rien à échanger, si le commerce n'est pas disponible,
+    // ou si le joueur n'a pas assez de ressources
+    this.confirmBtn.disabled = !hasOffered || !hasRequested || !canTrade || !hasEnoughResources;
+  }
+}
