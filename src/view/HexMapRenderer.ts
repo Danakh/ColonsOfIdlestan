@@ -12,6 +12,7 @@ import { ResourceHarvestController } from '../controller/ResourceHarvestControll
 import { ResourceHarvest } from '../model/game/ResourceHarvest';
 import { BuildingProductionController } from '../controller/BuildingProductionController';
 import { RoadConstruction } from '../model/game/RoadConstruction';
+import { OutpostController } from '../controller/OutpostController';
 
 /**
  * Configuration pour le rendu des hexagones.
@@ -74,8 +75,10 @@ export class HexMapRenderer {
   private onHexClickCallback: ((hexCoord: HexCoord) => void) | null = null;
   private onEdgeClickCallback: ((edge: Edge) => void) | null = null;
   private onVertexClickCallback: ((vertex: Vertex) => void) | null = null;
+  private onOutpostVertexClickCallback: ((vertex: Vertex) => void) | null = null;
   private hoveredEdge: Edge | null = null;
   private hoveredVertex: Vertex | null = null;
+  private hoveredOutpostVertex: Vertex | null = null;
   private selectedVertex: Vertex | null = null;
   private currentCivilizationId: CivilizationId | null = null;
   private renderCallback: (() => void) | null = null;
@@ -91,6 +94,7 @@ export class HexMapRenderer {
   private cooldownAnimationFrameId: number | null = null;
   private tooltipElement: HTMLDivElement | null = null;
   private tooltipEdge: Edge | null = null;
+  private tooltipOutpostVertex: Vertex | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -323,6 +327,11 @@ export class HexMapRenderer {
     // Dessiner les routes constructibles si une civilisation est fournie (avant les villes)
     if (civId) {
       this.drawBuildableRoads(gameMap, config, civId);
+    }
+
+    // Dessiner les avant-postes constructibles si une civilisation est fournie (avant les villes)
+    if (civId) {
+      this.drawBuildableOutposts(gameMap, config, civId);
     }
 
     // Dessiner les villes sur leurs sommets (en dernier pour qu'elles soient par-dessus les routes)
@@ -1001,6 +1010,68 @@ export class HexMapRenderer {
   }
 
   /**
+   * Dessine les avant-postes constructibles pour une civilisation.
+   */
+  private drawBuildableOutposts(
+    gameMap: GameMap,
+    config: RenderConfig,
+    civId: CivilizationId
+  ): void {
+    const buildableVertices = gameMap.getBuildableOutpostVertices(civId);
+
+    for (const vertex of buildableVertices) {
+      const isHighlighted = this.hoveredOutpostVertex !== null && this.hoveredOutpostVertex.equals(vertex);
+      this.drawBuildableOutpostVertex(vertex, config, isHighlighted);
+    }
+  }
+
+  /**
+   * Dessine un vertex constructible pour un avant-poste (rond en pointillé).
+   * @param vertex - Le vertex à dessiner
+   * @param config - La configuration de rendu
+   * @param isHighlighted - true si le vertex est survolé
+   */
+  private drawBuildableOutpostVertex(vertex: Vertex, config: RenderConfig, isHighlighted: boolean = false): void {
+    const { hexSize, offsetX, offsetY } = config;
+    const hexes = vertex.getHexes();
+
+    // Calculer la position du centre du vertex
+    let sumX = 0;
+    let sumY = 0;
+
+    for (const coord of hexes) {
+      const x = offsetX + Math.sqrt(3) * (coord.q + coord.r / 2) * hexSize;
+      const y = offsetY + (3 / 2) * coord.r * hexSize;
+      sumX += x;
+      sumY += y;
+    }
+
+    const centerX = sumX / 3;
+    const centerY = sumY / 3;
+
+    // Taille du cercle (légèrement plus grand que la ville)
+    const baseRadius = 16;
+    const radius = isHighlighted ? baseRadius * 1.3 : baseRadius;
+
+    // Sauvegarder le contexte
+    this.ctx.save();
+
+    // Dessiner un cercle en pointillé
+    this.ctx.beginPath();
+    this.ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+    
+    // Style du cercle pointillé
+    this.ctx.strokeStyle = isHighlighted ? '#00FF00' : '#90EE90'; // Vert clair
+    this.ctx.lineWidth = 2;
+    this.ctx.setLineDash([5, 5]); // Pointillé : 5px trait, 5px espace
+    this.ctx.stroke();
+    
+    // Restaurer le contexte
+    this.ctx.setLineDash([]); // Réinitialiser le pointillé
+    this.ctx.restore();
+  }
+
+  /**
    * Dessine une route (construite ou constructible) sur une arête.
    * @param edge - L'arête à dessiner
    * @param config - La configuration de rendu
@@ -1434,6 +1505,15 @@ export class HexMapRenderer {
   }
 
   /**
+   * Définit le callback à appeler lorsqu'un vertex constructible pour un avant-poste est cliqué.
+   * @param callback - Fonction appelée avec le vertex cliqué
+   */
+  setOnOutpostVertexClick(callback: (vertex: Vertex) => void): void {
+    this.onOutpostVertexClickCallback = callback;
+    this.setupClickHandler();
+  }
+
+  /**
    * Définit le callback à appeler lorsqu'une arête (route) est cliquée.
    * @param callback - Fonction appelée avec l'arête cliquée
    */
@@ -1496,6 +1576,9 @@ export class HexMapRenderer {
       return;
     }
 
+    // S'assurer que le tooltip d'avant-poste est masqué
+    this.tooltipOutpostVertex = null;
+
     // Calculer la distance
     const distance = this.currentGameMap.calculateBuildableRoadDistance(edge, this.currentCivilizationId);
     if (distance === undefined) {
@@ -1520,12 +1603,44 @@ export class HexMapRenderer {
   }
 
   /**
+   * Met à jour le tooltip avec les informations de coût d'un avant-poste constructible.
+   */
+  private updateOutpostTooltip(vertex: Vertex, event: MouseEvent): void {
+    if (!this.tooltipElement || !this.currentGameMap || !this.currentCivilizationId) {
+      return;
+    }
+
+    // S'assurer que le tooltip de route est masqué
+    this.tooltipEdge = null;
+
+    // Calculer le coût
+    const cityCount = this.currentGameMap.getCityCount();
+    const cost = OutpostController.getBuildableOutpostCost(cityCount);
+    const woodCost = cost.get(ResourceType.Wood) || 0;
+    const brickCost = cost.get(ResourceType.Brick) || 0;
+    const wheatCost = cost.get(ResourceType.Wheat) || 0;
+    const sheepCost = cost.get(ResourceType.Sheep) || 0;
+
+    // Mettre à jour le contenu
+    this.tooltipElement.textContent = 
+      `${woodCost} Bois, ${brickCost} Brique, ${wheatCost} Blé, ${sheepCost} Mouton (${cityCount} ville${cityCount > 1 ? 's' : ''})`;
+
+    // Positionner le tooltip près du curseur
+    this.tooltipElement.style.left = `${event.clientX + 15}px`;
+    this.tooltipElement.style.top = `${event.clientY + 15}px`;
+    this.tooltipElement.style.display = 'block';
+
+    this.tooltipOutpostVertex = vertex;
+  }
+
+  /**
    * Masque le tooltip.
    */
   private hideTooltip(): void {
     if (this.tooltipElement) {
       this.tooltipElement.style.display = 'none';
       this.tooltipEdge = null;
+      this.tooltipOutpostVertex = null;
     }
   }
 
@@ -1548,22 +1663,88 @@ export class HexMapRenderer {
 
     let needsRender = false;
 
-    // PRIORITÉ 1: Vérifier d'abord si on survole une ville
+    // PRIORITÉ 1: Vérifier d'abord si on survole une ville existante
     const vertex = this.pixelToVertex(pixelX, pixelY);
-    if (vertex) {
-      // On survole une ville
+    if (vertex && this.currentGameMap && this.currentGameMap.hasCity(vertex)) {
+      // On survole une ville existante
       if (!this.hoveredVertex || !this.hoveredVertex.equals(vertex)) {
         this.hoveredVertex = vertex;
-        // Retirer la surbrillance des routes si on survole une ville
+        // Retirer la surbrillance des routes et avant-postes si on survole une ville
         if (this.hoveredEdge !== null) {
           this.hoveredEdge = null;
+        }
+        if (this.hoveredOutpostVertex !== null) {
+          this.hoveredOutpostVertex = null;
         }
         // Masquer le tooltip
         this.hideTooltip();
         needsRender = true;
       }
+    } else if (vertex && this.currentCivilizationId) {
+      // Pas de ville, mais on survole un vertex - vérifier si c'est un avant-poste constructible
+      const buildableOutposts = this.currentGameMap.getBuildableOutpostVertices(this.currentCivilizationId);
+      const isBuildableOutpost = buildableOutposts.some(buildableVertex => buildableVertex.equals(vertex));
+      
+      if (isBuildableOutpost) {
+        if (!this.hoveredOutpostVertex || !this.hoveredOutpostVertex.equals(vertex)) {
+          this.hoveredOutpostVertex = vertex;
+          // Retirer la surbrillance des routes si on survole un avant-poste
+          if (this.hoveredEdge !== null) {
+            this.hoveredEdge = null;
+          }
+          needsRender = true;
+        }
+        // Afficher le tooltip avec le coût
+        this.updateOutpostTooltip(vertex, event);
+      } else {
+        // Vertex non constructible, retirer la surbrillance
+        if (this.hoveredOutpostVertex !== null) {
+          this.hoveredOutpostVertex = null;
+          needsRender = true;
+        }
+        // Vérifier les routes constructibles
+        if (this.currentCivilizationId) {
+          const edge = this.pixelToEdge(pixelX, pixelY);
+          
+          if (edge) {
+            const buildableRoads = this.currentGameMap.getBuildableRoadsForCivilization(this.currentCivilizationId);
+            const isBuildable = buildableRoads.some(buildableEdge => buildableEdge.equals(edge));
+            
+            if (isBuildable) {
+              if (!this.hoveredEdge || !this.hoveredEdge.equals(edge)) {
+                this.hoveredEdge = edge;
+                needsRender = true;
+              }
+              // Afficher le tooltip avec le coût
+              this.updateTooltip(edge, event);
+            } else {
+              // Route non constructible, retirer la surbrillance
+              if (this.hoveredEdge !== null) {
+                this.hoveredEdge = null;
+                needsRender = true;
+              }
+              // Masquer le tooltip
+              this.hideTooltip();
+            }
+          } else {
+            // Pas d'arête constructible, retirer la surbrillance
+            if (this.hoveredEdge !== null) {
+              this.hoveredEdge = null;
+              needsRender = true;
+            }
+            // Masquer le tooltip
+            this.hideTooltip();
+          }
+        }
+      }
+      
+      // Retirer la surbrillance de la ville si on ne survole plus
+      if (this.hoveredVertex !== null) {
+        this.hoveredVertex = null;
+        needsRender = true;
+      }
     } else {
-      // Pas de ville sous la souris, vérifier les routes constructibles
+      // Pas de vertex sous la souris, vérifier les routes constructibles
       if (this.currentCivilizationId) {
         const edge = this.pixelToEdge(pixelX, pixelY);
         
@@ -1598,9 +1779,13 @@ export class HexMapRenderer {
         }
       }
 
-      // Retirer la surbrillance de la ville si on ne survole plus
+      // Retirer la surbrillance de la ville et des avant-postes si on ne survole plus
       if (this.hoveredVertex !== null) {
         this.hoveredVertex = null;
+        needsRender = true;
+      }
+      if (this.hoveredOutpostVertex !== null) {
+        this.hoveredOutpostVertex = null;
         needsRender = true;
       }
     }
@@ -1626,7 +1811,12 @@ export class HexMapRenderer {
       this.hoveredVertex = null;
       needsRender = true;
     }
-    
+
+    if (this.hoveredOutpostVertex !== null) {
+      this.hoveredOutpostVertex = null;
+      needsRender = true;
+    }
+
     // Masquer le tooltip
     this.hideTooltip();
 
@@ -1681,7 +1871,21 @@ export class HexMapRenderer {
       }
     }
 
-    // PRIORITÉ 2: Vérifier si on a cliqué sur un edge
+    // PRIORITÉ 2: Vérifier si on a cliqué sur un vertex constructible pour un avant-poste
+    if (this.onOutpostVertexClickCallback && this.currentCivilizationId) {
+      const vertex = this.pixelToVertex(pixelX, pixelY);
+      if (vertex && this.currentGameMap) {
+        const buildableOutposts = this.currentGameMap.getBuildableOutpostVertices(this.currentCivilizationId);
+        const isBuildableOutpost = buildableOutposts.some(buildableVertex => buildableVertex.equals(vertex));
+        
+        if (isBuildableOutpost) {
+          this.onOutpostVertexClickCallback(vertex);
+          return; // Ne pas vérifier les edges ni les hexagones si on a cliqué sur un avant-poste
+        }
+      }
+    }
+
+    // PRIORITÉ 3: Vérifier si on a cliqué sur un edge
     if (this.onEdgeClickCallback) {
       const edge = this.pixelToEdge(pixelX, pixelY);
       if (edge) {
@@ -1690,7 +1894,7 @@ export class HexMapRenderer {
       }
     }
 
-    // PRIORITÉ 3: Vérifier si on a cliqué sur un hexagone
+    // PRIORITÉ 4: Vérifier si on a cliqué sur un hexagone
     if (this.onHexClickCallback) {
       const hexCoord = this.pixelToHexCoord(pixelX, pixelY);
       if (hexCoord && this.currentGameMap && this.currentCivilizationId) {

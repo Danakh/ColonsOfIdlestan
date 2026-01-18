@@ -210,6 +210,14 @@ export class GameMap {
   }
 
   /**
+   * Retourne le nombre total de villes sur la carte.
+   * @returns Le nombre de villes
+   */
+  getCityCount(): number {
+    return this.cityMap.size;
+  }
+
+  /**
    * Améliore une ville au niveau suivant.
    * @param vertex - Le sommet où se trouve la ville à améliorer
    * @throws Error si aucune ville n'existe sur ce sommet
@@ -477,6 +485,54 @@ export class GameMap {
   }
 
   /**
+   * Retourne les edges qui touchent un vertex donné.
+   * Un edge touche un vertex s'il contient deux des trois hexagones qui forment le vertex.
+   * @param vertex - Le vertex pour lequel trouver les edges
+   * @returns Un tableau des edges qui touchent ce vertex
+   */
+  getEdgesForVertex(vertex: Vertex): Edge[] {
+    const edges: Edge[] = [];
+    const hexes = vertex.getHexes();
+    
+    // Vérifier que tous les hexagones du vertex existent dans la grille
+    const allHexesExist = hexes.every(h => this.grid.hasHex(h));
+    if (!allHexesExist) {
+      return edges; // Retourner vide si les hexagones n'existent pas
+    }
+    
+    // Un vertex est formé de 3 hexagones, donc il y a 3 edges possibles entre ces hexagones
+    for (let i = 0; i < hexes.length; i++) {
+      for (let j = i + 1; j < hexes.length; j++) {
+        try {
+          const edge = Edge.create(hexes[i], hexes[j]);
+          
+          // Vérifier que les deux hexagones de l'edge existent dans la grille
+          const [edgeHex1, edgeHex2] = edge.getHexes();
+          if (!this.grid.hasHex(edgeHex1) || !this.grid.hasHex(edgeHex2)) {
+            continue;
+          }
+          
+          // Ignorer les edges entre deux hexagones d'eau
+          const hex1Type = this.getHexType(edgeHex1);
+          const hex2Type = this.getHexType(edgeHex2);
+          if (hex1Type === HexType.Water && hex2Type === HexType.Water) {
+            continue;
+          }
+          
+          // Éviter les doublons
+          if (!edges.some(e => e.equals(edge))) {
+            edges.push(edge);
+          }
+        } catch (e) {
+          // Ignorer les edges invalides
+        }
+      }
+    }
+    
+    return edges;
+  }
+
+  /**
    * Retourne les vertices adjacents à une arête donnée.
    * Un vertex est adjacent à un edge s'il contient les deux hexagones de l'edge.
    * @param edge - L'arête pour laquelle trouver les vertices adjacents
@@ -659,6 +715,118 @@ export class GameMap {
     }
     
     return minDistance;
+  }
+
+  /**
+   * Calcule la distance minimale d'un vertex à une ville de la civilisation (en nombre de routes).
+   * Utilise un algorithme BFS depuis les villes.
+   * Un vertex qui touche une route de distance D a lui-même une distance de D.
+   * @param vertex - Le vertex pour lequel calculer la distance
+   * @param civId - L'identifiant de la civilisation
+   * @returns La distance minimale, ou undefined si aucune ville de la civilisation n'est accessible
+   */
+  calculateVertexDistanceToCity(vertex: Vertex, civId: CivilizationId): number | undefined {
+    const civKey = civId.hashCode();
+    
+    // Vérifier que tous les hexagones du vertex existent
+    const vertexHexes = vertex.getHexes();
+    const allVertexHexesExist = vertexHexes.every(h => this.grid.hasHex(h));
+    if (!allVertexHexesExist) {
+      return undefined;
+    }
+    
+    // Si le vertex a directement une ville de la civilisation, distance = 0
+    if (this.hasCity(vertex)) {
+      const owner = this.getCityOwner(vertex);
+      if (owner && owner.hashCode() === civKey) {
+        return 0;
+      }
+    }
+    
+    // Trouver la distance minimale en vérifiant toutes les routes qui touchent ce vertex
+    // Un vertex qui touche une route de distance D a lui-même distance D
+    const edgesForVertex = this.getEdgesForVertex(vertex);
+    let minDistance: number | undefined = undefined;
+    
+    for (const edge of edgesForVertex) {
+      // Vérifier que la route appartient à la civilisation
+      if (!this.hasRoad(edge)) {
+        continue;
+      }
+      
+      const owner = this.getRoadOwner(edge);
+      if (!owner || owner.hashCode() !== civKey) {
+        continue;
+      }
+      
+      // Obtenir la distance de cette route
+      const roadDistance = this.getRoadDistanceToCity(edge);
+      if (roadDistance !== undefined) {
+        // Le vertex a la même distance que la route qu'il touche
+        if (minDistance === undefined || roadDistance < minDistance) {
+          minDistance = roadDistance;
+        }
+      }
+    }
+    
+    return minDistance;
+  }
+
+  /**
+   * Retourne tous les vertices où un avant-poste peut être construit pour une civilisation.
+   * @param civId - L'identifiant de la civilisation
+   * @returns Un tableau des vertices constructibles
+   */
+  getBuildableOutpostVertices(civId: CivilizationId): Vertex[] {
+    const buildableVertices: Vertex[] = [];
+    const civKey = civId.hashCode();
+    
+    // Vérifier que la civilisation est enregistrée
+    if (!this.isCivilizationRegistered(civId)) {
+      return buildableVertices;
+    }
+    
+    // Parcourir tous les vertices de la grille
+    const allVertices = this.grid.getAllVertices();
+    
+    for (const vertex of allVertices) {
+      // Vérifier que tous les hexagones du vertex existent
+      const vertexHexes = vertex.getHexes();
+      const allVertexHexesExist = vertexHexes.every(h => this.grid.hasHex(h));
+      if (!allVertexHexesExist) {
+        continue;
+      }
+      
+      // Vérifier qu'il n'y a pas déjà une ville sur ce vertex
+      if (this.hasCity(vertex)) {
+        continue;
+      }
+      
+      // Vérifier que le vertex touche au moins une route de la civilisation
+      const edgesForVertex = this.getEdgesForVertex(vertex);
+      let touchesRoad = false;
+      for (const edge of edgesForVertex) {
+        if (this.hasRoad(edge)) {
+          const owner = this.getRoadOwner(edge);
+          if (owner && owner.hashCode() === civKey) {
+            touchesRoad = true;
+            break;
+          }
+        }
+      }
+      
+      if (!touchesRoad) {
+        continue;
+      }
+      
+      // Vérifier que le vertex est à au moins 2 routes de distance d'une ville
+      const distance = this.calculateVertexDistanceToCity(vertex, civId);
+      if (distance !== undefined && distance >= 2) {
+        buildableVertices.push(vertex);
+      }
+    }
+    
+    return buildableVertices;
   }
 
   /**
