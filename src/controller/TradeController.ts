@@ -71,7 +71,8 @@ export class TradeController {
     }
 
     // Vérifier que le joueur a assez de ressources à échanger
-    if (!resources.hasEnough(fromResource, this.TRADE_RATE)) {
+    const tradeRate = this.getTradeRateForResource(fromResource);
+    if (!resources.hasEnough(fromResource, tradeRate)) {
       return false;
     }
 
@@ -108,16 +109,18 @@ export class TradeController {
         throw new Error('Vous ne pouvez pas échanger une ressource contre elle-même.');
       }
 
-      if (!resources.hasEnough(fromResource, this.TRADE_RATE)) {
+      const tradeRate = this.getTradeRateForResource(fromResource);
+      if (!resources.hasEnough(fromResource, tradeRate)) {
         throw new Error(
           `Pas assez de ${fromResource} pour effectuer l'échange. ` +
-          `Requis: ${this.TRADE_RATE}, disponible: ${resources.getResource(fromResource)}.`
+          `Requis: ${tradeRate}, disponible: ${resources.getResource(fromResource)}.`
         );
       }
     }
 
     // Retirer les ressources échangées
-    resources.removeResource(fromResource, this.TRADE_RATE);
+    const tradeRate = this.getTradeRateForResource(fromResource);
+    resources.removeResource(fromResource, tradeRate);
 
     // Ajouter la ressource reçue
     resources.addResource(toResource, this.TRADE_RECEIVED);
@@ -137,6 +140,19 @@ export class TradeController {
    */
   static getTradeReceived(): number {
     return this.TRADE_RECEIVED;
+  }
+
+  /**
+   * Retourne le nombre de ressources requises pour un échange d'un type de ressource donné.
+   * Actuellement, c'est 4 pour toutes les ressources, mais cette méthode permet
+   * d'avoir des taux différents par ressource à l'avenir.
+   * 
+   * @param resourceType - Le type de ressource à échanger
+   * @returns Le nombre de ressources requises pour un échange
+   */
+  static getTradeRateForResource(resourceType: ResourceType): number {
+    // Pour l'instant, le taux est le même pour toutes les ressources
+    return this.TRADE_RATE;
   }
 
   /**
@@ -166,13 +182,16 @@ export class TradeController {
       );
     }
 
-    // Valider que toutes les quantités offertes sont des multiples de 4
+    // Valider que toutes les quantités offertes sont des multiples du taux d'échange pour cette ressource
     for (const [resourceType, quantity] of offeredResources.entries()) {
-      if (quantity > 0 && quantity % this.TRADE_RATE !== 0) {
-        throw new Error(
-          `La quantité offerte de ${resourceType} doit être un multiple de ${this.TRADE_RATE}. ` +
-          `Quantité actuelle: ${quantity}`
-        );
+      if (quantity > 0) {
+        const tradeRate = this.getTradeRateForResource(resourceType);
+        if (quantity % tradeRate !== 0) {
+          throw new Error(
+            `La quantité offerte de ${resourceType} doit être un multiple de ${tradeRate}. ` +
+            `Quantité actuelle: ${quantity}`
+          );
+        }
       }
     }
 
@@ -227,7 +246,8 @@ export class TradeController {
         if (fromResource === toResource) continue; // Ne pas échanger contre la même ressource
 
         // Calculer combien d'échanges on peut faire avec cette ressource offerte
-        const availableOffers = offeredQty / this.TRADE_RATE;
+        const tradeRate = this.getTradeRateForResource(fromResource);
+        const availableOffers = offeredQty / tradeRate;
         const neededExchanges = remainingToReceive / this.TRADE_RECEIVED;
         const exchangesToDo = Math.min(availableOffers, neededExchanges);
 
@@ -240,7 +260,7 @@ export class TradeController {
 
           // Mettre à jour les quantités restantes
           remainingToReceive -= exchangesToDo * this.TRADE_RECEIVED;
-          const remainingOfferedQty = offeredQty - (exchangesToDo * this.TRADE_RATE);
+          const remainingOfferedQty = offeredQty - (exchangesToDo * tradeRate);
           remainingOffered.set(fromResource, remainingOfferedQty);
         }
       }

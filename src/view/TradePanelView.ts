@@ -25,6 +25,8 @@ export class TradePanelView {
   private requestedList: HTMLUListElement;
   private cancelBtn: HTMLButtonElement;
   private confirmBtn: HTMLButtonElement;
+  private offeredTitle: HTMLElement;
+  private requestedTitle: HTMLElement;
   
   private offeredResources: Map<ResourceType, number> = new Map();
   private requestedResources: Map<ResourceType, number> = new Map();
@@ -58,6 +60,8 @@ export class TradePanelView {
     const requestedListEl = document.getElementById('trade-requested-list') as HTMLUListElement;
     const cancelBtnEl = document.getElementById('trade-cancel-btn') as HTMLButtonElement;
     const confirmBtnEl = document.getElementById('trade-confirm-btn') as HTMLButtonElement;
+    const offeredTitleEl = document.querySelector('.trade-column:first-child h3') as HTMLElement;
+    const requestedTitleEl = document.querySelector('.trade-column:last-child h3') as HTMLElement;
 
     if (!panel) {
       throw new Error(`Élément avec l'id "${tradePanelId}" introuvable`);
@@ -74,12 +78,20 @@ export class TradePanelView {
     if (!confirmBtnEl) {
       throw new Error('Élément avec l\'id "trade-confirm-btn" introuvable');
     }
+    if (!offeredTitleEl) {
+      throw new Error('Titre "Vous donnez" introuvable');
+    }
+    if (!requestedTitleEl) {
+      throw new Error('Titre "Vous recevez" introuvable');
+    }
 
     this.tradePanel = panel;
     this.offeredList = offeredListEl;
     this.requestedList = requestedListEl;
     this.cancelBtn = cancelBtnEl;
     this.confirmBtn = confirmBtnEl;
+    this.offeredTitle = offeredTitleEl;
+    this.requestedTitle = requestedTitleEl;
 
     // Configurer les gestionnaires d'événements
     this.setupEventListeners();
@@ -171,6 +183,9 @@ export class TradePanelView {
     // Mettre à jour la liste des ressources demandées (droite)
     this.updateResourceList(this.requestedList, this.requestedResources, false);
 
+    // Mettre à jour les titres avec le nombre de batches
+    this.updateTitles();
+
     // Mettre à jour le bouton Échanger
     this.updateConfirmButton();
   }
@@ -192,9 +207,12 @@ export class TradePanelView {
       const item = document.createElement('li');
       item.className = 'trade-resource-item';
       
-      // Désactiver visuellement si c'est la liste offerte et qu'il n'y a plus de ressources disponibles
-      if (isOffered && quantity >= available) {
-        item.classList.add('disabled');
+      // Pour la liste offerte, désactiver visuellement si on n'a pas assez pour un échange minimum
+      if (isOffered) {
+        const tradeRate = TradeController.getTradeRateForResource(resourceType);
+        if (available < tradeRate) {
+          item.classList.add('disabled');
+        }
       }
 
       // Conteneur pour le sprite et le nom
@@ -245,15 +263,29 @@ export class TradePanelView {
       quantitySpan.textContent = quantity > 0 ? `×${quantity}` : '';
       item.appendChild(quantitySpan);
 
-      // Gestionnaire de clic
-      if (isOffered) {
-        item.addEventListener('click', () => {
-          this.handleOfferedClick(resourceType);
-        });
-      } else {
-        item.addEventListener('click', () => {
-          this.handleRequestedClick(resourceType);
-        });
+      // Gestionnaires de clic (gauche et droit)
+      if (!item.classList.contains('disabled')) {
+        if (isOffered) {
+          // Clic gauche : ajouter un batch
+          item.addEventListener('click', () => {
+            this.handleOfferedClick(resourceType);
+          });
+          // Clic droit : retirer un batch
+          item.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            this.handleOfferedRightClick(resourceType);
+          });
+        } else {
+          // Clic gauche : ajouter une ressource
+          item.addEventListener('click', () => {
+            this.handleRequestedClick(resourceType);
+          });
+          // Clic droit : retirer une ressource
+          item.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            this.handleRequestedRightClick(resourceType);
+          });
+        }
       }
 
       listElement.appendChild(item);
@@ -270,7 +302,8 @@ export class TradePanelView {
 
     const current = this.offeredResources.get(resourceType) || 0;
     const available = this.playerResources.getResource(resourceType);
-    const newQuantity = current + 4;
+    const tradeRate = TradeController.getTradeRateForResource(resourceType);
+    const newQuantity = current + tradeRate;
 
     // Vérifier qu'on ne dépasse pas les ressources disponibles
     if (newQuantity <= available) {
@@ -289,12 +322,80 @@ export class TradePanelView {
   }
 
   /**
+   * Gère le clic droit sur une ressource dans la liste des ressources offertes (retire un batch).
+   */
+  private handleOfferedRightClick(resourceType: ResourceType): void {
+    const current = this.offeredResources.get(resourceType) || 0;
+    if (current > 0) {
+      const tradeRate = TradeController.getTradeRateForResource(resourceType);
+      const newQuantity = Math.max(0, current - tradeRate);
+      this.offeredResources.set(resourceType, newQuantity);
+      this.update();
+    }
+  }
+
+  /**
+   * Gère le clic droit sur une ressource dans la liste des ressources demandées (retire une unité).
+   */
+  private handleRequestedRightClick(resourceType: ResourceType): void {
+    const current = this.requestedResources.get(resourceType) || 0;
+    if (current > 0) {
+      this.requestedResources.set(resourceType, current - 1);
+      this.update();
+    }
+  }
+
+  /**
+   * Calcule le nombre total de batches offerts.
+   */
+  private getOfferedBatches(): number {
+    let totalBatches = 0;
+    for (const [resourceType, quantity] of this.offeredResources.entries()) {
+      if (quantity > 0) {
+        const tradeRate = TradeController.getTradeRateForResource(resourceType);
+        totalBatches += quantity / tradeRate;
+      }
+    }
+    return totalBatches;
+  }
+
+  /**
+   * Calcule le nombre total de batches demandés (1 ressource = 1 batch).
+   */
+  private getRequestedBatches(): number {
+    let totalBatches = 0;
+    for (const quantity of this.requestedResources.values()) {
+      totalBatches += quantity;
+    }
+    return totalBatches;
+  }
+
+  /**
+   * Met à jour les titres avec le nombre de batches.
+   */
+  private updateTitles(): void {
+    const offeredBatches = this.getOfferedBatches();
+    const requestedBatches = this.getRequestedBatches();
+
+    this.offeredTitle.textContent = offeredBatches > 0 
+      ? `Vous donnez (${offeredBatches})`
+      : 'Vous donnez';
+    
+    this.requestedTitle.textContent = requestedBatches > 0
+      ? `Vous recevez (${requestedBatches})`
+      : 'Vous recevez';
+  }
+
+  /**
    * Met à jour l'état du bouton Échanger.
    */
   private updateConfirmButton(): void {
-    // Vérifier s'il y a des ressources proposées et demandées
-    const hasOffered = Array.from(this.offeredResources.values()).some(qty => qty > 0);
-    const hasRequested = Array.from(this.requestedResources.values()).some(qty => qty > 0);
+    // Calculer le nombre de batches des deux côtés
+    const offeredBatches = this.getOfferedBatches();
+    const requestedBatches = this.getRequestedBatches();
+
+    // Vérifier que le nombre de batches est égal des deux côtés
+    const batchesMatch = offeredBatches > 0 && requestedBatches > 0 && offeredBatches === requestedBatches;
 
     // Vérifier l'accès au commerce
     let canTrade = true;
@@ -313,8 +414,8 @@ export class TradePanelView {
       }
     }
 
-    // Le bouton est désactivé s'il n'y a rien à échanger, si le commerce n'est pas disponible,
+    // Le bouton est désactivé si les batches ne correspondent pas, si le commerce n'est pas disponible,
     // ou si le joueur n'a pas assez de ressources
-    this.confirmBtn.disabled = !hasOffered || !hasRequested || !canTrade || !hasEnoughResources;
+    this.confirmBtn.disabled = !batchesMatch || !canTrade || !hasEnoughResources;
   }
 }
