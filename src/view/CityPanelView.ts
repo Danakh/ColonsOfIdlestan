@@ -30,6 +30,12 @@ export class CityPanelView {
   private cityBuildingsTitle: HTMLHeadingElement;
   private callbacks: CityPanelCallbacks = {};
   private renderer: HexMapRenderer | null = null;
+  
+  // Cache de l'état précédent pour éviter les rendus inutiles
+  private lastSelectedVertexHash: string | null = null;
+  private lastResourcesHash: string | null = null;
+  private lastCityBuildings: BuildingType[] | null = null;
+  private lastCityLevel: CityLevel | null = null;
 
   constructor(cityPanelId: string = 'city-panel') {
     const panel = document.getElementById(cityPanelId);
@@ -157,6 +163,7 @@ export class CityPanelView {
 
   /**
    * Met à jour l'affichage du panneau de la ville sélectionnée.
+   * Évite le rendu si la ville sélectionnée et les ressources n'ont pas changé.
    */
   update(
     selectedVertex: Vertex | null,
@@ -166,9 +173,48 @@ export class CityPanelView {
   ): void {
     if (!selectedVertex || !gameMap || !city) {
       // Masquer le panneau si aucune ville n'est sélectionnée
-      this.cityPanel.classList.add('hidden');
+      if (this.lastSelectedVertexHash !== null) {
+        this.cityPanel.classList.add('hidden');
+        // Réinitialiser le cache
+        this.lastSelectedVertexHash = null;
+        this.lastResourcesHash = null;
+        this.lastCityBuildings = null;
+        this.lastCityLevel = null;
+      }
       return;
     }
+
+    // Calculer les hash pour comparer avec l'état précédent
+    const currentVertexHash = selectedVertex.hashCode();
+    const currentResourcesHash = this.getResourcesHash(playerResources);
+    const currentCityBuildings = [...city.getBuildings()].sort(); // Copie triée pour comparaison
+    const currentCityLevel = city.level;
+
+    // Vérifier si quelque chose a changé
+    // Si le cache est null, c'est le premier affichage, donc on doit rendre
+    const isFirstRender = this.lastSelectedVertexHash === null;
+    const vertexChanged = this.lastSelectedVertexHash !== currentVertexHash;
+    const resourcesChanged = this.lastResourcesHash !== currentResourcesHash;
+    const buildingsChanged = !this.arraysEqual(this.lastCityBuildings, currentCityBuildings);
+    const levelChanged = this.lastCityLevel !== currentCityLevel;
+
+    const hasChanged =
+      isFirstRender ||
+      vertexChanged ||
+      resourcesChanged ||
+      buildingsChanged ||
+      levelChanged;
+
+    // Si rien n'a changé, éviter le rendu
+    if (!hasChanged) {
+      return;
+    }
+
+    // Mettre à jour le cache
+    this.lastSelectedVertexHash = currentVertexHash;
+    this.lastResourcesHash = currentResourcesHash;
+    this.lastCityBuildings = currentCityBuildings;
+    this.lastCityLevel = currentCityLevel;
 
     // Afficher le panneau (l'animation CSS gère la transition)
     this.cityPanel.classList.remove('hidden');
@@ -328,5 +374,30 @@ export class CityPanelView {
       emptyItem.textContent = 'Aucun bâtiment disponible';
       this.cityBuildingsList.appendChild(emptyItem);
     }
+  }
+
+  /**
+   * Génère un hash des ressources pour la comparaison.
+   */
+  private getResourcesHash(playerResources: PlayerResources): string {
+    const resources = playerResources.getAllResources();
+    const parts: string[] = [];
+    for (const [resource, amount] of resources.entries()) {
+      parts.push(`${resource}:${amount}`);
+    }
+    return parts.sort().join(',');
+  }
+
+  /**
+   * Compare deux tableaux pour l'égalité.
+   */
+  private arraysEqual<T>(a: T[] | null, b: T[] | null): boolean {
+    if (a === null && b === null) return true;
+    if (a === null || b === null) return false;
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (a[i] !== b[i]) return false;
+    }
+    return true;
   }
 }
