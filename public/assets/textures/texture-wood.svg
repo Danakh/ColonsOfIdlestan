@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <pattern id="wood-texture" x="0" y="0" width="64" height="64" patternUnits="userSpaceOnUse">
+      <!-- Base color -->
+      <rect width="64" height="64" fill="#8B4513"/>
+      <!-- Wood grain lines -->
+      <line x1="0" y1="8" x2="64" y2="8" stroke="#654321" stroke-width="1" opacity="0.4"/>
+      <line x1="0" y1="16" x2="64" y2="16" stroke="#654321" stroke-width="1" opacity="0.4"/>
+      <line x1="0" y1="24" x2="64" y2="24" stroke="#654321" stroke-width="1" opacity="0.4"/>
+      <line x1="0" y1="32" x2="64" y2="32" stroke="#654321" stroke-width="1" opacity="0.4"/>
+      <line x1="0" y1="40" x2="64" y2="40" stroke="#654321" stroke-width="1" opacity="0.4"/>
+      <line x1="0" y1="48" x2="64" y2="48" stroke="#654321" stroke-width="1" opacity="0.4"/>
+      <line x1="0" y1="56" x2="64" y2="56" stroke="#654321" stroke-width="1" opacity="0.4"/>
+      <!-- Tree rings -->
+      <circle cx="32" cy="32" r="20" fill="none" stroke="#654321" stroke-width="1" opacity="0.3"/>
+      <circle cx="32" cy="32" r="15" fill="none" stroke="#654321" stroke-width="1" opacity="0.3"/>
+      <circle cx="32" cy="32" r="10" fill="none" stroke="#654321" stroke-width="1" opacity="0.3"/>
+    </pattern>
+  </defs>
+  <rect width="64" height="64" fill="url(#wood-texture)"/>
+</svg>
