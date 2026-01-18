@@ -214,6 +214,23 @@ export class HexMapRenderer {
   }
 
   /**
+   * Retourne le sprite (image) d'une ville selon son niveau.
+   * @param level - Le niveau de la ville
+   * @returns L'image du sprite ou null si non chargé
+   */
+  getCitySprite(level: CityLevel): HTMLImageElement | null {
+    return this.citySprites.get(level) || null;
+  }
+
+  /**
+   * Vérifie si les sprites sont chargés.
+   * @returns true si tous les sprites sont chargés
+   */
+  areCitySpritesLoaded(): boolean {
+    return this.citySpritesLoaded;
+  }
+
+  /**
    * Déclenche un effet visuel pour indiquer qu'un hexagone a été récolté.
    * L'hexagone sera légèrement réduit pendant un court instant.
    * @param hexCoord - La coordonnée de l'hexagone récolté
@@ -350,46 +367,16 @@ export class HexMapRenderer {
     const grid = gameMap.getGrid();
     const allHexes = grid.getAllHexes();
 
-    // Parcourir tous les hexagones pour trouver leurs vertices
-    // Utiliser un Set pour éviter les doublons
-    const processedVertices = new Set<string>();
-
-    for (const hex of allHexes) {
-      const vertices = grid.getVerticesForHex(hex.coord);
-      for (const vertex of vertices) {
-        const vertexKey = vertex.hashCode();
-        if (!processedVertices.has(vertexKey)) {
-          processedVertices.add(vertexKey);
-          
-          // Vérifier si ce vertex a une ville en utilisant le même vertex retourné par la grille
-          // Cela garantit que le hashCode correspond
-          if (gameMap.hasCity(vertex)) {
-            const city = gameMap.getCity(vertex);
-            const isHovered = this.hoveredVertex !== null && this.hoveredVertex.equals(vertex);
-            const isSelected = this.selectedVertex !== null && this.selectedVertex.equals(vertex);
-            if (city) {
-              this.drawCity(vertex, city, config, isHovered, isSelected);
-            }
-          }
-        }
-      }
-    }
     
-    // Debug: Vérifier tous les vertices pour s'assurer qu'on ne manque rien
-    // Cela peut aider à identifier les villes non trouvées
     const allVertices = grid.getAllVertices();
     for (const vertex of allVertices) {
       const vertexKey = vertex.hashCode();
       if (gameMap.hasCity(vertex)) {
-        // Si on trouve une ville dans getAllVertices mais pas dans drawCities,
-        // on la dessine quand même
-        if (!processedVertices.has(vertexKey)) {
-          const city = gameMap.getCity(vertex);
-          const isHovered = this.hoveredVertex !== null && this.hoveredVertex.equals(vertex);
-          const isSelected = this.selectedVertex !== null && this.selectedVertex.equals(vertex);
-          if (city) {
-            this.drawCity(vertex, city, config, isHovered, isSelected);
-          }
+        const city = gameMap.getCity(vertex);
+        const isHovered = this.hoveredVertex !== null && this.hoveredVertex.equals(vertex);
+        const isSelected = this.selectedVertex !== null && this.selectedVertex.equals(vertex);
+        if (city) {
+          this.drawCity(vertex, city, config, isHovered, isSelected);
         }
       }
     }

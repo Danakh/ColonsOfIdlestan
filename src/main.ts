@@ -182,9 +182,29 @@ function main(): void {
       [CityLevel.Capital]: 'Capitale',
     };
 
-    // Mettre à jour le titre
+    // Mettre à jour le titre avec le sprite
     const levelName = cityLevelNames[city.level] || `Niveau ${city.level}`;
-    cityPanelTitle.textContent = `${levelName}`;
+    
+    // Vider le titre
+    cityPanelTitle.innerHTML = '';
+    
+    // Ajouter le sprite si disponible
+    const sprite = renderer.getCitySprite(city.level);
+    if (sprite && renderer.areCitySpritesLoaded() && sprite.complete && sprite.naturalWidth > 0) {
+      const spriteImg = document.createElement('img');
+      spriteImg.src = sprite.src;
+      spriteImg.style.width = '32px';
+      spriteImg.style.height = '32px';
+      spriteImg.style.marginRight = '8px';
+      spriteImg.style.verticalAlign = 'middle';
+      spriteImg.style.display = 'inline-block';
+      cityPanelTitle.appendChild(spriteImg);
+    }
+    
+    // Ajouter le nom de la ville
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = levelName;
+    cityPanelTitle.appendChild(nameSpan);
 
     // Mettre à jour la liste des bâtiments
     cityBuildingsList.innerHTML = '';
