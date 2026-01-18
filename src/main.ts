@@ -11,11 +11,19 @@ import { Vertex } from './model/hex/Vertex';
 import { City } from './model/city/City';
 import { BuildingType, getBuildingTypeName } from './model/city/BuildingType';
 import { CityLevel } from './model/city/CityLevel';
+import { APP_VERSION, APP_NAME } from './config/version';
 
 /**
  * Point d'entrée principal de l'application web.
  */
 function main(): void {
+  // Mettre à jour le titre de la page et le header avec la version
+  document.title = `${APP_NAME} v${APP_VERSION}`;
+  const headerTitle = document.querySelector('header h1');
+  if (headerTitle) {
+    headerTitle.textContent = `${APP_NAME} v${APP_VERSION}`;
+  }
+
   // Récupérer les éléments DOM
   const canvas = document.getElementById('map-canvas') as HTMLCanvasElement;
   const regenerateBtn = document.getElementById('regenerate-btn') as HTMLButtonElement;

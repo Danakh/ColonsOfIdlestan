@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "permissions": {
+    "allow": [
+      "Shell(cd)",
+      "Shell(npm test)",
+      "Shell(npm test --*)",
+      "Shell(npm run test:run)",
+      "Shell(vitest)",
+      "Shell(vitest run)",
+      "Shell(vitest run *)",
+      "Shell(powershell -Command *)",
+      "Shell(Select-String)",
+      "Shell(Select-Object)"
+    ],
+    "deny": []
+  }
+}
