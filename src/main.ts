@@ -295,7 +295,7 @@ function main(): void {
     // Récolter la ressource via le contrôleur (qui gère la limitation de taux)
     const result = ResourceHarvestController.harvest(hexCoord, civId, currentGameMap, playerResources);
     
-    if (result.success) {
+    if (result.success && result.cityVertex) {
       // Déclencher l'effet visuel de récolte
       renderer.triggerHarvestEffect(hexCoord);
       
@@ -304,8 +304,8 @@ function main(): void {
       if (hexType) {
         const resourceType = ResourceHarvest.hexTypeToResourceType(hexType);
         if (resourceType) {
-          // Déclencher l'animation de la particule de ressource
-          renderer.triggerResourceHarvestAnimation(hexCoord, resourceType);
+          // Déclencher l'animation de la particule de ressource vers la ville
+          renderer.triggerResourceHarvestAnimation(hexCoord, resourceType, result.cityVertex);
         }
       }
       

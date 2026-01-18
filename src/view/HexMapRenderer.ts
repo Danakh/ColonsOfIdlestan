@@ -8,6 +8,7 @@ import { ResourceType } from '../model/map/ResourceType';
 import { CivilizationId } from '../model/map/CivilizationId';
 import { City } from '../model/city/City';
 import { CityLevel } from '../model/city/CityLevel';
+import { ResourceHarvestController } from '../controller/ResourceHarvestController';
 
 /**
  * Configuration pour le rendu des hexagones.
@@ -367,11 +368,12 @@ export class HexMapRenderer {
   };
 
   /**
-   * Déclenche une animation de particule pour représenter une ressource qui vole de l'hex vers l'inventaire.
+   * Déclenche une animation de particule pour représenter une ressource qui vole de l'hex vers la ville.
    * @param hexCoord - La coordonnée de l'hexagone récolté
    * @param resourceType - Le type de ressource récoltée
+   * @param cityVertex - Le vertex (ville) vers lequel la particule doit voler
    */
-  triggerResourceHarvestAnimation(hexCoord: HexCoord, resourceType: ResourceType): void {
+  triggerResourceHarvestAnimation(hexCoord: HexCoord, resourceType: ResourceType, cityVertex: Vertex): void {
     if (!this.currentConfig || !this.currentGameMap) {
       return;
     }
@@ -381,46 +383,10 @@ export class HexMapRenderer {
     const startX = offsetX + Math.sqrt(3) * (hexCoord.q + hexCoord.r / 2) * hexSize;
     const startY = offsetY + (3 / 2) * hexCoord.r * hexSize;
 
-    // Calculer la position de destination (élément de ressource dans le footer)
-    const resourcesList = document.getElementById('resources-list');
-    if (!resourcesList) {
-      return;
-    }
-
-    // Trouver l'élément de ressource correspondant
-    const resourceItems = resourcesList.querySelectorAll('.resource-item');
-    let targetElement: HTMLElement | null = null;
-    
-    // Mapper ResourceType vers l'ordre d'affichage (même ordre que dans main.ts)
-    const resourceOrder: ResourceType[] = [
-      ResourceType.Wood,
-      ResourceType.Brick,
-      ResourceType.Wheat,
-      ResourceType.Sheep,
-      ResourceType.Ore,
-    ];
-    
-    const resourceIndex = resourceOrder.indexOf(resourceType);
-    if (resourceIndex >= 0 && resourceIndex < resourceItems.length) {
-      const resourceItem = resourceItems[resourceIndex] as HTMLElement;
-      const countEl = resourceItem.querySelector('.resource-count') as HTMLElement;
-      targetElement = countEl || resourceItem;
-    }
-
-    if (!targetElement) {
-      return;
-    }
-
-    // Obtenir la position de destination relative au canvas
-    const canvasRect = this.canvas.getBoundingClientRect();
-    const targetRect = targetElement.getBoundingClientRect();
-    
-    // Convertir en coordonnées canvas (en tenant compte du scale si nécessaire)
-    const scaleX = this.canvas.width / canvasRect.width;
-    const scaleY = this.canvas.height / canvasRect.height;
-    
-    const endX = (targetRect.left + targetRect.width / 2 - canvasRect.left) * scaleX;
-    const endY = (targetRect.top + targetRect.height / 2 - canvasRect.top) * scaleY;
+    // Calculer la position de destination (position de la ville)
+    const cityPosition = this.getVertexPosition(cityVertex, this.currentConfig);
+    const endX = cityPosition.x;
+    const endY = cityPosition.y;
 
     // Créer la particule
     const particle: ResourceParticle = {
@@ -604,6 +570,54 @@ export class HexMapRenderer {
     this.ctx.strokeStyle = '#000000';
     this.ctx.lineWidth = 1;
     this.ctx.stroke();
+
+    // Dessiner le timer de cooldown si l'hex est en cooldown
+    this.drawCooldownTimer(coord, x, y, currentHexSize);
+  }
+
+  /**
+   * Dessine un timer circulaire pour indiquer le temps restant avant de pouvoir récolter à nouveau.
+   */
+  private drawCooldownTimer(hexCoord: HexCoord, centerX: number, centerY: number, hexSize: number): void {
+    const remainingCooldown = ResourceHarvestController.getRemainingCooldown(hexCoord);
+    
+    if (remainingCooldown <= 0) {
+      return; // Pas de cooldown, ne rien afficher
+    }
+
+    const MIN_HARVEST_INTERVAL_MS = 1000; // Doit correspondre à ResourceHarvestController.MIN_HARVEST_INTERVAL_MS
+    const progress = remainingCooldown / MIN_HARVEST_INTERVAL_MS;
+    
+    // Taille du timer (cercle au centre de l'hex)
+    const timerRadius = hexSize * 0.3;
+    
+    this.ctx.save();
+    
+    // Dessiner le fond du timer (cercle gris semi-transparent)
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    this.ctx.beginPath();
+    this.ctx.arc(centerX, centerY, timerRadius, 0, Math.PI * 2);
+    this.ctx.fill();
+    
+    // Dessiner l'arc de progression (de 0 à progress * 2π)
+    // L'arc commence en haut (-π/2) et tourne dans le sens horaire
+    this.ctx.strokeStyle = '#FFFFFF';
+    this.ctx.lineWidth = 3;
+    this.ctx.beginPath();
+    const startAngle = -Math.PI / 2; // En haut
+    const endAngle = startAngle + (1 - progress) * Math.PI * 2; // Progression du cooldown
+    this.ctx.arc(centerX, centerY, timerRadius, startAngle, endAngle);
+    this.ctx.stroke();
+    
+    // Afficher le temps restant en secondes au centre
+    const remainingSeconds = Math.ceil(remainingCooldown / 1000);
+    this.ctx.fillStyle = '#FFFFFF';
+    this.ctx.font = `${Math.max(10, timerRadius * 0.5)}px Arial`;
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
+    this.ctx.fillText(remainingSeconds.toString(), centerX, centerY);
+    
+    this.ctx.restore();
   }
 
   /**

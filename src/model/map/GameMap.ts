@@ -23,6 +23,7 @@ export class GameMap {
   private readonly roads: Set<string>;
   private readonly registeredCivilizations: Set<string>;
   private readonly roadOwner: Map<string, CivilizationId>;
+  private readonly roadDistanceToCity: Map<string, number>; // Map<edgeKey, distance>
 
   /**
    * Crée une nouvelle carte de jeu à partir d'une grille hexagonale.
@@ -34,6 +35,7 @@ export class GameMap {
     this.roads = new Set();
     this.registeredCivilizations = new Set();
     this.roadOwner = new Map();
+    this.roadDistanceToCity = new Map();
 
     // Initialiser tous les hexagones à Desert par défaut
     for (const hex of grid.getAllHexes()) {
@@ -177,6 +179,9 @@ export class GameMap {
     
     this.roads.add(edgeKey);
     this.roadOwner.set(edgeKey, civId);
+    
+    // Calculer et mettre à jour les distances depuis les villes pour toutes les routes
+    this.updateRoadDistances(civId);
   }
 
   /**
@@ -535,5 +540,101 @@ export class GameMap {
     }
     
     return false;
+  }
+
+  /**
+   * Retourne la distance d'une route à la ville la plus proche de la même civilisation.
+   * @param edge - L'arête de la route
+   * @returns La distance (1 si elle touche une ville, D+1 si elle touche une route de distance D), ou undefined si la route n'existe pas
+   */
+  getRoadDistanceToCity(edge: Edge): number | undefined {
+    return this.roadDistanceToCity.get(edge.hashCode());
+  }
+
+  /**
+   * Met à jour les distances de toutes les routes à la ville la plus proche pour une civilisation donnée.
+   * Utilise un algorithme BFS pour calculer les distances depuis les villes.
+   * @param civId - L'identifiant de la civilisation
+   */
+  private updateRoadDistances(civId: CivilizationId): void {
+    const civKey = civId.hashCode();
+    
+    // Réinitialiser les distances pour toutes les routes de cette civilisation
+    const civRoads = this.getRoadsForCivilization(civId);
+    for (const road of civRoads) {
+      this.roadDistanceToCity.delete(road.hashCode());
+    }
+
+    // Étape 1: Trouver toutes les routes qui touchent directement une ville de la civilisation (distance = 1)
+    const queue: Array<{ edge: Edge; distance: number }> = [];
+    const processed = new Set<string>();
+
+    for (const road of civRoads) {
+      const vertices = this.getVerticesForEdge(road);
+      let touchesCity = false;
+      
+      for (const vertex of vertices) {
+        // Vérifier que tous les hexagones du vertex existent
+        const vertexHexes = vertex.getHexes();
+        const allVertexHexesExist = vertexHexes.every(h => this.grid.hasHex(h));
+        if (!allVertexHexesExist) {
+          continue;
+        }
+        
+        if (this.hasCity(vertex)) {
+          const owner = this.getCityOwner(vertex);
+          if (owner && owner.hashCode() === civKey) {
+            touchesCity = true;
+            break;
+          }
+        }
+      }
+      
+      if (touchesCity) {
+        const roadKey = road.hashCode();
+        this.roadDistanceToCity.set(roadKey, 1);
+        queue.push({ edge: road, distance: 1 });
+        processed.add(roadKey);
+      }
+    }
+
+    // Étape 2: Propager les distances avec BFS
+    while (queue.length > 0) {
+      const { edge: currentRoad, distance: currentDistance } = queue.shift()!;
+      const adjacentEdges = this.getAdjacentEdges(currentRoad);
+      
+      for (const adjacentEdge of adjacentEdges) {
+        const adjRoadKey = adjacentEdge.hashCode();
+        const adjOwner = this.getRoadOwner(adjacentEdge);
+        
+        // Ignorer les routes qui ne sont pas de la même civilisation ou déjà traitées
+        if (!adjOwner || adjOwner.hashCode() !== civKey || processed.has(adjRoadKey)) {
+          continue;
+        }
+        
+        // Vérifier que l'edge adjacent existe vraiment dans la grille
+        const [adjHex1, adjHex2] = adjacentEdge.getHexes();
+        if (!this.grid.hasHex(adjHex1) || !this.grid.hasHex(adjHex2)) {
+          continue;
+        }
+        
+        // Ignorer les edges adjacents entre deux hexagones d'eau (mais autoriser terre-eau)
+        const adjHex1Type = this.getHexType(adjHex1);
+        const adjHex2Type = this.getHexType(adjHex2);
+        if (adjHex1Type === HexType.Water && adjHex2Type === HexType.Water) {
+          continue;
+        }
+        
+        const newDistance = currentDistance + 1;
+        const existingDistance = this.roadDistanceToCity.get(adjRoadKey);
+        
+        // Mettre à jour seulement si la nouvelle distance est meilleure (plus petite)
+        if (existingDistance === undefined || newDistance < existingDistance) {
+          this.roadDistanceToCity.set(adjRoadKey, newDistance);
+          queue.push({ edge: adjacentEdge, distance: newDistance });
+        }
+        processed.add(adjRoadKey);
+      }
+    }
   }
 }

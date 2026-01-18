@@ -308,9 +308,11 @@ describe('ResourceHarvest', () => {
 
       const playerResources = new PlayerResources();
 
-      const gain = ResourceHarvest.harvest(center, map, civId, playerResources);
+      const result = ResourceHarvest.harvest(center, map, civId, playerResources);
 
-      expect(gain).toBe(1);
+      expect(result.gain).toBe(1);
+      expect(result.cityVertex).not.toBeNull();
+      expect(result.cityVertex?.equals(vertex)).toBe(true);
       expect(playerResources.getResource(ResourceType.Wood)).toBe(1);
     });
 

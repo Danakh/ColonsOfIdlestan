@@ -695,4 +695,164 @@ describe('GameMap', () => {
       expect(roads).toHaveLength(0);
     });
   });
+
+  describe('distance des routes aux villes', () => {
+    it('devrait retourner une distance de 1 pour une route touchant directement une ville', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+      const northeast = center.neighbor(HexDirection.NE);
+
+      const grid = new HexGrid([
+        new Hex(center),
+        new Hex(north),
+        new Hex(northeast),
+      ]);
+      const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+      map.registerCivilization(civId);
+
+      // Ajouter une ville sur un vertex
+      const vertex = Vertex.create(center, north, northeast);
+      map.addCity(vertex, civId);
+
+      // Ajouter une route qui touche cette ville
+      const edge = Edge.create(center, north);
+      map.addRoad(edge, civId);
+
+      // La distance devrait être 1
+      expect(map.getRoadDistanceToCity(edge)).toBe(1);
+    });
+
+    it('devrait retourner une distance de 2 pour une route adjacente à une route de distance 1', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+      const northeast = center.neighbor(HexDirection.NE);
+      const northwest = center.neighbor(HexDirection.NW);
+
+      const grid = new HexGrid([
+        new Hex(center),
+        new Hex(north),
+        new Hex(northeast),
+        new Hex(northwest),
+      ]);
+      const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+      map.registerCivilization(civId);
+
+      // Ajouter une ville sur un vertex
+      const vertex = Vertex.create(center, north, northeast);
+      map.addCity(vertex, civId);
+
+      // Ajouter une route qui touche directement la ville (distance 1)
+      const edge1 = Edge.create(center, north);
+      map.addRoad(edge1, civId);
+      expect(map.getRoadDistanceToCity(edge1)).toBe(1);
+
+      // Ajouter une route adjacente à la première (distance 2)
+      const edge2 = Edge.create(center, northwest);
+      map.addRoad(edge2, civId);
+      expect(map.getRoadDistanceToCity(edge2)).toBe(2);
+    });
+
+    it('devrait prendre le minimum des distances possibles', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+      const northeast = center.neighbor(HexDirection.NE);
+      const southeast = center.neighbor(HexDirection.SE);
+
+      const grid = new HexGrid([
+        new Hex(center),
+        new Hex(north),
+        new Hex(northeast),
+        new Hex(southeast),
+      ]);
+      const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+      map.registerCivilization(civId);
+
+      // Ajouter deux villes
+      const vertex1 = Vertex.create(center, north, northeast);
+      const vertex2 = Vertex.create(center, northeast, southeast);
+      map.addCity(vertex1, civId);
+      map.addCity(vertex2, civId);
+
+      // Ajouter des routes : une qui touche vertex1, une autre qui touche vertex2
+      const edge1 = Edge.create(center, north);
+      const edge2 = Edge.create(center, southeast);
+      map.addRoad(edge1, civId);
+      map.addRoad(edge2, civId);
+
+      // edge1 devrait avoir distance 1 (touche vertex1)
+      expect(map.getRoadDistanceToCity(edge1)).toBe(1);
+      // edge2 devrait avoir distance 1 (touche vertex2)
+      expect(map.getRoadDistanceToCity(edge2)).toBe(1);
+
+      // edgeCenter devrait avoir distance 1 car il touche les deux vertices avec des villes
+      // (northeast, center) est une edge qui touche vertex1 et vertex2
+      const edgeCenter = Edge.create(center, northeast);
+      map.addRoad(edgeCenter, civId);
+      
+      // edgeCenter devrait avoir distance 1 (touche vertex1 ou vertex2)
+      expect(map.getRoadDistanceToCity(edgeCenter)).toBe(1);
+    });
+
+    it('devrait retourner undefined pour une route inexistante', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+
+      const grid = new HexGrid([
+        new Hex(center),
+        new Hex(north),
+      ]);
+      const map = new GameMap(grid);
+
+      const edge = Edge.create(center, north);
+      expect(map.getRoadDistanceToCity(edge)).toBeUndefined();
+    });
+
+    it('devrait recalculer les distances quand une nouvelle route raccourcit le chemin', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+      const northeast = center.neighbor(HexDirection.NE);
+      const northwest = center.neighbor(HexDirection.NW);
+      const northNorth = north.neighbor(HexDirection.N);
+
+      const grid = new HexGrid([
+        new Hex(center),
+        new Hex(north),
+        new Hex(northeast),
+        new Hex(northwest),
+        new Hex(northNorth),
+      ]);
+      const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+      map.registerCivilization(civId);
+
+      // Ajouter une ville
+      const vertex = Vertex.create(center, north, northeast);
+      map.addCity(vertex, civId);
+
+      // Ajouter une route longue (center -> northwest, puis northwest -> ...)
+      const edge1 = Edge.create(center, northwest);
+      map.addRoad(edge1, civId);
+
+      // edge1 devrait avoir distance 1 (touche la ville)
+      expect(map.getRoadDistanceToCity(edge1)).toBe(1);
+
+      // Ajouter une autre route qui part de center vers north, puis de north vers northNorth
+      const edgeNorth = Edge.create(center, north);
+      const edge3 = Edge.create(north, northNorth);
+      map.addRoad(edgeNorth, civId);
+      map.addRoad(edge3, civId);
+
+      // edgeNorth devrait avoir distance 1 (touche directement la ville)
+      const distanceNorth = map.getRoadDistanceToCity(edgeNorth);
+      expect(distanceNorth).toBeDefined();
+      expect(distanceNorth).toBe(1);
+      // edge3 devrait avoir distance 2 (via edgeNorth)
+      const distance3 = map.getRoadDistanceToCity(edge3);
+      expect(distance3).toBeDefined();
+      expect(distance3).toBe(2);
+    });
+  });
 });
