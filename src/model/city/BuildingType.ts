@@ -106,3 +106,37 @@ export function getResourceProductionBuildings(): BuildingType[] {
     BuildingType.Mine,
   ];
 }
+
+/**
+ * Actions associées aux bâtiments.
+ */
+export enum BuildingAction {
+  /** Commerce - Débloqué par le port maritime */
+  Trade = 'Trade',
+  /** Améliorer - Débloqué par l'hôtel de ville */
+  Upgrade = 'Upgrade',
+}
+
+/**
+ * Retourne l'action associée à un bâtiment, ou null si aucune action.
+ * @param buildingType - Le type de bâtiment
+ * @returns L'action associée, ou null
+ */
+export function getBuildingAction(buildingType: BuildingType): BuildingAction | null {
+  switch (buildingType) {
+    case BuildingType.Seaport:
+      return BuildingAction.Trade;
+    case BuildingType.TownHall:
+      return BuildingAction.Upgrade;
+    default:
+      return null;
+  }
+}
+
+/**
+ * Noms des actions en français.
+ */
+export const BUILDING_ACTION_NAMES: Record<BuildingAction, string> = {
+  [BuildingAction.Trade]: 'Commerce',
+  [BuildingAction.Upgrade]: 'Améliorer',
+};

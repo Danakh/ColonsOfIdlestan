@@ -39,7 +39,7 @@ export class City {
     // Town (2): 3 bâtiments
     // Metropolis (3): 4 bâtiments
     // Capital (4): 5 bâtiments
-    return this.level + 1;
+    return (this.level + 1) * 2;
   }
 
   /**

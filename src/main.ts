@@ -10,7 +10,7 @@ import { HexCoord } from './model/hex/HexCoord';
 import { Edge } from './model/hex/Edge';
 import { Vertex } from './model/hex/Vertex';
 import { City } from './model/city/City';
-import { BuildingType, getBuildingTypeName } from './model/city/BuildingType';
+import { BuildingType, getBuildingTypeName, getBuildingAction, BUILDING_ACTION_NAMES, BuildingAction } from './model/city/BuildingType';
 import { CityLevel } from './model/city/CityLevel';
 import { APP_VERSION, APP_NAME } from './config/version';
 
@@ -36,8 +36,6 @@ function main(): void {
   const cityPanel = document.getElementById('city-panel') as HTMLElement;
   const cityPanelTitle = document.getElementById('city-panel-title') as HTMLHeadingElement;
   const cityBuildingsList = document.getElementById('city-buildings-list') as HTMLUListElement;
-  const cityUpgradeBtn = document.getElementById('city-upgrade-btn') as HTMLButtonElement;
-  const cityTradeBtn = document.getElementById('city-trade-btn') as HTMLButtonElement;
 
   if (!canvas) {
     throw new Error('Canvas introuvable');
@@ -282,7 +280,41 @@ function main(): void {
       for (const buildingType of buildings) {
         const item = document.createElement('li');
         item.className = 'built-building';
-        item.textContent = getBuildingTypeName(buildingType);
+        
+        // Conteneur pour le nom
+        const infoContainer = document.createElement('div');
+        infoContainer.className = 'building-info';
+        
+        // Nom du bâtiment
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'building-name';
+        nameSpan.textContent = getBuildingTypeName(buildingType);
+        infoContainer.appendChild(nameSpan);
+        
+        item.appendChild(infoContainer);
+        
+        // Bouton d'action si le bâtiment en a une
+        const buildingAction = getBuildingAction(buildingType);
+        if (buildingAction !== null) {
+          const actionBtn = document.createElement('button');
+          actionBtn.className = 'building-action-btn';
+          actionBtn.textContent = BUILDING_ACTION_NAMES[buildingAction];
+          
+          // Désactiver le bouton d'amélioration si la ville ne peut pas être améliorée
+          if (buildingAction === BuildingAction.Upgrade) {
+            actionBtn.disabled = !city.canUpgrade();
+          } else {
+            // Pour l'instant, le bouton Trade est toujours activé (à implémenter plus tard)
+            actionBtn.disabled = false;
+          }
+          
+          // Stocker l'action et le type de bâtiment dans le bouton
+          actionBtn.dataset.buildingAction = buildingAction;
+          actionBtn.dataset.buildingType = buildingType;
+          
+          item.appendChild(actionBtn);
+        }
+        
         cityBuildingsList.appendChild(item);
       }
     }
@@ -294,11 +326,6 @@ function main(): void {
       emptyItem.textContent = 'Aucun bâtiment disponible';
       cityBuildingsList.appendChild(emptyItem);
     }
-
-    // Mettre à jour les boutons d'actions
-    cityUpgradeBtn.disabled = !city.canUpgrade();
-    // Pour l'instant, le bouton Trade est toujours activé (à implémenter plus tard)
-    cityTradeBtn.disabled = false;
   }
 
   // Configurer le callback de rendu pour la surbrillance au survol et la mise à jour du panneau
@@ -400,44 +427,12 @@ function main(): void {
     settingsMenu.classList.add('hidden');
   });
 
-  // Gérer le bouton d'amélioration de ville
-  cityUpgradeBtn.addEventListener('click', () => {
-    const selectedVertex = renderer.getSelectedVertex();
-    const currentGameMap = game.getGameMap();
-
-    if (!selectedVertex || !currentGameMap || !currentGameMap.hasCity(selectedVertex)) {
-      return;
-    }
-
-    const city = currentGameMap.getCity(selectedVertex);
-    if (!city || !city.canUpgrade()) {
-      return;
-    }
-
-    try {
-      // Améliorer la ville
-      city.upgrade();
-      
-      // Mettre à jour l'affichage
-      updateCityPanel();
-      const civId = game.getPlayerCivilizationId();
-      renderer.render(currentGameMap, civId);
-    } catch (error) {
-      console.error('Erreur lors de l\'amélioration de la ville:', error);
-      // On pourrait afficher un message à l'utilisateur si nécessaire
-    }
-  });
-
-  // Gérer le bouton de commerce (à implémenter plus tard)
-  cityTradeBtn.addEventListener('click', () => {
-    // TODO: Implémenter la logique de commerce
-    console.log('Commerce - à implémenter');
-  });
-
-  // Gérer les clics sur les boutons de construction de bâtiments
+  // Gérer les clics sur les boutons de la liste des bâtiments (construction et actions)
   // Utiliser la délégation d'événements pour gérer les boutons créés dynamiquement
   cityBuildingsList.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
+    
+    // Gérer les boutons de construction
     if (target.classList.contains('build-btn')) {
       const button = target as HTMLButtonElement;
       if (button.disabled) {
@@ -479,6 +474,53 @@ function main(): void {
         // Ignorer silencieusement les erreurs de construction
         // On pourrait afficher un message à l'utilisateur si nécessaire
         console.error('Erreur lors de la construction du bâtiment:', error);
+      }
+    }
+    
+    // Gérer les actions des bâtiments construits (Améliorer, Commerce)
+    if (target.classList.contains('building-action-btn')) {
+      const button = target as HTMLButtonElement;
+      if (button.disabled) {
+        return;
+      }
+
+      const buildingAction = button.dataset.buildingAction as BuildingAction;
+      if (!buildingAction) {
+        return;
+      }
+
+      const selectedVertex = renderer.getSelectedVertex();
+      const currentGameMap = game.getGameMap();
+
+      if (!selectedVertex || !currentGameMap || !currentGameMap.hasCity(selectedVertex)) {
+        return;
+      }
+
+      const city = currentGameMap.getCity(selectedVertex);
+      if (!city) {
+        return;
+      }
+
+      try {
+        if (buildingAction === BuildingAction.Upgrade) {
+          // Améliorer la ville
+          if (!city.canUpgrade()) {
+            return;
+          }
+          city.upgrade();
+        } else if (buildingAction === BuildingAction.Trade) {
+          // TODO: Implémenter la logique de commerce
+          console.log('Commerce - à implémenter');
+          return; // Ne pas mettre à jour si l'action n'est pas implémentée
+        }
+        
+        // Mettre à jour l'affichage
+        updateCityPanel();
+        const civId = game.getPlayerCivilizationId();
+        renderer.render(currentGameMap, civId);
+      } catch (error) {
+        console.error(`Erreur lors de l'action ${buildingAction}:`, error);
+        // On pourrait afficher un message à l'utilisateur si nécessaire
       }
     }
   });

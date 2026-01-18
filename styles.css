@@ -301,31 +301,34 @@ main {
     opacity: 0.6;
 }
 
-.city-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.city-action-btn {
-    padding: 0.75rem 1rem;
-    background: #667eea;
+.building-action-btn {
+    padding: 0.5rem 1rem;
+    background: #4CAF50;
     color: white;
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 500;
-    transition: background 0.3s ease;
+    transition: background-color 0.2s;
+    white-space: nowrap;
 }
 
-.city-action-btn:hover {
-    background: #5568d3;
+.building-action-btn:hover:not(:disabled) {
+    background: #45a049;
 }
 
-.city-action-btn:active {
-    transform: scale(0.98);
+.building-action-btn:active:not(:disabled) {
+    background: #3d8b40;
 }
+
+.building-action-btn:disabled {
+    background: #ccc;
+    color: #999;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
 
 .city-action-btn:disabled {
     background: #ccc;
