@@ -1,0 +1,582 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden; /* Pas de scroll sur la page */
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    flex-direction: column;
+}
+
+#app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* Utiliser height au lieu de min-height pour éviter le débordement */
+    overflow: hidden;
+}
+
+header.top-bar {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 1rem 2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+    flex-shrink: 0; /* Taille fixe, ne se rétrécit pas */
+    min-height: 80px; /* Hauteur minimale fixe */
+}
+
+header.top-bar .app-title {
+    color: #333;
+    font-size: 1.5rem;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.resources-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    flex: 1;
+    background: rgba(240, 240, 240, 0.8);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.settings-menu-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.settings-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #667eea;
+    transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.settings-btn:hover {
+    background: rgba(102, 126, 234, 0.1);
+    transform: rotate(90deg);
+}
+
+.settings-btn:active {
+    transform: rotate(90deg) scale(0.95);
+}
+
+.settings-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 0.5rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 180px;
+    padding: 0.5rem 0;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+}
+
+.settings-menu.hidden {
+    display: none;
+}
+
+.settings-menu .menu-item {
+    padding: 0.75rem 1.25rem;
+    background: transparent;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    color: #333;
+    font-size: 0.95rem;
+    transition: background 0.2s ease;
+    border-radius: 0;
+}
+
+.settings-menu .menu-item:hover {
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+}
+
+.settings-menu .menu-item:active {
+    background: rgba(102, 126, 234, 0.2);
+}
+
+button {
+    padding: 0.6rem 1.2rem;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: background 0.3s ease;
+}
+
+button:hover {
+    background: #5568d3;
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+main {
+    flex: 1 1 0; /* Prend tout l'espace restant */
+    display: flex;
+    padding: 2rem;
+    overflow: hidden; /* Pas de scroll vertical */
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    min-height: 0; /* Permet au flex de rétrécir si nécessaire */
+    max-height: 100%; /* Ne pas dépasser la hauteur disponible */
+    position: relative; /* Pour positionner le panneau en absolu */
+}
+
+#map-canvas {
+    background: #e8f4f8;
+    border-radius: 10px;
+    border: 6px solid #667eea;
+    border-style: double;
+    max-width: 100%;
+    max-height: 100%;
+    position: relative;
+    box-sizing: border-box; /* Inclure la bordure dans les dimensions */
+}
+
+.city-panel {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 10px;
+    border: 6px solid #667eea;
+    border-style: double;
+    padding: 1.5rem;
+    width: 350px;
+    max-height: calc(100vh - 120px); /* Hauteur max en tenant compte du header */
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    position: absolute; /* Position absolue pour ne pas affecter le layout */
+    right: 2rem; /* Positionné à droite du main */
+    top: 50%;
+    transform: translate(100%, -50%); /* Position initiale hors écran à droite, centré verticalement */
+    transition: transform 0.3s linear, opacity 0.1s linear;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 10; /* S'affiche par-dessus le canvas */
+    box-sizing: border-box; /* Inclure la bordure dans les dimensions */
+}
+
+.city-panel.hidden {
+    transform: translate(100%, -50%); /* Reste hors écran quand caché, centré verticalement */
+    opacity: 0;
+    pointer-events: none;
+}
+
+.city-panel:not(.hidden) {
+    transform: translate(0, -50%); /* Revient à sa position normale quand visible, centré verticalement */
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Panneau de commerce */
+.trade-panel {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 10px;
+    border: 6px solid #667eea;
+    border-style: double;
+    padding: 1.5rem;
+    width: 600px;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) scale(0.9);
+    transition: transform 0.3s linear, opacity 0.3s linear;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 20; /* Au-dessus du panneau de ville */
+    box-sizing: border-box;
+}
+
+.trade-panel.hidden {
+    transform: translate(-50%, -50%) scale(0.9);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.trade-panel:not(.hidden) {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.trade-panel h2 {
+    color: #333;
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 2px solid #667eea;
+    padding-bottom: 0.5rem;
+}
+
+.trade-content {
+    display: flex;
+    gap: 2rem;
+    flex: 1;
+}
+
+.trade-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.trade-column h3 {
+    color: #555;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+}
+
+.trade-column ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.trade-resource-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.8);
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.trade-resource-item:hover:not(.disabled) {
+    background: rgba(102, 126, 234, 0.1);
+    border-color: #667eea;
+    transform: translateX(4px);
+}
+
+.trade-resource-item.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.trade-resource-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.trade-resource-sprite,
+.trade-resource-color {
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.trade-resource-color {
+    border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.trade-resource-name {
+    font-weight: 500;
+    color: #333;
+}
+
+.trade-resource-quantity {
+    font-weight: 600;
+    color: #667eea;
+    font-size: 1.1rem;
+    min-width: 40px;
+    text-align: right;
+}
+
+.trade-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e0e0e0;
+}
+
+.trade-btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.trade-btn.cancel-btn {
+    background: #ccc;
+    color: #333;
+}
+
+.trade-btn.cancel-btn:hover {
+    background: #bbb;
+}
+
+.trade-btn.confirm-btn {
+    background: #667eea;
+    color: white;
+}
+
+.trade-btn.confirm-btn:hover:not(:disabled) {
+    background: #5568d3;
+}
+
+.trade-btn.confirm-btn:disabled {
+    background: #ccc;
+    color: #999;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.city-panel h2 {
+    color: #333;
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 2px solid #667eea;
+    padding-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.city-panel h3 {
+    color: #555;
+    font-size: 1.2rem;
+    margin-bottom: 0.75rem;
+}
+
+#city-buildings-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+#city-buildings-list li {
+    padding: 0.75rem;
+    background: #f5f5f5;
+    border-radius: 5px;
+    border-left: 4px solid #667eea;
+    color: #333;
+    font-size: 0.95rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#city-buildings-list li.empty {
+    color: #999;
+    font-style: italic;
+    border-left-color: #ccc;
+}
+
+#city-buildings-list li.buildable-building {
+    border-left-color: #4CAF50;
+}
+
+#city-buildings-list li.built-building {
+    border-left-color: #2196F3;
+}
+
+.building-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+}
+
+.building-name {
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.building-cost {
+    font-size: 0.75rem;
+    color: #666;
+    font-style: italic;
+}
+
+.build-btn {
+    padding: 0.5rem 1rem;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+}
+
+.build-btn:hover:not(:disabled) {
+    background: #5568d3;
+}
+
+.build-btn:active:not(:disabled) {
+    background: #4a5bbf;
+}
+
+.build-btn:disabled {
+    background: #ccc;
+    color: #999;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.building-action-btn {
+    padding: 0.5rem 1rem;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+}
+
+.building-action-btn:hover:not(:disabled) {
+    background: #45a049;
+}
+
+.building-action-btn:active:not(:disabled) {
+    background: #3d8b40;
+}
+
+.building-action-btn:disabled {
+    background: #ccc;
+    color: #999;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+
+.city-action-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+#resources-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+}
+
+.resource-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.resource-color {
+    width: 20px;
+    height: 20px;
+    border: 1px solid #000;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.resource-name {
+    color: #555;
+    font-size: 0.9rem;
+}
+
+.resource-count {
+    color: #333;
+    font-size: 0.9rem;
+    font-weight: bold;
+}
+
+footer {
+    display: none; /* Footer masqué car vide */
+}
+
+@media (max-width: 768px) {
+    header.top-bar {
+        flex-direction: row;
+        gap: 1rem;
+        padding: 1rem;
+    }
+
+    header.top-bar .app-title {
+        font-size: 1.2rem;
+        flex: 0 0 auto;
+    }
+
+    .resources-bar {
+        flex: 1 1 auto;
+        justify-content: flex-start;
+        min-width: 0;
+    }
+
+    .settings-menu-container {
+        flex: 0 0 auto;
+    }
+
+    main {
+        padding: 1rem;
+        flex-direction: column;
+    }
+
+    .city-panel {
+        min-width: auto;
+        max-width: 100%;
+        width: 100%;
+    }
+}

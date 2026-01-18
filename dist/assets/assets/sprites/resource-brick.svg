@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Brick resource - Simple brick -->
+  <!-- Brick body -->
+  <rect x="8" y="12" width="16" height="12" rx="1" fill="#CD5C5C" stroke="#A0522D" stroke-width="1.5"/>
+  <!-- Mortar lines -->
+  <line x1="8" y1="18" x2="24" y2="18" stroke="#A0522D" stroke-width="1.5" opacity="0.7"/>
+  <!-- Brick texture -->
+  <rect x="10" y="14" width="12" height="3" fill="#A0522D" opacity="0.3"/>
+  <rect x="10" y="21" width="12" height="2" fill="#A0522D" opacity="0.3"/>
+</svg>

@@ -33,7 +33,7 @@ export class ResourceSprites {
     for (const [resourceType, filename] of Object.entries(spriteFiles)) {
       const type = resourceType as ResourceType;
       const img = new Image();
-      const fullPath = `/assets/sprites/${filename}`;
+      const fullPath = `assets/sprites/${filename}`;
 
       img.onload = () => {
         this.resourceSprites.set(type, img);

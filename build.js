@@ -1,29 +1,41 @@
 import { build } from 'esbuild';
-import { readdirSync, statSync } from 'fs';
+import { readdirSync, statSync, mkdirSync, cpSync, readFileSync, writeFileSync, existsSync, rmSync } from 'fs';
 import { join } from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
-// Trouver tous les fichiers TypeScript dans src
-function getAllTsFiles(dir, fileList = []) {
-  const files = readdirSync(dir);
-  files.forEach(file => {
-    const filePath = join(dir, file);
-    if (statSync(filePath).isDirectory()) {
-      getAllTsFiles(filePath, fileList);
-    } else if (file.endsWith('.ts')) {
-      fileList.push(filePath);
-    }
-  });
-  return fileList;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Créer le répertoire dist s'il n'existe pas, ou le nettoyer s'il existe
+const distDir = join(__dirname, 'dist');
+if (existsSync(distDir)) {
+  rmSync(distDir, { recursive: true, force: true });
+}
+mkdirSync(distDir, { recursive: true });
+
+// Copier index.html dans dist/
+const indexHtmlPath = join(__dirname, 'index.html');
+const distIndexHtmlPath = join(distDir, 'index.html');
+cpSync(indexHtmlPath, distIndexHtmlPath);
+
+// Copier styles.css dans dist/
+const stylesCssPath = join(__dirname, 'styles.css');
+const distStylesCssPath = join(distDir, 'styles.css');
+cpSync(stylesCssPath, distStylesCssPath);
+
+// Copier public/ dans dist/assets/ (en conservant la structure)
+const publicDir = join(__dirname, 'public');
+const distAssetsDir = join(distDir, 'assets');
+if (existsSync(publicDir)) {
+  cpSync(publicDir, distAssetsDir, { recursive: true });
 }
 
-const entryPoints = getAllTsFiles('./src').filter(f => 
-  !f.includes('.test.') && !f.includes('node_modules')
-);
-
+// Bundler le TypeScript avec esbuild
 build({
   entryPoints: ['./src/main.ts'],
   bundle: true,
-  outfile: './main.js',
+  outfile: './dist/main.js',
   format: 'esm',
   target: 'es2020',
   platform: 'browser',

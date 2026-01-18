@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Ore resource - Rock or mineral chunk -->
+  <!-- Main rock shape -->
+  <path d="M10 22 L7 14 L12 8 L20 10 L24 18 L18 24 Z" fill="#708090" stroke="#556B2F" stroke-width="1.5"/>
+  <!-- Rock facets -->
+  <path d="M12 10 L16 16 L20 12 Z" fill="#556B2F" opacity="0.3"/>
+  <path d="M18 12 L22 18 L18 22 Z" fill="#556B2F" opacity="0.3"/>
+  <!-- Mineral veins -->
+  <line x1="10" y1="20" x2="18" y2="16" stroke="#2F4F4F" stroke-width="1" opacity="0.6"/>
+  <line x1="12" y1="12" x2="22" y2="18" stroke="#2F4F4F" stroke-width="1" opacity="0.6"/>
+  <!-- Highlight -->
+  <path d="M10 22 L12 16 L16 18 Z" fill="#87CEEB" opacity="0.3"/>
+</svg>

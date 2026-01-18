@@ -115,7 +115,7 @@ export class HexMapRenderer {
    */
   private loadCitySprites(): void {
     // Le serveur sert les fichiers depuis la racine du projet
-    // Les sprites sont accessibles via /assets/sprites/ (depuis la racine)
+    // Les sprites sont accessibles via assets/sprites/ (chemins relatifs)
 
     const spriteFiles: Record<CityLevel, string> = {
       [CityLevel.Outpost]: 'city-outpost.svg',
@@ -144,7 +144,7 @@ export class HexMapRenderer {
       
       const tryLoad = (): void => {
         const img = new Image();
-        const fullPath = "/assets/sprites/" + filename;
+        const fullPath = "assets/sprites/" + filename;
         
         img.onload = () => {
           this.citySprites.set(levelNum, img);
@@ -169,7 +169,7 @@ export class HexMapRenderer {
    */
   private loadLockSprite(): void {
     const img = new Image();
-    const fullPath = "/assets/sprites/lock.svg";
+    const fullPath = "assets/sprites/lock.svg";
     
     img.onload = () => {
       this.lockSprite = img;
@@ -221,7 +221,7 @@ export class HexMapRenderer {
       
       const tryLoad = (): void => {
         const img = new Image();
-        const fullPath = "/assets/textures/" + filename;
+        const fullPath = "assets/textures/" + filename;
         
         img.onload = () => {
           this.hexTextures.set(type, img);
