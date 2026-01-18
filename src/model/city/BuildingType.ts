@@ -118,7 +118,7 @@ export const BUILDING_REQUIRED_HEX_TYPE: Record<BuildingType, HexType | null> = 
   [BuildingType.Mill]: HexType.Wheat,
   [BuildingType.Sheepfold]: HexType.Sheep,
   [BuildingType.Mine]: HexType.Ore,
-  [BuildingType.Seaport]: null, // Pas de contrainte d'hex
+  [BuildingType.Seaport]: HexType.Water, // Nécessite de l'eau adjacente
   [BuildingType.TownHall]: null, // Pas de contrainte d'hex
 };
 

@@ -1,5 +1,6 @@
 import { BuildingType, getBuildingCost, getRequiredHexType } from '../model/city/BuildingType';
 import { City } from '../model/city/City';
+import { CityLevel } from '../model/city/CityLevel';
 import { GameMap } from '../model/map/GameMap';
 import { Vertex } from '../model/hex/Vertex';
 import { PlayerResources } from '../model/game/PlayerResources';
@@ -14,6 +15,8 @@ export interface BuildableBuildingStatus {
   buildingType: BuildingType;
   /** true si la ville peut construire ET le joueur a les ressources */
   canBuild: boolean;
+  /** true si le bâtiment est bloqué uniquement par la limite de bâtiments */
+  blockedByBuildingLimit: boolean;
   /** Le coût de construction */
   cost: Map<ResourceType, number>;
 }
@@ -157,31 +160,86 @@ export class BuildingController {
     vertex: Vertex,
     resources: PlayerResources
   ): BuildableBuildingStatus[] {
-    const buildableBuildings = city.getBuildableBuildings();
+    // Obtenir tous les types de bâtiments (pas seulement ceux dans getBuildableBuildings)
+    // pour inclure ceux qui sont bloqués par la limite
+    const allBuildingTypes = BuildingType;
+    const allTypes = Object.values(allBuildingTypes) as BuildingType[];
     const statusList: BuildableBuildingStatus[] = [];
 
-    for (const buildingType of buildableBuildings) {
+    for (const buildingType of allTypes) {
+      // Ne pas inclure les bâtiments déjà construits
+      if (city.hasBuilding(buildingType)) {
+        continue;
+      }
+
+      // Vérifier si le bâtiment peut être construit du point de vue de la ville (niveau suffisant)
+      // Note: Cette vérification n'inclut pas la limite, qui sera vérifiée séparément
+      const cityCanBuildType = city.canBuildBuildingType(buildingType);
+      
       // Vérifier si le bâtiment a un hex requis et si la ville en a un adjacent
       const requiredHexType = getRequiredHexType(buildingType);
       if (requiredHexType !== null) {
-        // Pour les bâtiments de ressources, vérifier la présence de l'hex requis
         if (!this.hasAdjacentHexOfType(vertex, requiredHexType, map)) {
           // Ne pas inclure ce bâtiment dans la liste s'il n'a pas l'hex requis
           continue;
         }
       }
 
+      // Vérifier le niveau requis séparément (sans tenir compte de la limite)
+      const levelIsSufficient = this.checkBuildingLevelRequirement(buildingType, city);
+      if (!levelIsSufficient) {
+        // Niveau insuffisant, ne pas afficher
+        continue;
+      }
+
       const cost = getBuildingCost(buildingType);
       const canBuild = this.canBuild(buildingType, city, map, vertex, resources);
+      
+      // Déterminer si le blocage est uniquement dû à la limite de bâtiments
+      // Pour cela, vérifier si toutes les autres conditions sont remplies
+      const cityCanBuildAny = city.canBuildBuilding();
+      const hasResources = resources.canAfford(cost);
+      const hasHex = requiredHexType === null || this.hasAdjacentHexOfType(vertex, requiredHexType, map);
+      
+      // Le bâtiment est bloqué par la limite si :
+      // - Le niveau est suffisant (déjà vérifié ci-dessus)
+      // - L'hex requis est présent (ou pas d'hex requis)
+      // - Les ressources sont suffisantes
+      // - Mais la ville ne peut pas construire (limite atteinte)
+      const blockedByBuildingLimit = hasHex && hasResources && !cityCanBuildAny && !canBuild;
 
       statusList.push({
         buildingType,
         canBuild,
+        blockedByBuildingLimit,
         cost,
       });
     }
 
     return statusList;
+  }
+
+  /**
+   * Vérifie si le niveau de la ville est suffisant pour construire un bâtiment.
+   * @param buildingType - Le type de bâtiment
+   * @param city - La ville
+   * @returns true si le niveau est suffisant
+   */
+  private static checkBuildingLevelRequirement(buildingType: BuildingType, city: City): boolean {
+    // Vérifier le niveau requis sans tenir compte de la limite ou du fait qu'il est déjà construit
+    switch (buildingType) {
+      case BuildingType.Seaport:
+      case BuildingType.TownHall:
+        return city.level >= CityLevel.Outpost;
+      case BuildingType.Sawmill:
+      case BuildingType.Brickworks:
+      case BuildingType.Mill:
+      case BuildingType.Sheepfold:
+      case BuildingType.Mine:
+        return city.level >= CityLevel.Colony;
+      default:
+        return false;
+    }
   }
 
   /**

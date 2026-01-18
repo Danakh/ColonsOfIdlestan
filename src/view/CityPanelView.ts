@@ -285,10 +285,10 @@ export class CityPanelView {
     const builtBuildings = new Set(city.getBuildings());
 
     // Obtenir les bâtiments constructibles avec leur statut pour vérifier si on peut les construire
-    const buildableBuildingsMap = new Map<BuildingType, { canBuild: boolean; cost: Map<ResourceType, number> }>();
+    const buildableBuildingsMap = new Map<BuildingType, { canBuild: boolean; blockedByBuildingLimit: boolean; cost: Map<ResourceType, number> }>();
     const buildableBuildings = BuildingController.getBuildableBuildingsWithStatus(city, gameMap, vertex, playerResources);
     for (const status of buildableBuildings) {
-      buildableBuildingsMap.set(status.buildingType, { canBuild: status.canBuild, cost: status.cost });
+      buildableBuildingsMap.set(status.buildingType, { canBuild: status.canBuild, blockedByBuildingLimit: status.blockedByBuildingLimit, cost: status.cost });
     }
 
     // Afficher tous les bâtiments dans l'ordre fixe (seulement ceux qui sont construits ou constructibles)
@@ -356,7 +356,9 @@ export class CityPanelView {
           const buildBtn = document.createElement('button');
           buildBtn.className = 'build-btn';
           buildBtn.textContent = 'Construire';
-          buildBtn.disabled = !buildableStatus.canBuild;
+          // Désactiver uniquement si bloqué par la limite de bâtiments
+          // (les autres raisons ne doivent pas griser le bouton)
+          buildBtn.disabled = buildableStatus.blockedByBuildingLimit;
 
           // Stocker le buildingType dans le bouton pour le gestionnaire d'événement
           buildBtn.dataset.buildingType = buildingType;
