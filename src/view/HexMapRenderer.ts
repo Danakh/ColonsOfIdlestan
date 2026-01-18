@@ -422,8 +422,8 @@ export class HexMapRenderer {
     const centerX = sumX / 3;
     const centerY = sumY / 3;
 
-    // Taille de base du sprite selon le niveau
-    let baseSize = 8 + city.level * 2; // 8, 10, 12, 14, 16 pour les niveaux 0-4
+    // Taille fixe pour toutes les villes (taille de la capitale)
+    const baseSize = (8 + CityLevel.Capital * 2) * 2; // 32 pixels pour tous les niveaux
     
     // Agrandir si survolée ou sélectionnée
     let scale = 1.0;
@@ -446,15 +446,23 @@ export class HexMapRenderer {
                           sprite.naturalWidth > 0;
     
     if (isSpriteReady) {
-      // Calculer les dimensions de l'image
-      const spriteWidth = baseSize * scale;
-      const spriteHeight = baseSize * scale;
-
       // Appliquer la transformation pour le scale et la position
       this.ctx.translate(centerX, centerY);
       this.ctx.scale(scale, scale);
 
-      // Dessiner le sprite
+      // Dessiner l'aura jaune autour du sprite pour améliorer le contraste
+      const auraRadius = baseSize / 2 + 3; // Rayon de l'aura (légèrement plus grand que le sprite)
+      const gradient = this.ctx.createRadialGradient(0, 0, baseSize / 2, 0, 0, auraRadius);
+      gradient.addColorStop(0, 'rgba(255, 255, 0, 0.0)'); // Transparent au centre
+      gradient.addColorStop(0.7, 'rgba(255, 255, 200, 0.6)'); // Jaune clair
+      gradient.addColorStop(1, 'rgba(255, 255, 0, 0.3)'); // Jaune plus foncé à l'extérieur
+      
+      this.ctx.fillStyle = gradient;
+      this.ctx.beginPath();
+      this.ctx.arc(0, 0, auraRadius, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // Dessiner le sprite (après l'aura pour qu'il soit au-dessus)
       this.ctx.drawImage(
         sprite,
         -baseSize / 2,
