@@ -1,4 +1,5 @@
 import { ResourceType } from '../map/ResourceType';
+import { HexType } from '../map/HexType';
 
 /**
  * Types de bâtiments constructibles dans les villes.
@@ -105,6 +106,29 @@ export function getResourceProductionBuildings(): BuildingType[] {
     BuildingType.Sheepfold,
     BuildingType.Mine,
   ];
+}
+
+/**
+ * Mapping des bâtiments de production de ressources vers le type d'hex requis.
+ * Un bâtiment ne peut être construit que si la ville a au moins un hex adjacent du type requis.
+ */
+export const BUILDING_REQUIRED_HEX_TYPE: Record<BuildingType, HexType | null> = {
+  [BuildingType.Sawmill]: HexType.Wood,
+  [BuildingType.Brickworks]: HexType.Brick,
+  [BuildingType.Mill]: HexType.Wheat,
+  [BuildingType.Sheepfold]: HexType.Sheep,
+  [BuildingType.Mine]: HexType.Ore,
+  [BuildingType.Seaport]: null, // Pas de contrainte d'hex
+  [BuildingType.TownHall]: null, // Pas de contrainte d'hex
+};
+
+/**
+ * Retourne le type d'hex requis pour construire un bâtiment, ou null si aucun requis.
+ * @param buildingType - Le type de bâtiment
+ * @returns Le type d'hex requis, ou null si aucun
+ */
+export function getRequiredHexType(buildingType: BuildingType): HexType | null {
+  return BUILDING_REQUIRED_HEX_TYPE[buildingType] ?? null;
 }
 
 /**

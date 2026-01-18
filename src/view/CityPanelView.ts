@@ -185,13 +185,13 @@ export class CityPanelView {
     this.cityPanelTitle.appendChild(nameSpan);
 
     // Mettre à jour la liste des bâtiments
-    this.updateBuildingsList(city, playerResources);
+    this.updateBuildingsList(city, gameMap, selectedVertex, playerResources);
   }
 
   /**
    * Met à jour la liste des bâtiments dans le panneau.
    */
-  private updateBuildingsList(city: City, playerResources: PlayerResources): void {
+  private updateBuildingsList(city: City, gameMap: GameMap, vertex: Vertex, playerResources: PlayerResources): void {
     // Mettre à jour le titre avec le nombre de bâtiments construits / maximum
     const buildingCount = city.getBuildingCount();
     const maxBuildings = city.getMaxBuildings();
@@ -209,7 +209,7 @@ export class CityPanelView {
     };
 
     // Obtenir les bâtiments constructibles avec leur statut
-    const buildableBuildings = BuildingController.getBuildableBuildingsWithStatus(city, playerResources);
+    const buildableBuildings = BuildingController.getBuildableBuildingsWithStatus(city, gameMap, vertex, playerResources);
 
     // Afficher d'abord les bâtiments constructibles
     for (const buildingStatus of buildableBuildings) {
