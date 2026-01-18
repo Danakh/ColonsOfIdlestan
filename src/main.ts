@@ -94,7 +94,11 @@ function main(): void {
   renderer.resize();
   window.addEventListener('resize', () => {
     renderer.resize();
-    // Rendu manuel supprimé - à réactiver si nécessaire
+    const gameMap = game.getGameMap();
+    if (gameMap) {
+      const civId = game.getPlayerCivilizationId();
+      renderer.render(gameMap, civId);
+    }
   });
   
   /**
@@ -178,7 +182,11 @@ function main(): void {
 
   // Initialiser et afficher la première carte
   game.initialize();
-  // Rendu manuel supprimé - à réactiver si nécessaire
+  const gameMap = game.getGameMap();
+  if (gameMap) {
+    const civId = game.getPlayerCivilizationId();
+    renderer.render(gameMap, civId);
+  }
 
   /**
    * Met à jour l'affichage du panneau de la ville sélectionnée.
@@ -211,7 +219,8 @@ function main(): void {
         
         updateResourcesDisplay();
         updateCityPanel();
-        // Rendu manuel supprimé - à réactiver si nécessaire
+        const civId = game.getPlayerCivilizationId();
+        renderer.render(gameMap, civId);
       } catch (error) {
         console.error('Erreur lors de la construction du bâtiment:', error);
       }
@@ -237,7 +246,11 @@ function main(): void {
           return; // Ne pas mettre à jour le panneau de ville ni re-rendre
         }
         updateCityPanel();
-        // Rendu manuel supprimé - à réactiver si nécessaire
+        const currentGameMap = game.getGameMap();
+        if (currentGameMap) {
+          const civId = game.getPlayerCivilizationId();
+          renderer.render(currentGameMap, civId);
+        }
       } catch (error) {
         console.error(`Erreur lors de l'action ${action}:`, error);
       }
@@ -304,8 +317,15 @@ function main(): void {
     cityPanelView.handleBuildingAction(e.detail.buildingAction, e.detail.buildingType, city);
   }) as EventListener);
 
-  // Callback de rendu désactivé - à réactiver si nécessaire
-  // renderer.setRenderCallback(() => { ... });
+  // Configurer le callback de rendu pour la surbrillance au survol et la mise à jour du panneau
+  renderer.setRenderCallback(() => {
+    const currentGameMap = game.getGameMap();
+    if (currentGameMap) {
+      const civId = game.getPlayerCivilizationId();
+      renderer.render(currentGameMap, civId);
+      updateCityPanel();
+    }
+  });
 
   // Mettre à jour l'affichage des ressources
   updateResourcesDisplay();
@@ -327,7 +347,8 @@ function main(): void {
       // Mettre à jour l'affichage des ressources
       updateResourcesDisplay();
       
-      // Rendu manuel supprimé - à réactiver si nécessaire
+      // Re-rendre la carte pour afficher la nouvelle ville
+      renderer.render(currentGameMap, civId);
       
       // Mettre à jour le panneau de ville si une ville était sélectionnée
       updateCityPanel();
@@ -354,7 +375,8 @@ function main(): void {
       // Mettre à jour l'affichage des ressources
       updateResourcesDisplay();
       
-      // Rendu manuel supprimé - à réactiver si nécessaire
+      // Re-rendre la carte pour afficher la nouvelle route
+      renderer.render(currentGameMap, civId);
     } catch (error) {
       // Ignorer silencieusement les erreurs de construction
       // On pourrait afficher un message à l'utilisateur si nécessaire
@@ -414,9 +436,13 @@ function main(): void {
     // Réinitialiser le temps de référence pour la boucle d'animation
     gameStartTime = null;
     
-    // Rendu manuel supprimé - à réactiver si nécessaire
-    updateResourcesDisplay(); // Réinitialiser l'affichage des ressources
-    updateCityPanel(); // Masquer le panneau de la ville
+    const newGameMap = game.getGameMap();
+    if (newGameMap) {
+      const civId = game.getPlayerCivilizationId();
+      renderer.render(newGameMap, civId);
+      updateResourcesDisplay(); // Réinitialiser l'affichage des ressources
+      updateCityPanel(); // Masquer le panneau de la ville
+    }
     // Fermer le menu après l'action
     settingsMenu.classList.add('hidden');
   });
@@ -465,26 +491,22 @@ function main(): void {
     );
 
     // Si des productions ont eu lieu, déclencher les animations et mettre à jour l'affichage
-    // Utiliser requestAnimationFrame pour différer les mises à jour visuelles et laisser
-    // les événements utilisateur se traiter
     if (productionResults.length > 0) {
-      requestAnimationFrame(() => {
-        // Déclencher les animations pour chaque production
-        for (const result of productionResults) {
-          // Effet visuel sur l'hex récolté (automatique, donc sans effet de réduction)
-          renderer.triggerHarvestEffect(result.hexCoord, true);
-          
-          // Animation de la particule de ressource vers la ville ayant déclenché le harvest
-          renderer.triggerResourceHarvestAnimation(
-            result.hexCoord,
-            result.resourceType,
-            result.cityVertex
-          );
-        }
+      // Déclencher les animations pour chaque production
+      for (const result of productionResults) {
+        // Effet visuel sur l'hex récolté (automatique, donc sans effet de réduction)
+        renderer.triggerHarvestEffect(result.hexCoord, true);
+        
+        // Animation de la particule de ressource vers la ville ayant déclenché le harvest
+        renderer.triggerResourceHarvestAnimation(
+          result.hexCoord,
+          result.resourceType,
+          result.cityVertex
+        );
+      }
 
-        // Mettre à jour l'affichage des ressources
-        updateResourcesDisplay();
-      });
+      // Mettre à jour l'affichage des ressources
+      updateResourcesDisplay();
     }
   }
 
@@ -494,16 +516,11 @@ function main(): void {
 
   /**
    * Boucle d'animation principale qui gère le temps et la production automatique.
-   * Utilise un intervalle pour ne pas surcharger le système et laisser les événements utilisateur se traiter.
    */
-  let lastProcessTime: number = 0;
-  const PROCESS_INTERVAL_MS = 200; // Traiter la production automatique toutes les 200ms (plus espacé)
-
   function gameLoop(timestamp: number): void {
     // Initialiser le temps de référence au premier appel
     if (gameStartTime === null) {
       gameStartTime = timestamp;
-      lastProcessTime = timestamp;
     }
 
     // Calculer le temps écoulé depuis le début en secondes
@@ -512,15 +529,8 @@ function main(): void {
     // Mettre à jour l'horloge de jeu
     game.updateGameTime(timeSeconds);
 
-    // Traiter la production automatique seulement si l'intervalle est écoulé
-    // Utiliser setTimeout pour différer le traitement et laisser les événements utilisateur se traiter
-    if (timestamp - lastProcessTime >= PROCESS_INTERVAL_MS) {
-      // Différer le traitement pour laisser le navigateur traiter les événements utilisateur
-      setTimeout(() => {
-        processAutomaticBuildingProduction();
-      }, 0);
-      lastProcessTime = timestamp;
-    }
+    // Traiter la production automatique
+    processAutomaticBuildingProduction();
 
     // Continuer la boucle
     lastAnimationFrame = requestAnimationFrame(gameLoop);

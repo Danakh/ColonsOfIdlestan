@@ -92,8 +92,6 @@ export class HexMapRenderer {
   private resourceParticles: ResourceParticle[] = [];
   private animationFrameId: number | null = null;
   private cooldownAnimationFrameId: number | null = null;
-  private lastParticleRenderTime: number = 0;
-  private readonly PARTICLE_RENDER_INTERVAL_MS = 33; // Limiter à ~30 FPS pour réduire la charge
   private tooltipElement: HTMLDivElement | null = null;
   private tooltipEdge: Edge | null = null;
   private tooltipOutpostVertex: Vertex | null = null;
@@ -134,7 +132,10 @@ export class HexMapRenderer {
       loadedCount++;
       if (loadedCount === totalSprites) {
         this.citySpritesLoaded = true;
-        // Rendu manuel supprimé - à réactiver si nécessaire
+        // Re-rendre si nécessaire pour mettre à jour le panneau
+        if (this.renderCallback) {
+          this.renderCallback();
+        }
       }
     };
 
@@ -173,7 +174,10 @@ export class HexMapRenderer {
     img.onload = () => {
       this.lockSprite = img;
       this.lockSpriteLoaded = true;
-      // Rendu manuel supprimé - à réactiver si nécessaire
+      // Re-rendre si nécessaire pour mettre à jour la carte
+      if (this.renderCallback) {
+        this.renderCallback();
+      }
     };
     
     img.onerror = () => {
@@ -205,7 +209,10 @@ export class HexMapRenderer {
       loadedCount++;
       if (loadedCount === totalTextures) {
         this.hexTexturesLoaded = true;
-        // Rendu manuel supprimé - à réactiver si nécessaire
+        // Re-rendre si nécessaire pour mettre à jour la carte
+        if (this.renderCallback) {
+          this.renderCallback();
+        }
       }
     };
 
@@ -367,7 +374,14 @@ export class HexMapRenderer {
           const currentAllHexes = currentGrid.getAllHexes();
           const currentVisibleHexes = currentAllHexes.filter(hex => this.currentGameMap!.isHexVisible(hex.coord));
           
-          // Rendu manuel supprimé - à réactiver si nécessaire
+          // Toujours re-rendre avant de vérifier si on continue, pour mettre à jour les timers
+          if (this.currentCivilizationId !== null) {
+            if (this.renderCallback) {
+              this.renderCallback();
+            } else {
+              this.render(this.currentGameMap, this.currentCivilizationId);
+            }
+          }
           
           // Vérifier s'il y a encore des cooldowns actifs après le rendu
           const stillHasActiveCooldown = currentVisibleHexes.some(hex => {
@@ -444,12 +458,18 @@ export class HexMapRenderer {
     const now = Date.now();
     this.harvestedHexes.set(hexKey, now);
 
-    // Rendu manuel supprimé - à réactiver si nécessaire
+    // Re-rendre immédiatement pour afficher l'effet
+    if (this.renderCallback) {
+      this.renderCallback();
+    }
 
     // Nettoyer après la durée de l'animation (100ms)
     setTimeout(() => {
       this.harvestedHexes.delete(hexKey);
-      // Rendu manuel supprimé - à réactiver si nécessaire
+      // Re-rendre pour revenir à la taille normale
+      if (this.renderCallback) {
+        this.renderCallback();
+      }
     }, 100);
   }
 
@@ -508,7 +528,6 @@ export class HexMapRenderer {
 
   /**
    * Anime les particules de ressources en utilisant requestAnimationFrame.
-   * Utilise un throttling pour éviter de surcharger le système et permettre aux événements utilisateur de se traiter.
    */
   private animateParticles(): void {
     const now = Date.now();
@@ -536,12 +555,11 @@ export class HexMapRenderer {
 
     this.resourceParticles = activeParticles;
 
-    // Dessiner les particules seulement si l'intervalle minimum est écoulé
+    // Dessiner les particules
     if (this.resourceParticles.length > 0) {
-      // Throttling : ne re-rendre que si l'intervalle minimum est écoulé
-      if (now - this.lastParticleRenderTime >= this.PARTICLE_RENDER_INTERVAL_MS) {
-        // Rendu manuel supprimé - à réactiver si nécessaire
-        this.lastParticleRenderTime = now;
+      // Re-rendre la carte pour afficher les particules
+      if (this.renderCallback) {
+        this.renderCallback();
       }
       
       // Continuer l'animation
@@ -549,7 +567,6 @@ export class HexMapRenderer {
     } else {
       // Arrêter l'animation si toutes les particules sont terminées
       this.animationFrameId = null;
-      this.lastParticleRenderTime = 0;
     }
   }
 
@@ -1861,10 +1878,10 @@ export class HexMapRenderer {
       }
     }
 
-    // Rendu manuel supprimé - à réactiver si nécessaire
-    // if (needsRender && this.renderCallback) {
-    //   this.renderCallback();
-    // }
+    // Re-rendre seulement si nécessaire
+    if (needsRender && this.renderCallback) {
+      this.renderCallback();
+    }
   };
 
   /**
@@ -1891,10 +1908,9 @@ export class HexMapRenderer {
     // Masquer le tooltip
     this.hideTooltip();
 
-    // Rendu manuel supprimé - à réactiver si nécessaire
-    // if (needsRender && this.renderCallback) {
-    //   this.renderCallback();
-    // }
+    if (needsRender && this.renderCallback) {
+      this.renderCallback();
+    }
   };
 
   /**
@@ -1927,7 +1943,10 @@ export class HexMapRenderer {
         this.onVertexClickCallback(vertex);
       }
       
-      // Rendu manuel supprimé - à réactiver si nécessaire
+      // Re-rendre pour afficher la sélection
+      if (this.renderCallback) {
+        this.renderCallback();
+      }
       
       return; // Ne pas vérifier les edges ni les hexagones si on a cliqué sur une ville
     }
@@ -1935,7 +1954,9 @@ export class HexMapRenderer {
     // Si on a cliqué ailleurs que sur une ville, désélectionner
     if (this.selectedVertex !== null) {
       this.selectedVertex = null;
-      // Rendu manuel supprimé - à réactiver si nécessaire
+      if (this.renderCallback) {
+        this.renderCallback();
+      }
     }
 
     // PRIORITÉ 2: Vérifier si on a cliqué sur un vertex constructible pour un avant-poste
