@@ -44,19 +44,23 @@ export class ResourceHarvestController {
     map: GameMap,
     resources: PlayerResources
   ): HarvestResult {
-    const now = Date.now();
     const hexKey = hexCoord.hashCode();
-    const lastHarvestTime = ResourceHarvestController.hexCooldowns.get(hexKey) || 0;
-    const timeSinceLastHarvest = now - lastHarvestTime;
-    const remainingTime = Math.max(0, ResourceHarvestController.MIN_HARVEST_INTERVAL_MS - timeSinceLastHarvest);
+    const lastHarvestTime = ResourceHarvestController.hexCooldowns.get(hexKey);
     
-    // Vérifier la limitation de taux (1 clic par seconde par hex)
-    if (timeSinceLastHarvest < ResourceHarvestController.MIN_HARVEST_INTERVAL_MS) {
-      return {
-        success: false,
-        remainingTimeMs: remainingTime,
-        cityVertex: null,
-      };
+    // Si un timestamp existe, vérifier le cooldown
+    if (lastHarvestTime !== undefined) {
+      const now = Date.now();
+      const timeSinceLastHarvest = now - lastHarvestTime;
+      const remainingTime = Math.max(0, ResourceHarvestController.MIN_HARVEST_INTERVAL_MS - timeSinceLastHarvest);
+      
+      // Vérifier la limitation de taux (1 clic par seconde par hex)
+      if (timeSinceLastHarvest < ResourceHarvestController.MIN_HARVEST_INTERVAL_MS) {
+        return {
+          success: false,
+          remainingTimeMs: remainingTime,
+          cityVertex: null,
+        };
+      }
     }
 
     // Vérifier que la récolte est possible
@@ -72,6 +76,7 @@ export class ResourceHarvestController {
     const harvestResult = ResourceHarvest.harvest(hexCoord, map, civId, resources);
     
     // Mettre à jour le timestamp de la dernière récolte pour cet hex
+    const now = Date.now();
     ResourceHarvestController.hexCooldowns.set(hexKey, now);
     
     // Prochain harvest possible dans MIN_HARVEST_INTERVAL_MS
@@ -89,12 +94,19 @@ export class ResourceHarvestController {
    */
   static getRemainingCooldown(hexCoord: HexCoord): number {
     const hexKey = hexCoord.hashCode();
-    const lastHarvestTime = ResourceHarvestController.hexCooldowns.get(hexKey) || 0;
-    if (lastHarvestTime === 0) {
+    const lastHarvestTime = ResourceHarvestController.hexCooldowns.get(hexKey);
+    if (lastHarvestTime === undefined) {
       return 0;
     }
     const now = Date.now();
     const timeSinceLastHarvest = now - lastHarvestTime;
     return Math.max(0, ResourceHarvestController.MIN_HARVEST_INTERVAL_MS - timeSinceLastHarvest);
+  }
+
+  /**
+   * Réinitialise tous les cooldowns. Utile pour les tests.
+   */
+  static resetCooldowns(): void {
+    ResourceHarvestController.hexCooldowns.clear();
   }
 }

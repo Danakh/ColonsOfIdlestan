@@ -21,8 +21,7 @@ describe('ResourceHarvestController', () => {
 
   beforeEach(() => {
     // Réinitialiser les cooldowns avant chaque test
-    // Note: on ne peut pas accéder directement à hexCooldowns car c'est private
-    // On va utiliser Date.now() pour simuler le temps qui passe
+    ResourceHarvestController.resetCooldowns();
 
     const center = new HexCoord(0, 0);
     const north = center.neighbor(HexDirection.N);
