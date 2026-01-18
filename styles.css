@@ -58,13 +58,14 @@ button:active {
 }
 
 main {
-    flex: 1;
+    flex: 1 1 auto;
     display: flex;
     padding: 2rem;
-    overflow: hidden;
+    overflow: auto;
     justify-content: center;
     align-items: center;
     gap: 1rem;
+    min-height: 0; /* Permet au flex de rétrécir si nécessaire */
 }
 
 #map-canvas {
@@ -202,6 +203,7 @@ footer {
     background: rgba(255, 255, 255, 0.95);
     padding: 1rem 2rem;
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0; /* Empêche le footer de se rétrécir */
 }
 
 @media (max-width: 768px) {

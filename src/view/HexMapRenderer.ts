@@ -4,6 +4,7 @@ import { HexCoord } from '../model/hex/HexCoord';
 import { Vertex } from '../model/hex/Vertex';
 import { Edge } from '../model/hex/Edge';
 import { HexType } from '../model/map/HexType';
+import { ResourceType } from '../model/map/ResourceType';
 import { CivilizationId } from '../model/map/CivilizationId';
 import { City } from '../model/city/City';
 import { CityLevel } from '../model/city/CityLevel';
@@ -18,6 +19,30 @@ interface RenderConfig {
   offsetX: number;
   /** Offset Y pour centrer la carte */
   offsetY: number;
+}
+
+/**
+ * Particule animée pour représenter une ressource qui vole de l'hex vers l'inventaire.
+ */
+interface ResourceParticle {
+  /** Position X actuelle */
+  x: number;
+  /** Position Y actuelle */
+  y: number;
+  /** Position X de départ */
+  startX: number;
+  /** Position Y de départ */
+  startY: number;
+  /** Position X de destination */
+  endX: number;
+  /** Position Y de destination */
+  endY: number;
+  /** Type de ressource (pour la couleur) */
+  resourceType: ResourceType;
+  /** Progression de l'animation (0 à 1) */
+  progress: number;
+  /** Temps de création en millisecondes */
+  createdAt: number;
 }
 
 /**
@@ -53,6 +78,10 @@ export class HexMapRenderer {
   private harvestedHexes: Map<string, number> = new Map(); // Map<hexCoord.hashCode(), timestamp>
   private citySprites: Map<CityLevel, HTMLImageElement> = new Map();
   private citySpritesLoaded: boolean = false;
+  private hexTextures: Map<HexType, HTMLImageElement> = new Map();
+  private hexTexturesLoaded: boolean = false;
+  private resourceParticles: ResourceParticle[] = [];
+  private animationFrameId: number | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -63,6 +92,7 @@ export class HexMapRenderer {
     this.ctx = context;
     this.setupMouseMoveHandler();
     this.loadCitySprites();
+    this.loadHexTextures();
   }
 
   /**
@@ -108,6 +138,59 @@ export class HexMapRenderer {
         
         img.onerror = () => {
           console.warn(`Échec du chargement avec ${fullPath}`);
+          // Compter quand même pour ne pas bloquer
+          checkAllLoaded();
+        };
+        
+        img.src = fullPath;
+      };
+
+      tryLoad();
+    }
+  }
+
+  /**
+   * Charge les textures SVG des hexagones.
+   */
+  private loadHexTextures(): void {
+    const textureFiles: Record<HexType, string> = {
+      [HexType.Wood]: 'texture-wood.svg',
+      [HexType.Brick]: 'texture-brick.svg',
+      [HexType.Wheat]: 'texture-wheat.svg',
+      [HexType.Sheep]: 'texture-sheep.svg',
+      [HexType.Ore]: 'texture-ore.svg',
+      [HexType.Desert]: 'texture-desert.svg',
+      [HexType.Water]: 'texture-water.svg',
+    };
+
+    let loadedCount = 0;
+    const totalTextures = Object.keys(textureFiles).length;
+
+    const checkAllLoaded = (): void => {
+      loadedCount++;
+      if (loadedCount === totalTextures) {
+        this.hexTexturesLoaded = true;
+        // Re-rendre si nécessaire pour mettre à jour la carte
+        if (this.renderCallback) {
+          this.renderCallback();
+        }
+      }
+    };
+
+    for (const [hexType, filename] of Object.entries(textureFiles)) {
+      const type = hexType as HexType;
+      
+      const tryLoad = (): void => {
+        const img = new Image();
+        const fullPath = "/assets/textures/" + filename;
+        
+        img.onload = () => {
+          this.hexTextures.set(type, img);
+          checkAllLoaded();
+        };
+        
+        img.onerror = () => {
+          console.warn(`Échec du chargement de la texture ${fullPath}`);
           // Compter quand même pour ne pas bloquer
           checkAllLoaded();
         };
@@ -209,6 +292,9 @@ export class HexMapRenderer {
 
     // Dessiner les villes sur leurs sommets (en dernier pour qu'elles soient par-dessus les routes)
     this.drawCities(gameMap, config);
+
+    // Dessiner les particules de ressources animées (par-dessus tout le reste)
+    this.drawResourceParticles();
   }
 
   /**
@@ -267,6 +353,162 @@ export class HexMapRenderer {
         this.renderCallback();
       }
     }, 100);
+  }
+
+  /**
+   * Couleurs des ressources pour les particules d'animation.
+   */
+  private static readonly RESOURCE_COLORS: Record<ResourceType, string> = {
+    [ResourceType.Wood]: '#8B4513',
+    [ResourceType.Brick]: '#CD5C5C',
+    [ResourceType.Wheat]: '#FFD700',
+    [ResourceType.Sheep]: '#90EE90',
+    [ResourceType.Ore]: '#708090',
+  };
+
+  /**
+   * Déclenche une animation de particule pour représenter une ressource qui vole de l'hex vers l'inventaire.
+   * @param hexCoord - La coordonnée de l'hexagone récolté
+   * @param resourceType - Le type de ressource récoltée
+   */
+  triggerResourceHarvestAnimation(hexCoord: HexCoord, resourceType: ResourceType): void {
+    if (!this.currentConfig || !this.currentGameMap) {
+      return;
+    }
+
+    // Calculer la position de départ (centre de l'hex)
+    const { hexSize, offsetX, offsetY } = this.currentConfig;
+    const startX = offsetX + Math.sqrt(3) * (hexCoord.q + hexCoord.r / 2) * hexSize;
+    const startY = offsetY + (3 / 2) * hexCoord.r * hexSize;
+
+    // Calculer la position de destination (élément de ressource dans le footer)
+    const resourcesList = document.getElementById('resources-list');
+    if (!resourcesList) {
+      return;
+    }
+
+    // Trouver l'élément de ressource correspondant
+    const resourceItems = resourcesList.querySelectorAll('.resource-item');
+    let targetElement: HTMLElement | null = null;
+    
+    // Mapper ResourceType vers l'ordre d'affichage (même ordre que dans main.ts)
+    const resourceOrder: ResourceType[] = [
+      ResourceType.Wood,
+      ResourceType.Brick,
+      ResourceType.Wheat,
+      ResourceType.Sheep,
+      ResourceType.Ore,
+    ];
+    
+    const resourceIndex = resourceOrder.indexOf(resourceType);
+    if (resourceIndex >= 0 && resourceIndex < resourceItems.length) {
+      const resourceItem = resourceItems[resourceIndex] as HTMLElement;
+      const countEl = resourceItem.querySelector('.resource-count') as HTMLElement;
+      targetElement = countEl || resourceItem;
+    }
+
+    if (!targetElement) {
+      return;
+    }
+
+    // Obtenir la position de destination relative au canvas
+    const canvasRect = this.canvas.getBoundingClientRect();
+    const targetRect = targetElement.getBoundingClientRect();
+    
+    // Convertir en coordonnées canvas (en tenant compte du scale si nécessaire)
+    const scaleX = this.canvas.width / canvasRect.width;
+    const scaleY = this.canvas.height / canvasRect.height;
+    
+    const endX = (targetRect.left + targetRect.width / 2 - canvasRect.left) * scaleX;
+    const endY = (targetRect.top + targetRect.height / 2 - canvasRect.top) * scaleY;
+
+    // Créer la particule
+    const particle: ResourceParticle = {
+      x: startX,
+      y: startY,
+      startX,
+      startY,
+      endX,
+      endY,
+      resourceType,
+      progress: 0,
+      createdAt: Date.now(),
+    };
+
+    this.resourceParticles.push(particle);
+
+    // Démarrer l'animation si elle n'est pas déjà en cours
+    if (this.animationFrameId === null) {
+      this.animateParticles();
+    }
+  }
+
+  /**
+   * Anime les particules de ressources en utilisant requestAnimationFrame.
+   */
+  private animateParticles(): void {
+    const now = Date.now();
+    const ANIMATION_DURATION_MS = 800; // Durée de l'animation en millisecondes
+    const EASING_FUNCTION = (t: number): number => {
+      // Fonction d'easing ease-out (commence vite, ralentit à la fin)
+      return 1 - Math.pow(1 - t, 3);
+    };
+
+    // Mettre à jour les particules
+    const activeParticles: ResourceParticle[] = [];
+    
+    for (const particle of this.resourceParticles) {
+      const elapsed = now - particle.createdAt;
+      particle.progress = Math.min(elapsed / ANIMATION_DURATION_MS, 1);
+      
+      if (particle.progress < 1) {
+        // Calculer la position interpolée avec easing
+        const easedProgress = EASING_FUNCTION(particle.progress);
+        particle.x = particle.startX + (particle.endX - particle.startX) * easedProgress;
+        particle.y = particle.startY + (particle.endY - particle.startY) * easedProgress;
+        activeParticles.push(particle);
+      }
+    }
+
+    this.resourceParticles = activeParticles;
+
+    // Dessiner les particules
+    if (this.resourceParticles.length > 0) {
+      // Re-rendre la carte pour afficher les particules
+      if (this.renderCallback) {
+        this.renderCallback();
+      }
+      
+      // Continuer l'animation
+      this.animationFrameId = requestAnimationFrame(() => this.animateParticles());
+    } else {
+      // Arrêter l'animation si toutes les particules sont terminées
+      this.animationFrameId = null;
+    }
+  }
+
+  /**
+   * Dessine les particules de ressources actives.
+   */
+  private drawResourceParticles(): void {
+    for (const particle of this.resourceParticles) {
+      const color = HexMapRenderer.RESOURCE_COLORS[particle.resourceType] || '#000000';
+      const size = 8; // Taille de la particule
+      
+      // Dessiner un cercle coloré pour représenter la ressource
+      this.ctx.save();
+      this.ctx.fillStyle = color;
+      this.ctx.beginPath();
+      this.ctx.arc(particle.x, particle.y, size / 2, 0, Math.PI * 2);
+      this.ctx.fill();
+      
+      // Ajouter une bordure pour plus de visibilité
+      this.ctx.strokeStyle = '#FFFFFF';
+      this.ctx.lineWidth = 1.5;
+      this.ctx.stroke();
+      
+      this.ctx.restore();
+    }
   }
 
   /**
@@ -329,9 +571,34 @@ export class HexMapRenderer {
     }
     this.ctx.closePath();
 
-    // Remplir avec la couleur de la ressource
-    this.ctx.fillStyle = color;
-    this.ctx.fill();
+    // Remplir avec la texture si disponible, sinon utiliser la couleur
+    const texture = this.hexTextures.get(hexType);
+    if (texture && this.hexTexturesLoaded && texture.complete && texture.naturalWidth > 0) {
+      // Créer un pattern répétable avec la texture
+      // Ajuster la taille du pattern en fonction de la taille de l'hexagone
+      const patternSize = Math.max(currentHexSize * 1.2, 32);
+      const pattern = this.ctx.createPattern(texture, 'repeat');
+      if (pattern) {
+        // Sauvegarder le contexte pour appliquer la transformation du pattern
+        this.ctx.save();
+        
+        // Créer un canvas temporaire pour redimensionner la texture si nécessaire
+        // Note: createPattern utilise la taille originale de l'image, donc on peut
+        // utiliser directement l'image ou créer un pattern plus petit
+        this.ctx.fillStyle = pattern;
+        this.ctx.fill();
+        
+        this.ctx.restore();
+      } else {
+        // Fallback: utiliser la couleur si le pattern n'a pas pu être créé
+        this.ctx.fillStyle = color;
+        this.ctx.fill();
+      }
+    } else {
+      // Fallback: utiliser la couleur si la texture n'est pas disponible
+      this.ctx.fillStyle = color;
+      this.ctx.fill();
+    }
 
     // Dessiner le contour
     this.ctx.strokeStyle = '#000000';

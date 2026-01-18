@@ -299,6 +299,16 @@ function main(): void {
       // Déclencher l'effet visuel de récolte
       renderer.triggerHarvestEffect(hexCoord);
       
+      // Obtenir le type de ressource récoltée pour l'animation
+      const hexType = currentGameMap.getHexType(hexCoord);
+      if (hexType) {
+        const resourceType = ResourceHarvest.hexTypeToResourceType(hexType);
+        if (resourceType) {
+          // Déclencher l'animation de la particule de ressource
+          renderer.triggerResourceHarvestAnimation(hexCoord, resourceType);
+        }
+      }
+      
       // Mettre à jour l'affichage des ressources
       updateResourcesDisplay();
     }
