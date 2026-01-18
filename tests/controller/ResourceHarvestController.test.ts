@@ -85,32 +85,20 @@ describe('ResourceHarvestController', () => {
     });
 
     it('devrait permettre la récolte sur différents hexagones simultanément', () => {
-      // Ajouter un deuxième hexagone
-      const south = hexCoord.neighbor(HexDirection.S);
-      const southeast = hexCoord.neighbor(HexDirection.SE);
-      const grid = map.getGrid();
+      // Utiliser north et northeast qui sont déjà adjacents à la ville
+      const north = hexCoord.neighbor(HexDirection.N);
+      const northeast = hexCoord.neighbor(HexDirection.NE);
       
-      // Créer une nouvelle carte avec plus d'hexagones
-      const newHexes = [
-        new Hex(hexCoord),
-        new Hex(hexCoord.neighbor(HexDirection.N)),
-        new Hex(hexCoord.neighbor(HexDirection.NE)),
-        new Hex(south),
-        new Hex(southeast),
-      ];
-      const newGrid = new HexGrid(newHexes);
-      const newMap = new GameMap(newGrid);
-      newMap.registerCivilization(civId);
-      newMap.addCity(vertex, civId);
-      newMap.setHexType(hexCoord, HexType.Wood);
-      newMap.setHexType(south, HexType.Brick);
+      // Les deux hexagones sont déjà dans la carte et adjacents à la ville
+      map.setHexType(hexCoord, HexType.Wood);
+      map.setHexType(north, HexType.Brick);
 
       // Récolter sur le premier hex
-      const result1 = ResourceHarvestController.harvest(hexCoord, civId, newMap, resources);
+      const result1 = ResourceHarvestController.harvest(hexCoord, civId, map, resources);
       expect(result1.success).toBe(true);
 
       // Récolter immédiatement sur le deuxième hex (devrait réussir car c'est un hex différent)
-      const result2 = ResourceHarvestController.harvest(south, civId, newMap, resources);
+      const result2 = ResourceHarvestController.harvest(north, civId, map, resources);
       expect(result2.success).toBe(true);
       expect(resources.getResource(ResourceType.Wood)).toBe(1);
       expect(resources.getResource(ResourceType.Brick)).toBe(1);

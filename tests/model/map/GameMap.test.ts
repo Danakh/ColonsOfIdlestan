@@ -815,14 +815,12 @@ describe('GameMap', () => {
       const north = center.neighbor(HexDirection.N);
       const northeast = center.neighbor(HexDirection.NE);
       const northwest = center.neighbor(HexDirection.NW);
-      const northNorth = north.neighbor(HexDirection.N);
 
       const grid = new HexGrid([
         new Hex(center),
         new Hex(north),
         new Hex(northeast),
         new Hex(northwest),
-        new Hex(northNorth),
       ]);
       const map = new GameMap(grid);
       const civId = CivilizationId.create('civ1');
@@ -832,27 +830,23 @@ describe('GameMap', () => {
       const vertex = Vertex.create(center, north, northeast);
       map.addCity(vertex, civId);
 
-      // Ajouter une route longue (center -> northwest, puis northwest -> ...)
+      // Ajouter une route qui touche la ville (distance 1)
+      const edgeNorth = Edge.create(center, north);
+      map.addRoad(edgeNorth, civId);
+      expect(map.getRoadDistanceToCity(edgeNorth)).toBe(1);
+
+      // Ajouter une route adjacente (distance 2)
       const edge1 = Edge.create(center, northwest);
       map.addRoad(edge1, civId);
+      expect(map.getRoadDistanceToCity(edge1)).toBe(2);
 
-      // edge1 devrait avoir distance 1 (touche la ville)
-      expect(map.getRoadDistanceToCity(edge1)).toBe(1);
-
-      // Ajouter une autre route qui part de center vers north, puis de north vers northNorth
-      const edgeNorth = Edge.create(center, north);
-      const edge3 = Edge.create(north, northNorth);
-      map.addRoad(edgeNorth, civId);
-      map.addRoad(edge3, civId);
-
-      // edgeNorth devrait avoir distance 1 (touche directement la ville)
-      const distanceNorth = map.getRoadDistanceToCity(edgeNorth);
-      expect(distanceNorth).toBeDefined();
-      expect(distanceNorth).toBe(1);
-      // edge3 devrait avoir distance 2 (via edgeNorth)
-      const distance3 = map.getRoadDistanceToCity(edge3);
-      expect(distance3).toBeDefined();
-      expect(distance3).toBe(2);
+      // Ajouter une autre route qui touche la ville directement (distance 1)
+      // Cela ne change pas edge1 car il n'y a pas de chemin plus court
+      const edgeNortheast = Edge.create(center, northeast);
+      map.addRoad(edgeNortheast, civId);
+      expect(map.getRoadDistanceToCity(edgeNortheast)).toBe(1);
+      // edge1 devrait toujours avoir distance 2 (aucun chemin plus court)
+      expect(map.getRoadDistanceToCity(edge1)).toBe(2);
     });
   });
 });
