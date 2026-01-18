@@ -24,11 +24,11 @@ const stylesCssPath = join(__dirname, 'styles.css');
 const distStylesCssPath = join(distDir, 'styles.css');
 cpSync(stylesCssPath, distStylesCssPath);
 
-// Copier public/ dans dist/assets/ (en conservant la structure)
-const publicDir = join(__dirname, 'public');
+// Copier public/assets/ dans dist/assets/ (en conservant la structure)
+const publicAssetsDir = join(__dirname, 'public', 'assets');
 const distAssetsDir = join(distDir, 'assets');
-if (existsSync(publicDir)) {
-  cpSync(publicDir, distAssetsDir, { recursive: true });
+if (existsSync(publicAssetsDir)) {
+  cpSync(publicAssetsDir, distAssetsDir, { recursive: true });
 }
 
 // Bundler le TypeScript avec esbuild
