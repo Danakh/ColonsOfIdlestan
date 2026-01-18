@@ -1032,31 +1032,23 @@ export class HexMapRenderer {
    * Redimensionne le canvas pour qu'il s'adapte à la fenêtre.
    */
   resize(): void {
-    // Ajuster la taille du canvas en tenant compte du header, footer, panneau de ressources et panneau de ville
+    // Ajuster la taille du canvas en tenant compte du header et footer uniquement
+    // Le panneau de ville est en position absolue, donc il n'affecte pas la taille du canvas
     const header = document.querySelector('header');
     const footer = document.querySelector('footer');
-    const resourcesPanel = document.getElementById('resources-panel');
-    const cityPanel = document.getElementById('city-panel');
     const main = document.querySelector('main');
     const headerHeight = header ? header.offsetHeight : 0;
     const footerHeight = footer ? footer.offsetHeight : 0;
     
-    // Tenir compte du panneau de ville s'il est visible
-    let cityPanelWidth = 0;
-    if (cityPanel && !cityPanel.classList.contains('hidden')) {
-      cityPanelWidth = cityPanel.offsetWidth;
-      const mainStyle = main ? window.getComputedStyle(main) : null;
-      const gap = mainStyle ? parseFloat(mainStyle.gap) || 16 : 16;
-      cityPanelWidth += gap; // Ajouter le gap entre le canvas et le panneau
-    }
-    
     // Calculer le padding du main (2rem de chaque côté)
     const mainStyle = main ? window.getComputedStyle(main) : null;
     const mainPaddingX = mainStyle ? (parseFloat(mainStyle.paddingLeft) || 32) + (parseFloat(mainStyle.paddingRight) || 32) : 64;
+    const mainPaddingY = mainStyle ? (parseFloat(mainStyle.paddingTop) || 32) + (parseFloat(mainStyle.paddingBottom) || 32) : 64;
     
-    // Largeur disponible = largeur fenêtre - padding main - panneau ville
-    this.canvas.width = window.innerWidth - mainPaddingX - cityPanelWidth;
-    this.canvas.height = window.innerHeight - headerHeight - footerHeight;
+    // Largeur disponible = largeur fenêtre - padding main
+    // Hauteur disponible = hauteur fenêtre - header - footer - padding main
+    this.canvas.width = window.innerWidth - mainPaddingX;
+    this.canvas.height = window.innerHeight - headerHeight - footerHeight - mainPaddingY;
   }
 
   /**

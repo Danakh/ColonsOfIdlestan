@@ -154,32 +154,53 @@ main {
     gap: 1rem;
     min-height: 0; /* Permet au flex de rétrécir si nécessaire */
     max-height: 100%; /* Ne pas dépasser la hauteur disponible */
+    position: relative; /* Pour positionner le panneau en absolu */
 }
 
 #map-canvas {
     background: #e8f4f8;
     border-radius: 10px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    border: 6px solid #667eea;
+    border-style: double;
     max-width: 100%;
     max-height: 100%;
+    position: relative;
+    box-sizing: border-box; /* Inclure la bordure dans les dimensions */
 }
 
 .city-panel {
     background: rgba(255, 255, 255, 0.95);
     border-radius: 10px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    border: 6px solid #667eea;
+    border-style: double;
     padding: 1.5rem;
     width: 350px;
-    flex-shrink: 0;
     max-height: calc(100vh - 120px); /* Hauteur max en tenant compte du header */
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+    position: absolute; /* Position absolue pour ne pas affecter le layout */
+    right: 2rem; /* Positionné à droite du main */
+    top: 50%;
+    transform: translate(100%, -50%); /* Position initiale hors écran à droite, centré verticalement */
+    transition: transform 0.5s linear, opacity 0.5s linear;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 10; /* S'affiche par-dessus le canvas */
+    box-sizing: border-box; /* Inclure la bordure dans les dimensions */
 }
 
 .city-panel.hidden {
-    display: none;
+    transform: translate(100%, -50%); /* Reste hors écran quand caché, centré verticalement */
+    opacity: 0;
+    pointer-events: none;
+}
+
+.city-panel:not(.hidden) {
+    transform: translate(0, -50%); /* Revient à sa position normale quand visible, centré verticalement */
+    opacity: 1;
+    pointer-events: auto;
 }
 
 .city-panel h2 {

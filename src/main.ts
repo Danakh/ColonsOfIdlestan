@@ -154,37 +154,14 @@ function main(): void {
     const selectedVertex = renderer.getSelectedVertex();
     const currentGameMap = game.getGameMap();
 
-    const wasVisible = !cityPanel.classList.contains('hidden');
-
     if (!selectedVertex || !currentGameMap || !currentGameMap.hasCity(selectedVertex)) {
       // Masquer le panneau si aucune ville n'est sélectionnée
       cityPanel.classList.add('hidden');
-      // Redimensionner le canvas si le panneau était visible
-      if (wasVisible) {
-        renderer.resize();
-        const civId = game.getPlayerCivilizationId();
-        if (currentGameMap) {
-          renderer.render(currentGameMap, civId);
-        }
-      }
       return;
     }
 
-    // Afficher le panneau
-    const isNowVisible = cityPanel.classList.contains('hidden');
+    // Afficher le panneau (l'animation CSS gère la transition)
     cityPanel.classList.remove('hidden');
-    
-    // Redimensionner le canvas si le panneau vient d'apparaître
-    if (!wasVisible || isNowVisible) {
-      // Utiliser setTimeout pour laisser le navigateur calculer la largeur du panneau
-      setTimeout(() => {
-        renderer.resize();
-        const civId = game.getPlayerCivilizationId();
-        if (currentGameMap) {
-          renderer.render(currentGameMap, civId);
-        }
-      }, 0);
-    }
 
     // Obtenir la ville
     const city = currentGameMap.getCity(selectedVertex);
