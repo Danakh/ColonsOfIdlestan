@@ -151,7 +151,7 @@ export class BuildingProductionController {
             city.updateBuildingProductionTime(buildingType, newProductionTime);
             
             results.push({
-              cityVertex: harvestResult.cityVertex,
+              cityVertex: city.vertex,
               buildingType,
               hexCoord,
               resourceType,

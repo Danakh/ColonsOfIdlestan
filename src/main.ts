@@ -397,8 +397,8 @@ function main(): void {
     const result = ResourceHarvestController.harvest(hexCoord, civId, currentGameMap, playerResources);
     
     if (result.success && result.cityVertex) {
-      // Déclencher l'effet visuel de récolte
-      renderer.triggerHarvestEffect(hexCoord);
+      // Déclencher l'effet visuel de récolte (manuel, donc avec effet de réduction)
+      renderer.triggerHarvestEffect(hexCoord, false);
       
       // Obtenir le type de ressource récoltée pour l'animation
       const hexType = currentGameMap.getHexType(hexCoord);
@@ -494,10 +494,10 @@ function main(): void {
     if (productionResults.length > 0) {
       // Déclencher les animations pour chaque production
       for (const result of productionResults) {
-        // Effet visuel sur l'hex récolté
-        renderer.triggerHarvestEffect(result.hexCoord);
+        // Effet visuel sur l'hex récolté (automatique, donc sans effet de réduction)
+        renderer.triggerHarvestEffect(result.hexCoord, true);
         
-        // Animation de la particule de ressource vers la ville
+        // Animation de la particule de ressource vers la ville ayant déclenché le harvest
         renderer.triggerResourceHarvestAnimation(
           result.hexCoord,
           result.resourceType,

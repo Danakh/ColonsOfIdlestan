@@ -444,10 +444,16 @@ export class HexMapRenderer {
 
   /**
    * Déclenche un effet visuel pour indiquer qu'un hexagone a été récolté.
-   * L'hexagone sera légèrement réduit pendant un court instant.
+   * L'hexagone sera légèrement réduit pendant un court instant (uniquement pour les récoltes manuelles).
    * @param hexCoord - La coordonnée de l'hexagone récolté
+   * @param isAutomatic - Si true, n'affiche pas l'effet de réduction de taille (seulement la particule)
    */
-  triggerHarvestEffect(hexCoord: HexCoord): void {
+  triggerHarvestEffect(hexCoord: HexCoord, isAutomatic: boolean = false): void {
+    // Pour les récoltes automatiques, ne pas appliquer l'effet de réduction de taille
+    if (isAutomatic) {
+      return;
+    }
+
     const hexKey = hexCoord.hashCode();
     const now = Date.now();
     this.harvestedHexes.set(hexKey, now);
@@ -457,7 +463,7 @@ export class HexMapRenderer {
       this.renderCallback();
     }
 
-    // Nettoyer après la durée de l'animation (150ms)
+    // Nettoyer après la durée de l'animation (100ms)
     setTimeout(() => {
       this.harvestedHexes.delete(hexKey);
       // Re-rendre pour revenir à la taille normale
