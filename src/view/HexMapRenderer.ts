@@ -85,8 +85,6 @@ export class HexMapRenderer {
   private hexTexturesLoaded: boolean = false;
   private lockSprite: HTMLImageElement | null = null;
   private lockSpriteLoaded: boolean = false;
-  private autoSprite: HTMLImageElement | null = null;
-  private autoSpriteLoaded: boolean = false;
   private resourceParticles: ResourceParticle[] = [];
   private animationFrameId: number | null = null;
   private cooldownAnimationFrameId: number | null = null;
@@ -102,7 +100,6 @@ export class HexMapRenderer {
     this.loadCitySprites();
     this.loadHexTextures();
     this.loadLockSprite();
-    this.loadAutoSprite();
   }
 
   /**
@@ -182,28 +179,6 @@ export class HexMapRenderer {
     img.src = fullPath;
   }
 
-  /**
-   * Charge le sprite SVG "auto" pour indiquer les hexes récoltés automatiquement.
-   */
-  private loadAutoSprite(): void {
-    const img = new Image();
-    const fullPath = "/assets/sprites/auto.svg";
-    
-    img.onload = () => {
-      this.autoSprite = img;
-      this.autoSpriteLoaded = true;
-      // Re-rendre si nécessaire pour mettre à jour la carte
-      if (this.renderCallback) {
-        this.renderCallback();
-      }
-    };
-    
-    img.onerror = () => {
-      console.warn(`Échec du chargement du sprite auto ${fullPath}`);
-    };
-    
-    img.src = fullPath;
-  }
 
   /**
    * Charge les textures SVG des hexagones.
@@ -705,7 +680,7 @@ export class HexMapRenderer {
       }
     }
 
-    // Dessiner l'icône "auto" si l'hex est récolté automatiquement
+    // Dessiner le texte "auto" si l'hex est récolté automatiquement
     if (civId && BuildingProductionController.isHexAutoHarvested(coord, civId, gameMap)) {
       this.drawAutoIcon(x, y, currentHexSize);
     }
@@ -739,27 +714,29 @@ export class HexMapRenderer {
   }
 
   /**
-   * Dessine une icône "auto" au centre d'un hexagone pour indiquer qu'il est récolté automatiquement.
-   * Utilise le sprite SVG chargé depuis les assets.
+   * Dessine le texte "auto" au centre d'un hexagone pour indiquer qu'il est récolté automatiquement.
    */
   private drawAutoIcon(centerX: number, centerY: number, hexSize: number): void {
-    // Si le sprite n'est pas encore chargé, ne rien dessiner
-    if (!this.autoSprite || !this.autoSpriteLoaded) {
-      return;
-    }
-    
-    const iconSize = hexSize * 0.5; // Taille de l'icône proportionnelle à l'hexagone
-    
     this.ctx.save();
     
-    // Centrer l'image sur le point (centerX, centerY)
-    const spriteWidth = iconSize;
-    const spriteHeight = iconSize;
-    const x = centerX - spriteWidth / 2;
-    const y = centerY - spriteHeight / 2;
+    const fontSize = hexSize * 0.25;
+    const text = 'auto';
     
-    // Dessiner le sprite
-    this.ctx.drawImage(this.autoSprite, x, y, spriteWidth, spriteHeight);
+    // Configurer la police
+    this.ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
+    
+    // Dessiner le texte avec un contour pour améliorer la lisibilité
+    this.ctx.strokeStyle = '#000000';
+    this.ctx.lineWidth = 3;
+    this.ctx.lineJoin = 'round';
+    this.ctx.miterLimit = 2;
+    this.ctx.strokeText(text, centerX, centerY);
+    
+    // Dessiner le texte en blanc
+    this.ctx.fillStyle = '#FFFFFF';
+    this.ctx.fillText(text, centerX, centerY);
     
     this.ctx.restore();
   }
