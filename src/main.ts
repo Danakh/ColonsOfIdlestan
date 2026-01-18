@@ -3,6 +3,7 @@ import { HexMapRenderer } from './view/HexMapRenderer';
 import { ResourceHarvest } from './model/game/ResourceHarvest';
 import { RoadConstruction } from './model/game/RoadConstruction';
 import { RoadController } from './controller/RoadController';
+import { ResourceHarvestController } from './controller/ResourceHarvestController';
 import { ResourceType } from './model/map/ResourceType';
 import { HexCoord } from './model/hex/HexCoord';
 import { Edge } from './model/hex/Edge';
@@ -256,22 +257,18 @@ function main(): void {
     const civId = game.getPlayerCivilizationId();
     const playerResources = game.getPlayerResources();
 
-    try {
-      // Vérifier si on peut récolter
-      if (ResourceHarvest.canHarvest(hexCoord, currentGameMap, civId)) {
-        // Récolter la ressource
-        ResourceHarvest.harvest(hexCoord, currentGameMap, civId, playerResources);
-        
-        // Mettre à jour l'affichage des ressources
-        updateResourcesDisplay();
-        
-        // Optionnel: Re-rendre la carte pour un feedback visuel
-        renderer.render(currentGameMap, civId);
-      }
-    } catch (error) {
-      // Ignorer silencieusement les erreurs de récolte (hexagone non récoltable)
-      // On pourrait afficher un message à l'utilisateur si nécessaire
+    // Récolter la ressource via le contrôleur (qui gère la limitation de taux)
+    const result = ResourceHarvestController.harvest(hexCoord, civId, currentGameMap, playerResources);
+    
+    if (result.success) {
+      // Déclencher l'effet visuel de récolte
+      renderer.triggerHarvestEffect(hexCoord);
+      
+      // Mettre à jour l'affichage des ressources
+      updateResourcesDisplay();
     }
+    // Si result.success est false, la récolte a échoué (limitation de taux ou autre raison)
+    // On pourrait afficher un message à l'utilisateur avec result.remainingTimeMs si nécessaire
   });
 
   // Gérer le bouton de régénération

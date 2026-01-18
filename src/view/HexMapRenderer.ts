@@ -49,6 +49,7 @@ export class HexMapRenderer {
   private selectedVertex: Vertex | null = null;
   private currentCivilizationId: CivilizationId | null = null;
   private renderCallback: (() => void) | null = null;
+  private harvestedHexes: Map<string, number> = new Map(); // Map<hexCoord.hashCode(), timestamp>
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -169,6 +170,31 @@ export class HexMapRenderer {
   }
 
   /**
+   * Déclenche un effet visuel pour indiquer qu'un hexagone a été récolté.
+   * L'hexagone sera légèrement réduit pendant un court instant.
+   * @param hexCoord - La coordonnée de l'hexagone récolté
+   */
+  triggerHarvestEffect(hexCoord: HexCoord): void {
+    const hexKey = hexCoord.hashCode();
+    const now = Date.now();
+    this.harvestedHexes.set(hexKey, now);
+
+    // Re-rendre immédiatement pour afficher l'effet
+    if (this.renderCallback) {
+      this.renderCallback();
+    }
+
+    // Nettoyer après la durée de l'animation (150ms)
+    setTimeout(() => {
+      this.harvestedHexes.delete(hexKey);
+      // Re-rendre pour revenir à la taille normale
+      if (this.renderCallback) {
+        this.renderCallback();
+      }
+    }, 100);
+  }
+
+  /**
    * Calcule la taille optimale des hexagones pour que la carte tienne dans le canvas.
    */
   private calculateHexSize(minQ: number, maxQ: number, minR: number, maxR: number): number {
@@ -194,6 +220,15 @@ export class HexMapRenderer {
     const { hexSize, offsetX, offsetY } = config;
     const coord = hex.coord;
 
+    // Vérifier si cet hexagone vient d'être récolté (pour l'effet visuel)
+    const hexKey = coord.hashCode();
+    const harvestTime = this.harvestedHexes.get(hexKey);
+    const isHarvested = harvestTime !== undefined;
+    
+    // Calculer le facteur de réduction (0.85 = réduction de 15%)
+    const scale = isHarvested ? 0.85 : 1.0;
+    const currentHexSize = hexSize * scale;
+
     // Convertir les coordonnées axiales en coordonnées pixel
     // Formule: x = sqrt(3) * (q + r/2) * size
     //          y = 3/2 * r * size
@@ -209,8 +244,8 @@ export class HexMapRenderer {
     this.ctx.beginPath();
     for (let i = 0; i < 6; i++) {
       const angle = (Math.PI / 3) * i + Math.PI / 6;
-      const hx = x + hexSize * Math.cos(angle);
-      const hy = y + hexSize * Math.sin(angle);
+      const hx = x + currentHexSize * Math.cos(angle);
+      const hy = y + currentHexSize * Math.sin(angle);
       if (i === 0) {
         this.ctx.moveTo(hx, hy);
       } else {

@@ -6,3 +6,4 @@
 
 export { MapGenerator, type MapGeneratorConfig } from './MapGenerator';
 export { RoadController } from './RoadController';
+export { ResourceHarvestController } from './ResourceHarvestController';
