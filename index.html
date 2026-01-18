@@ -8,10 +8,19 @@
 </head>
 <body>
     <div id="app">
-        <header>
-            <h1>Colons of Idlestan v0.0.1 alpha</h1>
-            <div class="controls">
-                <button id="regenerate-btn">Nouvelle Carte</button>
+        <header class="top-bar">
+            <h1 class="app-title">Colons of Idlestan v0.0.1 alpha</h1>
+            <div id="resources-list" class="resources-bar"></div>
+            <div class="settings-menu-container">
+                <button id="settings-btn" class="settings-btn" aria-label="Paramètres">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 15.5C13.933 15.5 15.5 13.933 15.5 12C15.5 10.067 13.933 8.5 12 8.5C10.067 8.5 8.5 10.067 8.5 12C8.5 13.933 10.067 15.5 12 15.5Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M19.622 10.3954L18.5247 7.7448L20 6L18 4L16.2647 5.4829L13.5578 4.3697L12.9353 2H11.0647L10.4422 4.3697L7.73529 5.4829L6 4L4 6L5.47529 7.7448L4.37765 10.3954L2 11.2361L2 12.7639L4.37765 13.6046L5.47529 16.2552L4 18L6 20L7.73529 18.5171L10.4422 19.6303L11.0647 22H12.9353L13.5578 19.6303L16.2647 18.5171L18 20L20 18L18.5247 16.2552L19.622 13.6046L22 12.7639V11.2361L19.622 10.3954Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <div id="settings-menu" class="settings-menu hidden">
+                    <button id="regenerate-btn" class="menu-item">Nouvelle Carte</button>
+                </div>
             </div>
         </header>
         <main>
@@ -32,7 +41,6 @@
             </aside>
         </main>
         <footer>
-            <div id="resources-list"></div>
         </footer>
     </div>
     <script type="module" src="main.js"></script>

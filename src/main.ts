@@ -17,15 +17,19 @@ import { APP_VERSION, APP_NAME } from './config/version';
  * Point d'entrée principal de l'application web.
  */
 function main(): void {
-  // Mettre à jour le titre de la page et le header avec la version
+  // Mettre à jour le titre de la page avec la version
   document.title = `${APP_NAME} v${APP_VERSION}`;
-  const headerTitle = document.querySelector('header h1');
+  
+  // Mettre à jour le titre dans le header
+  const headerTitle = document.querySelector('.app-title');
   if (headerTitle) {
     headerTitle.textContent = `${APP_NAME} v${APP_VERSION}`;
   }
 
   // Récupérer les éléments DOM
   const canvas = document.getElementById('map-canvas') as HTMLCanvasElement;
+  const settingsBtn = document.getElementById('settings-btn') as HTMLButtonElement;
+  const settingsMenu = document.getElementById('settings-menu') as HTMLElement;
   const regenerateBtn = document.getElementById('regenerate-btn') as HTMLButtonElement;
   const resourcesList = document.getElementById('resources-list') as HTMLDivElement;
   const cityPanel = document.getElementById('city-panel') as HTMLElement;
@@ -36,6 +40,14 @@ function main(): void {
 
   if (!canvas) {
     throw new Error('Canvas introuvable');
+  }
+
+  if (!settingsBtn) {
+    throw new Error('Bouton de paramètres introuvable');
+  }
+
+  if (!settingsMenu) {
+    throw new Error('Menu de paramètres introuvable');
   }
 
   if (!regenerateBtn) {
@@ -324,7 +336,20 @@ function main(): void {
     // On pourrait afficher un message à l'utilisateur avec result.remainingTimeMs si nécessaire
   });
 
-  // Gérer le bouton de régénération
+  // Gérer le bouton d'engrenage pour ouvrir/fermer le menu
+  settingsBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // Empêcher la fermeture immédiate
+    settingsMenu.classList.toggle('hidden');
+  });
+
+  // Fermer le menu si on clique ailleurs
+  document.addEventListener('click', (e) => {
+    if (!settingsMenu.contains(e.target as Node) && !settingsBtn.contains(e.target as Node)) {
+      settingsMenu.classList.add('hidden');
+    }
+  });
+
+  // Gérer le bouton de régénération dans le menu
   regenerateBtn.addEventListener('click', () => {
     game.regenerate();
     const newGameMap = game.getGameMap();
@@ -334,6 +359,8 @@ function main(): void {
       updateResourcesDisplay(); // Réinitialiser l'affichage des ressources
       updateCityPanel(); // Masquer le panneau de la ville
     }
+    // Fermer le menu après l'action
+    settingsMenu.classList.add('hidden');
   });
 
   // Gérer le bouton d'amélioration de ville
