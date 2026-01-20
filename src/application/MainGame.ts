@@ -2,27 +2,34 @@ import { MapGenerator, MapGeneratorConfig } from '../controller/MapGenerator';
 import { GameMap } from '../model/map/GameMap';
 import { HexType } from '../model/map/HexType';
 import { CivilizationId } from '../model/map/CivilizationId';
+import { GameState } from '../model/game/GameState';
 import { PlayerResources } from '../model/game/PlayerResources';
 import { GameClock } from '../model/game/GameClock';
 
 /**
  * Classe principale de l'application de jeu.
- * 
+ *
  * Orchestre la génération de la carte et la gestion du jeu.
- * Cette classe se situe au-dessus de la couche MVC.
+ * Possède un GameState (couche modèle) regroupant ressources, civilisations, carte et horloge.
  */
 export class MainGame {
-  private gameMap: GameMap | null = null;
   private readonly mapGenerator: MapGenerator;
-  private readonly playerResources: PlayerResources;
-  private readonly playerCivilizationId: CivilizationId;
-  private readonly gameClock: GameClock;
+  private readonly gameState: GameState;
 
   constructor() {
     this.mapGenerator = new MapGenerator();
-    this.playerResources = new PlayerResources();
-    this.playerCivilizationId = CivilizationId.create('player1');
-    this.gameClock = new GameClock();
+    this.gameState = new GameState(
+      new PlayerResources(),
+      CivilizationId.create('player1'),
+      new GameClock()
+    );
+  }
+
+  /**
+   * Retourne l'état de la partie (ressources, civilisations, carte, horloge).
+   */
+  getGameState(): GameState {
+    return this.gameState;
   }
 
   /**
@@ -42,8 +49,7 @@ export class MainGame {
       [HexType.Desert, 1],
     ]);
 
-    // Créer une civilisation par défaut
-    const civilizations = [CivilizationId.create('player1')];
+    const civilizations = [this.gameState.getPlayerCivilizationId()];
 
     const config: MapGeneratorConfig = {
       resourceDistribution,
@@ -51,13 +57,12 @@ export class MainGame {
       seed: actualSeed,
     };
 
-    this.gameMap = this.mapGenerator.generate(config);
-    
-    // Réinitialiser l'inventaire du joueur à chaque nouvelle partie
-    this.playerResources.clear();
-    
-    // Réinitialiser l'horloge de jeu
-    this.gameClock.reset();
+    const gameMap = this.mapGenerator.generate(config);
+    this.gameState.setGameMap(gameMap);
+    this.gameState.setCivilizations(civilizations);
+
+    this.gameState.getPlayerResources().clear();
+    this.gameState.getGameClock().reset();
   }
 
   /**
@@ -65,7 +70,7 @@ export class MainGame {
    * @returns La GameMap, ou null si non initialisée
    */
   getGameMap(): GameMap | null {
-    return this.gameMap;
+    return this.gameState.getGameMap();
   }
 
   /**
@@ -73,7 +78,7 @@ export class MainGame {
    * @returns L'inventaire du joueur
    */
   getPlayerResources(): PlayerResources {
-    return this.playerResources;
+    return this.gameState.getPlayerResources();
   }
 
   /**
@@ -81,7 +86,7 @@ export class MainGame {
    * @returns L'identifiant de la civilisation
    */
   getPlayerCivilizationId(): CivilizationId {
-    return this.playerCivilizationId;
+    return this.gameState.getPlayerCivilizationId();
   }
 
   /**
@@ -96,7 +101,7 @@ export class MainGame {
    * @returns L'horloge de jeu
    */
   getGameClock(): GameClock {
-    return this.gameClock;
+    return this.gameState.getGameClock();
   }
 
   /**
@@ -105,6 +110,6 @@ export class MainGame {
    * @param timeSeconds - Le temps actuel en secondes
    */
   updateGameTime(timeSeconds: number): void {
-    this.gameClock.updateTime(timeSeconds);
+    this.gameState.getGameClock().updateTime(timeSeconds);
   }
 }

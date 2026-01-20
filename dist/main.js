@@ -1799,6 +1799,45 @@ var CivilizationId = class _CivilizationId {
   }
 };
 
+// src/model/game/GameState.ts
+var GameState = class {
+  constructor(playerResources, playerCivilizationId, gameClock) {
+    this.playerResources = playerResources;
+    this.playerCivilizationId = playerCivilizationId;
+    this.gameClock = gameClock;
+    this.gameMap = null;
+    this.civilizations = [];
+  }
+  /** Ressources du joueur. */
+  getPlayerResources() {
+    return this.playerResources;
+  }
+  /** Identifiant de la civilisation du joueur. */
+  getPlayerCivilizationId() {
+    return this.playerCivilizationId;
+  }
+  /** Liste des civilisations de la partie. */
+  getCivilizations() {
+    return this.civilizations;
+  }
+  /** Carte de jeu, ou null si non initialisée. */
+  getGameMap() {
+    return this.gameMap;
+  }
+  /** Horloge de jeu. */
+  getGameClock() {
+    return this.gameClock;
+  }
+  /** Définit la carte de jeu (lors d'une nouvelle partie ou régénération). */
+  setGameMap(map) {
+    this.gameMap = map;
+  }
+  /** Définit la liste des civilisations de la partie. */
+  setCivilizations(civs) {
+    this.civilizations = [...civs];
+  }
+};
+
 // src/model/game/PlayerResources.ts
 var PlayerResources = class {
   /**
@@ -1975,11 +2014,18 @@ var GameClock = class {
 // src/application/MainGame.ts
 var MainGame = class {
   constructor() {
-    this.gameMap = null;
     this.mapGenerator = new MapGenerator();
-    this.playerResources = new PlayerResources();
-    this.playerCivilizationId = CivilizationId.create("player1");
-    this.gameClock = new GameClock();
+    this.gameState = new GameState(
+      new PlayerResources(),
+      CivilizationId.create("player1"),
+      new GameClock()
+    );
+  }
+  /**
+   * Retourne l'état de la partie (ressources, civilisations, carte, horloge).
+   */
+  getGameState() {
+    return this.gameState;
   }
   /**
    * Initialise une nouvelle partie en générant une carte.
@@ -1995,36 +2041,38 @@ var MainGame = class {
       ["Ore" /* Ore */, 5],
       ["Desert" /* Desert */, 1]
     ]);
-    const civilizations = [CivilizationId.create("player1")];
+    const civilizations = [this.gameState.getPlayerCivilizationId()];
     const config = {
       resourceDistribution,
       civilizations,
       seed: actualSeed
     };
-    this.gameMap = this.mapGenerator.generate(config);
-    this.playerResources.clear();
-    this.gameClock.reset();
+    const gameMap = this.mapGenerator.generate(config);
+    this.gameState.setGameMap(gameMap);
+    this.gameState.setCivilizations(civilizations);
+    this.gameState.getPlayerResources().clear();
+    this.gameState.getGameClock().reset();
   }
   /**
    * Retourne la carte de jeu actuelle.
    * @returns La GameMap, ou null si non initialisée
    */
   getGameMap() {
-    return this.gameMap;
+    return this.gameState.getGameMap();
   }
   /**
    * Retourne l'inventaire du joueur.
    * @returns L'inventaire du joueur
    */
   getPlayerResources() {
-    return this.playerResources;
+    return this.gameState.getPlayerResources();
   }
   /**
    * Retourne l'identifiant de la civilisation du joueur.
    * @returns L'identifiant de la civilisation
    */
   getPlayerCivilizationId() {
-    return this.playerCivilizationId;
+    return this.gameState.getPlayerCivilizationId();
   }
   /**
    * Génère une nouvelle carte avec un nouveau seed.
@@ -2037,7 +2085,7 @@ var MainGame = class {
    * @returns L'horloge de jeu
    */
   getGameClock() {
-    return this.gameClock;
+    return this.gameState.getGameClock();
   }
   /**
    * Met à jour le temps de l'horloge de jeu.
@@ -2045,7 +2093,7 @@ var MainGame = class {
    * @param timeSeconds - Le temps actuel en secondes
    */
   updateGameTime(timeSeconds) {
-    this.gameClock.updateTime(timeSeconds);
+    this.gameState.getGameClock().updateTime(timeSeconds);
   }
 };
 
