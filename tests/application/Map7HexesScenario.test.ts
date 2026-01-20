@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Make7HexesMap } from '../utils/GameStateGenerator';
+import { Make7HexesMap, saveGameState } from '../utils/GameStateGenerator';
 import { HexCoord } from '../../src/model/hex/HexCoord';
 import { HexDirection } from '../../src/model/hex/HexDirection';
 import { Vertex } from '../../src/model/hex/Vertex';
@@ -48,6 +48,10 @@ describe('Map7HexesScenario', () => {
 
   it('récolte sur hex adjacents, construit Market+Sawmill+Brickworks, 2 routes, outpost au SE (model+controller, GameClock)', () => {
     const gs = Make7HexesMap();
+    
+    // Enregistrer l'état initial
+    //saveGameState(gs, 'Map7HexesScenario-start');
+    
     const map = gs.getGameMap()!;
     const civId = gs.getPlayerCivilizationId();
     const resources = gs.getPlayerResources();
@@ -96,5 +100,8 @@ describe('Map7HexesScenario', () => {
     expect(city.hasBuilding(BuildingType.Market)).toBe(true);
     expect(city.hasBuilding(BuildingType.Sawmill)).toBe(true);
     expect(city.hasBuilding(BuildingType.Brickworks)).toBe(true);
+    
+    // Enregistrer l'état final
+    //saveGameState(gs, 'Map7HexesScenario-end');
   });
 });

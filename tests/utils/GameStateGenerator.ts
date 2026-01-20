@@ -11,6 +11,10 @@ import { BuildingType } from '../../src/model/city/BuildingType';
 import { GameClock } from '../../src/model/game/GameClock';
 import { GameState } from '../../src/model/game/GameState';
 import { PlayerResources } from '../../src/model/game/PlayerResources';
+import { writeFileSync, mkdirSync } from 'fs';
+import { join } from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
 /**
  * Utilitaire de test (couche model uniquement).
@@ -67,4 +71,27 @@ export function Make7HexesMap(): GameState {
   gs.setCivilizations([civId]);
   gs.setSeed(null);
   return gs;
+}
+
+/**
+ * Enregistre un GameState sur le disque dur dans le dossier saves à la racine du projet.
+ * @param gameState L'état de jeu à enregistrer
+ * @param filename Le nom du fichier (sans extension, .json sera ajouté automatiquement)
+ */
+export function saveGameState(gameState: GameState, filename: string): void {
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+  // Remonter depuis tests/utils vers la racine du projet
+  const projectRoot = join(__dirname, '..', '..');
+  const savesDir = join(projectRoot, 'saves');
+  
+  // Créer le dossier saves s'il n'existe pas
+  mkdirSync(savesDir, { recursive: true });
+  
+  // Créer le chemin complet du fichier
+  const filePath = join(savesDir, `${filename}.json`);
+  
+  // Sérialiser et enregistrer
+  const serialized = gameState.serialize();
+  writeFileSync(filePath, serialized, 'utf-8');
 }
