@@ -190,13 +190,68 @@ function main(): void {
     }
   }
 
-  // Initialiser et afficher la première carte
-  game.newGame();
+  // Clé pour la sauvegarde automatique dans localStorage
+  const AUTOSAVE_KEY = 'colons-of-idlestan-autosave';
+
+  /**
+   * Sauvegarde automatique de la partie dans localStorage.
+   */
+  function autoSave(): void {
+    try {
+      const serialized = game.saveGame();
+      localStorage.setItem(AUTOSAVE_KEY, serialized);
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde automatique:', error);
+    }
+  }
+
+  /**
+   * Charge automatiquement la partie depuis localStorage si elle existe.
+   */
+  function autoLoad(): boolean {
+    try {
+      const saved = localStorage.getItem(AUTOSAVE_KEY);
+      if (saved) {
+        console.log('Chargement automatique de la sauvegarde...');
+        game.loadGame(saved);
+        console.log('Sauvegarde chargée avec succès');
+        return true;
+      } else {
+        console.log('Aucune sauvegarde trouvée dans localStorage');
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement automatique:', error);
+      // En cas d'erreur, on supprime la sauvegarde corrompue
+      localStorage.removeItem(AUTOSAVE_KEY);
+    }
+    return false;
+  }
+
+  // Boucle principale d'animation pour gérer le temps et la production automatique
+  let lastAnimationFrame: number | null = null;
+  let gameStartTime: number | null = null;
+
+  // Charger automatiquement la sauvegarde si elle existe, sinon créer une nouvelle partie
+  const loaded = autoLoad();
+  if (!loaded) {
+    game.newGame();
+  } else {
+    // Réinitialiser le temps de référence pour la boucle d'animation après le chargement
+    // Cela permettra à la boucle de repartir correctement
+    gameStartTime = null;
+    // Sauvegarder immédiatement après le chargement pour s'assurer qu'on a une sauvegarde valide
+    autoSave();
+  }
+  
   const gameMap = game.getGameMap();
   if (gameMap) {
     const civId = game.getPlayerCivilizationId();
     renderer.render(gameMap, civId);
   }
+  
+  // Mettre à jour l'affichage après le chargement
+  updateResourcesDisplay();
+  updateCityPanel();
 
   /**
    * Met à jour l'affichage du panneau de la ville sélectionnée.
@@ -446,6 +501,9 @@ function main(): void {
     // Réinitialiser le temps de référence pour la boucle d'animation
     gameStartTime = null;
     
+    // Sauvegarder immédiatement après la régénération
+    autoSave();
+    
     const newGameMap = game.getGameMap();
     if (newGameMap) {
       const civId = game.getPlayerCivilizationId();
@@ -497,6 +555,9 @@ function main(): void {
         try {
           const content = event.target?.result as string;
           game.loadGame(content);
+          
+          // Sauvegarder immédiatement après l'import
+          autoSave();
           
           // Réinitialiser le temps de référence pour la boucle d'animation
           gameStartTime = null;
@@ -589,10 +650,6 @@ function main(): void {
     }
   }
 
-  // Boucle principale d'animation pour gérer le temps et la production automatique
-  let lastAnimationFrame: number | null = null;
-  let gameStartTime: number | null = null;
-
   /**
    * Boucle d'animation principale qui gère le temps et la production automatique.
    */
@@ -600,6 +657,13 @@ function main(): void {
     // Initialiser le temps de référence au premier appel
     if (gameStartTime === null) {
       gameStartTime = timestamp;
+      // Si on a chargé une partie, on doit ajuster gameStartTime pour tenir compte
+      // du temps déjà écoulé dans le GameClock
+      const savedTime = game.getGameClock().getCurrentTime();
+      if (savedTime > 0) {
+        // Ajuster gameStartTime pour que le temps continue depuis où il était
+        gameStartTime = timestamp - savedTime * 1000;
+      }
     }
 
     // Calculer le temps écoulé depuis le début en secondes
@@ -617,6 +681,11 @@ function main(): void {
 
   // Démarrer la boucle d'animation
   lastAnimationFrame = requestAnimationFrame(gameLoop);
+
+  // Sauvegarder automatiquement toutes les secondes
+  setInterval(() => {
+    autoSave();
+  }, 1000);
 }
 
 // Lancer l'application quand le DOM est prêt
