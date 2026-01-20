@@ -11,7 +11,7 @@ describe('MainGame - Récolte par clic', () => {
   beforeEach(() => {
     game = new MainGame();
     // Initialiser avec un seed fixe pour des résultats reproductibles
-    game.initialize(12345);
+    game.newGame(12345);
   });
 
   it('devrait récolter les ressources en cliquant sur les hexagones adjacents à une ville', () => {

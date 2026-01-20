@@ -1,45 +1,45 @@
 import { MapGenerator, MapGeneratorConfig } from '../controller/MapGenerator';
+import { MainGameController } from '../controller/MainGameController';
 import { GameMap } from '../model/map/GameMap';
 import { HexType } from '../model/map/HexType';
-import { CivilizationId } from '../model/map/CivilizationId';
 import { GameState } from '../model/game/GameState';
 import { PlayerResources } from '../model/game/PlayerResources';
 import { GameClock } from '../model/game/GameClock';
+import { CivilizationId } from '../model/map/CivilizationId';
 
 /**
- * Classe principale de l'application de jeu.
- *
- * Orchestre la génération de la carte et la gestion du jeu.
- * Possède un GameState (couche modèle) regroupant ressources, civilisations, carte et horloge.
+ * Point d'entrée applicatif : NewGame (génération de carte), SaveGame et LoadGame.
+ * La gestion du jeu (état, temps, etc.) est déléguée à MainGameController.
  */
 export class MainGame {
   private readonly mapGenerator: MapGenerator;
-  private readonly gameState: GameState;
+  private readonly controller: MainGameController;
 
   constructor() {
     this.mapGenerator = new MapGenerator();
-    this.gameState = new GameState(
+    const gameState = new GameState(
       new PlayerResources(),
       CivilizationId.create('player1'),
       new GameClock()
     );
+    this.controller = new MainGameController(gameState);
   }
 
   /**
-   * Retourne l'état de la partie (ressources, civilisations, carte, horloge).
+   * Retourne le contrôleur de partie (accès à la carte, ressources, horloge, etc.).
    */
-  getGameState(): GameState {
-    return this.gameState;
+  getController(): MainGameController {
+    return this.controller;
   }
 
   /**
-   * Initialise une nouvelle partie en générant une carte.
+   * Démarre une nouvelle partie : génère une carte et réinitialise l'état.
    * @param seed - Seed optionnel pour la génération (par défaut: timestamp)
    */
-  initialize(seed?: number): void {
+  newGame(seed?: number): void {
     const actualSeed = seed ?? Date.now();
+    const state = this.controller.getGameState();
 
-    // Configuration : 5 hexagones de chaque type (sauf Water qui est généré automatiquement)
     const resourceDistribution = new Map<HexType, number>([
       [HexType.Wood, 5],
       [HexType.Brick, 5],
@@ -49,8 +49,7 @@ export class MainGame {
       [HexType.Desert, 1],
     ]);
 
-    const civilizations = [this.gameState.getPlayerCivilizationId()];
-
+    const civilizations = [state.getPlayerCivilizationId()];
     const config: MapGeneratorConfig = {
       resourceDistribution,
       civilizations,
@@ -58,66 +57,55 @@ export class MainGame {
     };
 
     const gameMap = this.mapGenerator.generate(config);
-    this.gameState.setGameMap(gameMap);
-    this.gameState.setCivilizations(civilizations);
-    this.gameState.setSeed(actualSeed);
-
-    this.gameState.getPlayerResources().clear();
-    this.gameState.getGameClock().reset();
+    state.setGameMap(gameMap);
+    state.setCivilizations(civilizations);
+    state.setSeed(actualSeed);
+    state.getPlayerResources().clear();
+    state.getGameClock().reset();
   }
 
   /**
-   * Retourne la carte de jeu actuelle.
-   * @returns La GameMap, ou null si non initialisée
+   * Sauvegarde la partie en une chaîne (sérialisation de GameState).
    */
+  saveGame(): string {
+    return this.controller.getGameState().serialize();
+  }
+
+  /**
+   * Charge une partie depuis une chaîne et remplace l'état du contrôleur.
+   */
+  loadGame(serialized: string): void {
+    const state = GameState.deserialize(serialized);
+    this.controller.setGameState(state);
+  }
+
+  // ——— Délégations vers le contrôleur (compatibilité / raccourcis) ———
+
+  getGameState(): GameState {
+    return this.controller.getGameState();
+  }
+
   getGameMap(): GameMap | null {
-    return this.gameState.getGameMap();
+    return this.controller.getGameMap();
   }
 
-  /**
-   * Retourne l'inventaire du joueur.
-   * @returns L'inventaire du joueur
-   */
   getPlayerResources(): PlayerResources {
-    return this.gameState.getPlayerResources();
+    return this.controller.getPlayerResources();
   }
 
-  /**
-   * Retourne l'identifiant de la civilisation du joueur.
-   * @returns L'identifiant de la civilisation
-   */
   getPlayerCivilizationId(): CivilizationId {
-    return this.gameState.getPlayerCivilizationId();
+    return this.controller.getPlayerCivilizationId();
   }
 
-  /**
-   * Génère une nouvelle carte avec un nouveau seed.
-   */
-  regenerate(): void {
-    this.initialize();
-  }
-
-  /**
-   * Retourne l'horloge de jeu.
-   * @returns L'horloge de jeu
-   */
   getGameClock(): GameClock {
-    return this.gameState.getGameClock();
+    return this.controller.getGameClock();
   }
 
-  /**
-   * Retourne le seed de génération de la carte, ou null si non initialisée.
-   */
   getSeed(): number | null {
-    return this.gameState.getSeed();
+    return this.controller.getSeed();
   }
 
-  /**
-   * Met à jour le temps de l'horloge de jeu.
-   * Doit être appelée par la couche applicative à chaque frame.
-   * @param timeSeconds - Le temps actuel en secondes
-   */
   updateGameTime(timeSeconds: number): void {
-    this.gameState.getGameClock().updateTime(timeSeconds);
+    this.controller.updateGameTime(timeSeconds);
   }
 }

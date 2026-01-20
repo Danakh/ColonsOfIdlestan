@@ -4,6 +4,7 @@
  * de génération de GameMap et de construction de routes.
  */
 
+export { MainGameController } from './MainGameController';
 export { MapGenerator, type MapGeneratorConfig } from './MapGenerator';
 export { RoadController } from './RoadController';
 export { ResourceHarvestController } from './ResourceHarvestController';

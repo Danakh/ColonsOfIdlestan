@@ -6,6 +6,8 @@ import { Vertex } from '../../../src/model/hex/Vertex';
 import { HexType } from '../../../src/model/map/HexType';
 import { CityLevel } from '../../../src/model/city/CityLevel';
 import { BuildingType } from '../../../src/model/city/BuildingType';
+import { GameState } from '../../../src/model/game/GameState';
+import { PlayerResources } from '../../../src/model/game/PlayerResources';
 
 describe('GameStateGenerator', () => {
   describe('Make7HexesMap', () => {
@@ -51,6 +53,43 @@ describe('GameStateGenerator', () => {
 
       // GameClock à 123 s
       expect(gameClock.getCurrentTime()).toBe(123);
+    });
+
+    it('sauve la carte Map7Hexes, la charge et vérifie que la map est identique', () => {
+      const { gameMap, gameClock, civilizationId } = Make7HexesMap();
+      const gs = new GameState(new PlayerResources(), civilizationId, gameClock);
+      gs.setGameMap(gameMap);
+      gs.setCivilizations([civilizationId]);
+      gs.setSeed(null);
+
+      const serialized = gs.serialize();
+      const loaded = GameState.deserialize(serialized);
+      const map2 = loaded.getGameMap();
+      expect(map2).not.toBeNull();
+      if (!map2) throw new Error('Carte chargée nulle');
+
+      const center = new HexCoord(0, 0);
+      expect(map2.getGrid().size()).toBe(7);
+      expect(map2.getHexType(center)).toBe(HexType.Brick);
+      expect(map2.getHexType(center.neighbor(HexDirection.N))).toBe(HexType.Wood);
+      expect(map2.getHexType(center.neighbor(HexDirection.NE))).toBe(HexType.Wood);
+      expect(map2.getHexType(center.neighbor(HexDirection.SE))).toBe(HexType.Wheat);
+      expect(map2.getHexType(center.neighbor(HexDirection.S))).toBe(HexType.Sheep);
+      expect(map2.getHexType(center.neighbor(HexDirection.SW))).toBe(HexType.Ore);
+      expect(map2.getHexType(center.neighbor(HexDirection.NW))).toBe(HexType.Ore);
+
+      expect(map2.getCityCount()).toBe(1);
+      const cityVertex = Vertex.create(
+        center,
+        center.neighbor(HexDirection.N),
+        center.neighbor(HexDirection.NW)
+      );
+      expect(map2.hasCity(cityVertex)).toBe(true);
+      const city = map2.getCity(cityVertex)!;
+      expect(city.level).toBe(CityLevel.Colony);
+      expect(city.hasBuilding(BuildingType.TownHall)).toBe(true);
+
+      expect(loaded.getGameClock().getCurrentTime()).toBe(123);
     });
   });
 });

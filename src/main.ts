@@ -181,7 +181,7 @@ function main(): void {
   }
 
   // Initialiser et afficher la première carte
-  game.initialize();
+  game.newGame();
   const gameMap = game.getGameMap();
   if (gameMap) {
     const civId = game.getPlayerCivilizationId();
@@ -432,7 +432,7 @@ function main(): void {
 
   // Gérer le bouton de régénération dans le menu
   regenerateBtn.addEventListener('click', () => {
-    game.regenerate();
+    game.newGame();
     // Réinitialiser le temps de référence pour la boucle d'animation
     gameStartTime = null;
     
