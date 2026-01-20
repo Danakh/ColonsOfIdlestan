@@ -124,6 +124,12 @@ header.top-bar .app-title {
     background: rgba(102, 126, 234, 0.2);
 }
 
+.settings-menu .menu-separator {
+    height: 1px;
+    background: rgba(0, 0, 0, 0.1);
+    margin: 0.5rem 0;
+}
+
 button {
     padding: 0.6rem 1.2rem;
     background: #667eea;

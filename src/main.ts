@@ -38,6 +38,8 @@ function main(): void {
   const settingsBtn = document.getElementById('settings-btn') as HTMLButtonElement;
   const settingsMenu = document.getElementById('settings-menu') as HTMLElement;
   const regenerateBtn = document.getElementById('regenerate-btn') as HTMLButtonElement;
+  const exportBtn = document.getElementById('export-btn') as HTMLButtonElement;
+  const importBtn = document.getElementById('import-btn') as HTMLButtonElement;
   const cheatBtn = document.getElementById('cheat-btn') as HTMLButtonElement;
   const resourcesList = document.getElementById('resources-list') as HTMLDivElement;
   // Créer la vue du panneau de ville
@@ -60,6 +62,14 @@ function main(): void {
 
   if (!regenerateBtn) {
     throw new Error('Bouton de régénération introuvable');
+  }
+
+  if (!exportBtn) {
+    throw new Error('Bouton d\'export introuvable');
+  }
+
+  if (!importBtn) {
+    throw new Error('Bouton d\'import introuvable');
   }
 
   if (!cheatBtn) {
@@ -443,6 +453,75 @@ function main(): void {
       updateResourcesDisplay(); // Réinitialiser l'affichage des ressources
       updateCityPanel(); // Masquer le panneau de la ville
     }
+    // Fermer le menu après l'action
+    settingsMenu.classList.add('hidden');
+  });
+
+  // Gérer le bouton d'export dans le menu
+  exportBtn.addEventListener('click', () => {
+    try {
+      const serialized = game.saveGame();
+      const blob = new Blob([serialized], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `colons-of-idlestan-save-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Erreur lors de l\'export:', error);
+      alert('Erreur lors de l\'export de la partie');
+    }
+    
+    // Fermer le menu après l'action
+    settingsMenu.classList.add('hidden');
+  });
+
+  // Gérer le bouton d'import dans le menu
+  importBtn.addEventListener('click', () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.style.display = 'none';
+    
+    input.addEventListener('change', (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) {
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const content = event.target?.result as string;
+          game.loadGame(content);
+          
+          // Réinitialiser le temps de référence pour la boucle d'animation
+          gameStartTime = null;
+          
+          // Mettre à jour l'affichage
+          const newGameMap = game.getGameMap();
+          if (newGameMap) {
+            const civId = game.getPlayerCivilizationId();
+            renderer.render(newGameMap, civId);
+            updateResourcesDisplay();
+            updateCityPanel();
+          }
+        } catch (error) {
+          console.error('Erreur lors de l\'import:', error);
+          alert('Erreur lors de l\'import de la partie. Le fichier est peut-être invalide.');
+        }
+      };
+      
+      reader.readAsText(file);
+      document.body.removeChild(input);
+    });
+    
+    document.body.appendChild(input);
+    input.click();
+    
     // Fermer le menu après l'action
     settingsMenu.classList.add('hidden');
   });
