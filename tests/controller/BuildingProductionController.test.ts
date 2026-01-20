@@ -97,7 +97,8 @@ describe('BuildingProductionController', () => {
 
     it('devrait retourner false si la ville a un bâtiment non-producteur (ex: Seaport)', () => {
       map.setHexType(hexCoord, HexType.Wood);
-      map.addCity(vertex, civId);
+      map.setHexType(vertex.getHexes()[0], HexType.Water); // Seaport exige un hex eau adjacent
+      map.addCity(vertex, civId, CityLevel.Town); // Seaport demande niveau Town (2)
       const city = map.getCity(vertex)!;
       
       // Ajouter un bâtiment non-producteur
@@ -202,7 +203,8 @@ describe('BuildingProductionController', () => {
 
     it('devrait retourner true même si la ville a plusieurs bâtiments dont un qui correspond', () => {
       map.setHexType(hexCoord, HexType.Wood);
-      map.addCity(vertex, civId, CityLevel.Colony);
+      map.setHexType(vertex.getHexes()[0], HexType.Water); // Seaport exige un hex eau adjacent
+      map.addCity(vertex, civId, CityLevel.Town); // Seaport demande niveau Town (2)
       const city = map.getCity(vertex)!;
       
       // Ajouter plusieurs bâtiments

@@ -737,6 +737,8 @@ var City = class {
     }
     switch (buildingType) {
       case "Seaport" /* Seaport */:
+        return this.level >= 2 /* Town */;
+      // Niveau 2 (Ville)
       case "Market" /* Market */:
       case "TownHall" /* TownHall */:
         return this.level >= 0 /* Outpost */;
@@ -4445,6 +4447,7 @@ var BuildingController = class {
   static checkBuildingLevelRequirement(buildingType, city) {
     switch (buildingType) {
       case "Seaport" /* Seaport */:
+        return city.level >= 2 /* Town */;
       case "Market" /* Market */:
       case "TownHall" /* TownHall */:
         return city.level >= 0 /* Outpost */;
@@ -4789,14 +4792,14 @@ var TradeController = class {
     if (fromResource === toResource) {
       return false;
     }
-    const tradeRate = this.getTradeRateForResource(fromResource);
+    const tradeRate = this.getTradeRateForCivilization(civId, map);
     if (!resources.hasEnough(fromResource, tradeRate)) {
       return false;
     }
     return true;
   }
   /**
-   * Effectue un échange : 4 ressources identiques contre 1 ressource de choix.
+   * Effectue un échange : X ressources identiques contre 1 ressource de choix (X = 3 avec port, 4 avec marché).
    * 
    * @param fromResource - La ressource à échanger (4 unités)
    * @param toResource - La ressource à recevoir (1 unité)
@@ -4815,46 +4818,49 @@ var TradeController = class {
       if (fromResource === toResource) {
         throw new Error("Vous ne pouvez pas \xE9changer une ressource contre elle-m\xEAme.");
       }
-      const tradeRate2 = this.getTradeRateForResource(fromResource);
+      const tradeRate2 = this.getTradeRateForCivilization(civId, map);
       if (!resources.hasEnough(fromResource, tradeRate2)) {
         throw new Error(
           `Pas assez de ${fromResource} pour effectuer l'\xE9change. Requis: ${tradeRate2}, disponible: ${resources.getResource(fromResource)}.`
         );
       }
     }
-    const tradeRate = this.getTradeRateForResource(fromResource);
+    const tradeRate = this.getTradeRateForCivilization(civId, map);
     resources.removeResource(fromResource, tradeRate);
     resources.addResource(toResource, this.TRADE_RECEIVED);
   }
   /**
-   * Retourne le taux d'échange (nombre de ressources requises).
-   * @returns Le taux d'échange
+   * Retourne le taux d'échange par défaut (4:1, marché).
    */
   static getTradeRate() {
-    return this.TRADE_RATE;
+    return this.TRADE_RATE_MARKET;
   }
   /**
    * Retourne le nombre de ressources reçues lors d'un échange.
-   * @returns Le nombre de ressources reçues
    */
   static getTradeReceived() {
     return this.TRADE_RECEIVED;
   }
   /**
-   * Retourne le nombre de ressources requises pour un échange d'un type de ressource donné.
-   * Actuellement, c'est 4 pour toutes les ressources, mais cette méthode permet
-   * d'avoir des taux différents par ressource à l'avenir.
-   * 
-   * @param resourceType - Le type de ressource à échanger
-   * @returns Le nombre de ressources requises pour un échange
+   * Retourne le taux d'échange pour une civilisation : 3 si elle a un port (Seaport), 4 si marché (Market) uniquement.
+   * @param civId - L'identifiant de la civilisation
+   * @param map - La carte de jeu
+   * @returns Le nombre de ressources à donner pour recevoir 1 (3 ou 4)
    */
-  static getTradeRateForResource(resourceType) {
-    return this.TRADE_RATE;
+  static getTradeRateForCivilization(civId, map) {
+    const cities = map.getCitiesByCivilization(civId);
+    for (const city of cities) {
+      if (city.hasBuilding("Seaport" /* Seaport */)) return this.TRADE_RATE_SEAPORT;
+    }
+    for (const city of cities) {
+      if (city.hasBuilding("Market" /* Market */)) return this.TRADE_RATE_MARKET;
+    }
+    return this.TRADE_RATE_MARKET;
   }
   /**
    * Effectue plusieurs échanges en une seule transaction.
-   * Valide que toutes les quantités offertes sont des multiples de 4
-   * et que toutes les quantités demandées sont des multiples de 1.
+   * Valide que les quantités offertes sont des multiples du taux (3 ou 4 selon port/marché)
+   * et que les quantités demandées sont des multiples de 1.
    * 
    * @param offeredResources - Map des ressources offertes (quantités multiples de 4)
    * @param requestedResources - Map des ressources demandées (quantités multiples de 1)
@@ -4869,14 +4875,12 @@ var TradeController = class {
         "Le commerce n'est pas disponible. Vous devez poss\xE9der au moins un port maritime ou un march\xE9 dans une de vos villes."
       );
     }
+    const tradeRate = this.getTradeRateForCivilization(civId, map);
     for (const [resourceType, quantity] of offeredResources.entries()) {
-      if (quantity > 0) {
-        const tradeRate = this.getTradeRateForResource(resourceType);
-        if (quantity % tradeRate !== 0) {
-          throw new Error(
-            `La quantit\xE9 offerte de ${resourceType} doit \xEAtre un multiple de ${tradeRate}. Quantit\xE9 actuelle: ${quantity}`
-          );
-        }
+      if (quantity > 0 && quantity % tradeRate !== 0) {
+        throw new Error(
+          `La quantit\xE9 offerte de ${resourceType} doit \xEAtre un multiple de ${tradeRate}. Quantit\xE9 actuelle: ${quantity}`
+        );
       }
     }
     for (const [resourceType, quantity] of requestedResources.entries()) {
@@ -4910,7 +4914,6 @@ var TradeController = class {
         if (remainingToReceive === 0) break;
         if (offeredQty === 0) continue;
         if (fromResource === toResource) continue;
-        const tradeRate = this.getTradeRateForResource(fromResource);
         const availableOffers = offeredQty / tradeRate;
         const neededExchanges = remainingToReceive / this.TRADE_RECEIVED;
         const exchangesToDo = Math.min(availableOffers, neededExchanges);
@@ -4938,10 +4941,8 @@ var TradeController = class {
     }
   }
 };
-/**
- * Nombre de ressources requises pour un échange.
- */
-TradeController.TRADE_RATE = 4;
+TradeController.TRADE_RATE_SEAPORT = 3;
+TradeController.TRADE_RATE_MARKET = 4;
 /**
  * Nombre de ressources reçues lors d'un échange.
  */
@@ -5087,16 +5088,14 @@ var TradePanelView = class {
    */
   updateResourceList(listElement, resourceMap, isOffered) {
     listElement.innerHTML = "";
+    const rate = this.civId && this.gameMap ? TradeController.getTradeRateForCivilization(this.civId, this.gameMap) : 4;
     for (const resourceType of this.resourceOrder) {
       const quantity = resourceMap.get(resourceType) || 0;
       const available = this.playerResources?.getResource(resourceType) || 0;
       const item = document.createElement("li");
       item.className = "trade-resource-item";
-      if (isOffered) {
-        const tradeRate = TradeController.getTradeRateForResource(resourceType);
-        if (available < tradeRate) {
-          item.classList.add("disabled");
-        }
+      if (isOffered && available < rate) {
+        item.classList.add("disabled");
       }
       const resourceInfo = document.createElement("div");
       resourceInfo.className = "trade-resource-info";
@@ -5164,10 +5163,10 @@ var TradePanelView = class {
     if (!this.playerResources) {
       return;
     }
+    const rate = this.civId && this.gameMap ? TradeController.getTradeRateForCivilization(this.civId, this.gameMap) : 4;
     const current = this.offeredResources.get(resourceType) || 0;
     const available = this.playerResources.getResource(resourceType);
-    const tradeRate = TradeController.getTradeRateForResource(resourceType);
-    const newQuantity = current + tradeRate;
+    const newQuantity = current + rate;
     if (newQuantity <= available) {
       this.offeredResources.set(resourceType, newQuantity);
       this.update();
@@ -5187,8 +5186,8 @@ var TradePanelView = class {
   handleOfferedRightClick(resourceType) {
     const current = this.offeredResources.get(resourceType) || 0;
     if (current > 0) {
-      const tradeRate = TradeController.getTradeRateForResource(resourceType);
-      const newQuantity = Math.max(0, current - tradeRate);
+      const rate = this.civId && this.gameMap ? TradeController.getTradeRateForCivilization(this.civId, this.gameMap) : 4;
+      const newQuantity = Math.max(0, current - rate);
       this.offeredResources.set(resourceType, newQuantity);
       this.update();
     }
@@ -5207,11 +5206,11 @@ var TradePanelView = class {
    * Calcule le nombre total de batches offerts.
    */
   getOfferedBatches() {
+    const rate = this.civId && this.gameMap ? TradeController.getTradeRateForCivilization(this.civId, this.gameMap) : 4;
     let totalBatches = 0;
-    for (const [resourceType, quantity] of this.offeredResources.entries()) {
+    for (const [, quantity] of this.offeredResources.entries()) {
       if (quantity > 0) {
-        const tradeRate = TradeController.getTradeRateForResource(resourceType);
-        totalBatches += quantity / tradeRate;
+        totalBatches += quantity / rate;
       }
     }
     return totalBatches;

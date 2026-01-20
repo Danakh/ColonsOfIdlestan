@@ -5,7 +5,7 @@ import { HexType } from '../map/HexType';
  * Types de bâtiments constructibles dans les villes.
  */
 export enum BuildingType {
-  /** Port maritime - Permet le commerce maritime (4:1), nécessite de l'eau */
+  /** Port maritime - Permet le commerce maritime (3:1), nécessite de l'eau. Disponible au niveau Ville (2). */
   Seaport = 'Seaport',
   /** Marché - Permet le commerce (4:1) */
   Market = 'Market',

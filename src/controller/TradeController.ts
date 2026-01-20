@@ -5,16 +5,14 @@ import { ResourceType } from '../model/map/ResourceType';
 import { BuildingType } from '../model/city/BuildingType';
 
 /**
- * Contrôleur pour gérer le commerce (4:1).
+ * Contrôleur pour gérer le commerce.
  *
- * Une civilisation peut échanger 4 ressources identiques contre 1 ressource de son choix
- * si elle possède au moins un port maritime (Seaport) ou un marché (Market) dans une de ses villes.
+ * Une civilisation peut échanger des ressources contre 1 de son choix si elle possède
+ * au moins un port maritime (Seaport, 3:1) ou un marché (Market, 4:1) dans une de ses villes.
  */
 export class TradeController {
-  /**
-   * Nombre de ressources requises pour un échange.
-   */
-  private static readonly TRADE_RATE = 4;
+  private static readonly TRADE_RATE_SEAPORT = 3;
+  private static readonly TRADE_RATE_MARKET = 4;
 
   /**
    * Nombre de ressources reçues lors d'un échange.
@@ -67,7 +65,7 @@ export class TradeController {
     }
 
     // Vérifier que le joueur a assez de ressources à échanger
-    const tradeRate = this.getTradeRateForResource(fromResource);
+    const tradeRate = this.getTradeRateForCivilization(civId, map);
     if (!resources.hasEnough(fromResource, tradeRate)) {
       return false;
     }
@@ -76,7 +74,7 @@ export class TradeController {
   }
 
   /**
-   * Effectue un échange : 4 ressources identiques contre 1 ressource de choix.
+   * Effectue un échange : X ressources identiques contre 1 ressource de choix (X = 3 avec port, 4 avec marché).
    * 
    * @param fromResource - La ressource à échanger (4 unités)
    * @param toResource - La ressource à recevoir (1 unité)
@@ -105,7 +103,7 @@ export class TradeController {
         throw new Error('Vous ne pouvez pas échanger une ressource contre elle-même.');
       }
 
-      const tradeRate = this.getTradeRateForResource(fromResource);
+      const tradeRate = this.getTradeRateForCivilization(civId, map);
       if (!resources.hasEnough(fromResource, tradeRate)) {
         throw new Error(
           `Pas assez de ${fromResource} pour effectuer l'échange. ` +
@@ -115,7 +113,7 @@ export class TradeController {
     }
 
     // Retirer les ressources échangées
-    const tradeRate = this.getTradeRateForResource(fromResource);
+    const tradeRate = this.getTradeRateForCivilization(civId, map);
     resources.removeResource(fromResource, tradeRate);
 
     // Ajouter la ressource reçue
@@ -123,38 +121,40 @@ export class TradeController {
   }
 
   /**
-   * Retourne le taux d'échange (nombre de ressources requises).
-   * @returns Le taux d'échange
+   * Retourne le taux d'échange par défaut (4:1, marché).
    */
   static getTradeRate(): number {
-    return this.TRADE_RATE;
+    return this.TRADE_RATE_MARKET;
   }
 
   /**
    * Retourne le nombre de ressources reçues lors d'un échange.
-   * @returns Le nombre de ressources reçues
    */
   static getTradeReceived(): number {
     return this.TRADE_RECEIVED;
   }
 
   /**
-   * Retourne le nombre de ressources requises pour un échange d'un type de ressource donné.
-   * Actuellement, c'est 4 pour toutes les ressources, mais cette méthode permet
-   * d'avoir des taux différents par ressource à l'avenir.
-   * 
-   * @param resourceType - Le type de ressource à échanger
-   * @returns Le nombre de ressources requises pour un échange
+   * Retourne le taux d'échange pour une civilisation : 3 si elle a un port (Seaport), 4 si marché (Market) uniquement.
+   * @param civId - L'identifiant de la civilisation
+   * @param map - La carte de jeu
+   * @returns Le nombre de ressources à donner pour recevoir 1 (3 ou 4)
    */
-  static getTradeRateForResource(resourceType: ResourceType): number {
-    // Pour l'instant, le taux est le même pour toutes les ressources
-    return this.TRADE_RATE;
+  static getTradeRateForCivilization(civId: CivilizationId, map: GameMap): number {
+    const cities = map.getCitiesByCivilization(civId);
+    for (const city of cities) {
+      if (city.hasBuilding(BuildingType.Seaport)) return this.TRADE_RATE_SEAPORT;
+    }
+    for (const city of cities) {
+      if (city.hasBuilding(BuildingType.Market)) return this.TRADE_RATE_MARKET;
+    }
+    return this.TRADE_RATE_MARKET; // canTrade déjà vérifié en amont
   }
 
   /**
    * Effectue plusieurs échanges en une seule transaction.
-   * Valide que toutes les quantités offertes sont des multiples de 4
-   * et que toutes les quantités demandées sont des multiples de 1.
+   * Valide que les quantités offertes sont des multiples du taux (3 ou 4 selon port/marché)
+   * et que les quantités demandées sont des multiples de 1.
    * 
    * @param offeredResources - Map des ressources offertes (quantités multiples de 4)
    * @param requestedResources - Map des ressources demandées (quantités multiples de 1)
@@ -178,16 +178,15 @@ export class TradeController {
       );
     }
 
-    // Valider que toutes les quantités offertes sont des multiples du taux d'échange pour cette ressource
+    const tradeRate = this.getTradeRateForCivilization(civId, map);
+
+    // Valider que toutes les quantités offertes sont des multiples du taux d'échange
     for (const [resourceType, quantity] of offeredResources.entries()) {
-      if (quantity > 0) {
-        const tradeRate = this.getTradeRateForResource(resourceType);
-        if (quantity % tradeRate !== 0) {
-          throw new Error(
-            `La quantité offerte de ${resourceType} doit être un multiple de ${tradeRate}. ` +
-            `Quantité actuelle: ${quantity}`
-          );
-        }
+      if (quantity > 0 && quantity % tradeRate !== 0) {
+        throw new Error(
+          `La quantité offerte de ${resourceType} doit être un multiple de ${tradeRate}. ` +
+          `Quantité actuelle: ${quantity}`
+        );
       }
     }
 
@@ -242,7 +241,6 @@ export class TradeController {
         if (fromResource === toResource) continue; // Ne pas échanger contre la même ressource
 
         // Calculer combien d'échanges on peut faire avec cette ressource offerte
-        const tradeRate = this.getTradeRateForResource(fromResource);
         const availableOffers = offeredQty / tradeRate;
         const neededExchanges = remainingToReceive / this.TRADE_RECEIVED;
         const exchangesToDo = Math.min(availableOffers, neededExchanges);
