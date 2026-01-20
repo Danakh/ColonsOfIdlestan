@@ -1,3 +1,109 @@
+// src/model/hex/HexDirection.ts
+var ALL_DIRECTIONS = [
+  0 /* N */,
+  1 /* NE */,
+  2 /* SE */,
+  3 /* S */,
+  4 /* SW */,
+  5 /* NW */
+];
+
+// src/model/hex/HexCoord.ts
+var HexCoord = class _HexCoord {
+  constructor(q, r) {
+    this.q = q;
+    this.r = r;
+  }
+  /**
+   * Retourne la coordonnée s (dérivée) pour compatibilité avec système cubique.
+   * Dans le système axial, s = -q - r
+   */
+  get s() {
+    return -this.q - this.r;
+  }
+  /**
+   * Retourne les coordonnées du voisin dans la direction spécifiée.
+   * Les déplacements sont définis pour le système de coordonnées axiales.
+   */
+  neighbor(direction) {
+    const deltas = {
+      [0 /* N */]: [0, -1],
+      [1 /* NE */]: [1, -1],
+      [2 /* SE */]: [1, 0],
+      [3 /* S */]: [0, 1],
+      [4 /* SW */]: [-1, 1],
+      [5 /* NW */]: [-1, 0]
+    };
+    const [dq, dr] = deltas[direction];
+    return new _HexCoord(this.q + dq, this.r + dr);
+  }
+  /**
+   * Retourne tous les voisins de cet hexagone.
+   */
+  neighbors() {
+    return ALL_DIRECTIONS.map((dir) => this.neighbor(dir));
+  }
+  /**
+   * Calcule la distance entre deux hexagones.
+   */
+  distanceTo(other) {
+    return (Math.abs(this.q - other.q) + Math.abs(this.q + this.r - other.q - other.r) + Math.abs(this.r - other.r)) / 2;
+  }
+  /**
+   * Vérifie l'égalité avec un autre HexCoord.
+   */
+  equals(other) {
+    return this.q === other.q && this.r === other.r;
+  }
+  /**
+   * Retourne une représentation en chaîne pour le débogage.
+   */
+  toString() {
+    return `(${this.q}, ${this.r})`;
+  }
+  /**
+   * Génère un hash pour utiliser comme clé dans des Maps/Sets.
+   */
+  hashCode() {
+    return `${this.q},${this.r}`;
+  }
+  /** Sérialise la coordonnée en [q, r]. */
+  serialize() {
+    return [this.q, this.r];
+  }
+  /** Désérialise depuis [q, r]. */
+  static deserialize(data) {
+    return new _HexCoord(data[0], data[1]);
+  }
+};
+
+// src/model/hex/Hex.ts
+var Hex = class _Hex {
+  constructor(coord) {
+    this.coord = coord;
+  }
+  /**
+   * Vérifie l'égalité avec un autre Hex (égalité structurelle sur la coordonnée).
+   */
+  equals(other) {
+    return this.coord.equals(other.coord);
+  }
+  /**
+   * Retourne une représentation en chaîne pour le débogage.
+   */
+  toString() {
+    return `Hex(${this.coord.toString()})`;
+  }
+  /** Sérialise l'hexagone (délègue à la coordonnée). */
+  serialize() {
+    return this.coord.serialize();
+  }
+  /** Désérialise depuis [q, r]. */
+  static deserialize(data) {
+    return new _Hex(HexCoord.deserialize(data));
+  }
+};
+
 // src/model/hex/Edge.ts
 var Edge = class _Edge {
   constructor(hex1, hex2) {
@@ -58,6 +164,15 @@ var Edge = class _Edge {
   hashCode() {
     const normalized = _Edge.normalize(this.hex1, this.hex2);
     return `${normalized[0].hashCode()}-${normalized[1].hashCode()}`;
+  }
+  /** Sérialise l'arête en [h1, h2] (chaque hi = [q, r]). */
+  serialize() {
+    const [a, b] = this.getHexes();
+    return [a.serialize(), b.serialize()];
+  }
+  /** Désérialise depuis [[q1,r1],[q2,r2]]. */
+  static deserialize(data) {
+    return _Edge.create(HexCoord.deserialize(data[0]), HexCoord.deserialize(data[1]));
   }
 };
 
@@ -137,20 +252,22 @@ var Vertex = class _Vertex {
     const normalized = _Vertex.normalize(this.hex1, this.hex2, this.hex3);
     return `${normalized[0].hashCode()}-${normalized[1].hashCode()}-${normalized[2].hashCode()}`;
   }
+  /** Sérialise le sommet en [h1, h2, h3] (chaque hi = [q, r]). */
+  serialize() {
+    return this.getHexes().map((h) => h.serialize());
+  }
+  /** Désérialise depuis [[q1,r1],[q2,r2],[q3,r3]]. */
+  static deserialize(data) {
+    return _Vertex.create(
+      HexCoord.deserialize(data[0]),
+      HexCoord.deserialize(data[1]),
+      HexCoord.deserialize(data[2])
+    );
+  }
 };
 
-// src/model/hex/HexDirection.ts
-var ALL_DIRECTIONS = [
-  0 /* N */,
-  1 /* NE */,
-  2 /* SE */,
-  3 /* S */,
-  4 /* SW */,
-  5 /* NW */
-];
-
 // src/model/hex/HexGrid.ts
-var HexGrid = class {
+var HexGrid = class _HexGrid {
   /**
    * Crée une nouvelle grille hexagonale.
    * @param hexes - Tableau d'hexagones à ajouter à la grille
@@ -334,85 +451,62 @@ var HexGrid = class {
   hasHex(coord) {
     return this.hexMap.has(coord.hashCode());
   }
+  /** Sérialise la grille en { hexes: [coord, ...] }. */
+  serialize() {
+    return { hexes: this.getAllHexes().map((h) => h.serialize()) };
+  }
+  /** Désérialise depuis { hexes }. */
+  static deserialize(data) {
+    return new _HexGrid(data.hexes.map((h) => Hex.deserialize(h)));
+  }
 };
 
-// src/model/hex/Hex.ts
-var Hex = class {
-  constructor(coord) {
-    this.coord = coord;
+// src/model/map/CivilizationId.ts
+var CivilizationId = class _CivilizationId {
+  constructor(value) {
+    this.value = value;
+    if (!value || value.trim().length === 0) {
+      throw new Error("L'identifiant de civilisation ne peut pas \xEAtre vide.");
+    }
   }
   /**
-   * Vérifie l'égalité avec un autre Hex (égalité structurelle sur la coordonnée).
+   * Crée un identifiant de civilisation.
+   * @param value - La valeur unique de l'identifiant
+   */
+  static create(value) {
+    return new _CivilizationId(value.trim());
+  }
+  /**
+   * Retourne la valeur de l'identifiant.
+   */
+  getValue() {
+    return this.value;
+  }
+  /**
+   * Vérifie si cet identifiant est égal à un autre.
    */
   equals(other) {
-    return this.coord.equals(other.coord);
+    return this.value === other.value;
   }
   /**
    * Retourne une représentation en chaîne pour le débogage.
    */
   toString() {
-    return `Hex(${this.coord.toString()})`;
-  }
-};
-
-// src/model/hex/HexCoord.ts
-var HexCoord = class _HexCoord {
-  constructor(q, r) {
-    this.q = q;
-    this.r = r;
-  }
-  /**
-   * Retourne la coordonnée s (dérivée) pour compatibilité avec système cubique.
-   * Dans le système axial, s = -q - r
-   */
-  get s() {
-    return -this.q - this.r;
-  }
-  /**
-   * Retourne les coordonnées du voisin dans la direction spécifiée.
-   * Les déplacements sont définis pour le système de coordonnées axiales.
-   */
-  neighbor(direction) {
-    const deltas = {
-      [0 /* N */]: [0, -1],
-      [1 /* NE */]: [1, -1],
-      [2 /* SE */]: [1, 0],
-      [3 /* S */]: [0, 1],
-      [4 /* SW */]: [-1, 1],
-      [5 /* NW */]: [-1, 0]
-    };
-    const [dq, dr] = deltas[direction];
-    return new _HexCoord(this.q + dq, this.r + dr);
-  }
-  /**
-   * Retourne tous les voisins de cet hexagone.
-   */
-  neighbors() {
-    return ALL_DIRECTIONS.map((dir) => this.neighbor(dir));
-  }
-  /**
-   * Calcule la distance entre deux hexagones.
-   */
-  distanceTo(other) {
-    return (Math.abs(this.q - other.q) + Math.abs(this.q + this.r - other.q - other.r) + Math.abs(this.r - other.r)) / 2;
-  }
-  /**
-   * Vérifie l'égalité avec un autre HexCoord.
-   */
-  equals(other) {
-    return this.q === other.q && this.r === other.r;
-  }
-  /**
-   * Retourne une représentation en chaîne pour le débogage.
-   */
-  toString() {
-    return `(${this.q}, ${this.r})`;
+    return `CivilizationId(${this.value})`;
   }
   /**
    * Génère un hash pour utiliser comme clé dans des Maps/Sets.
    */
   hashCode() {
-    return `${this.q},${this.r}`;
+    return this.value;
+  }
+  /** Sérialise l'identifiant (valeur string). */
+  serialize() {
+    return this.value;
+  }
+  /** Désérialise depuis une chaîne. */
+  static deserialize(data) {
+    return _CivilizationId.create(data);
   }
 };
 
@@ -420,6 +514,16 @@ var HexCoord = class _HexCoord {
 function isValidCityLevel(level) {
   return level >= 0 /* Outpost */ && level <= 4 /* Capital */;
 }
+
+// src/model/map/ResourceType.ts
+var ResourceType = /* @__PURE__ */ ((ResourceType2) => {
+  ResourceType2["Wood"] = "Wood";
+  ResourceType2["Brick"] = "Brick";
+  ResourceType2["Wheat"] = "Wheat";
+  ResourceType2["Sheep"] = "Sheep";
+  ResourceType2["Ore"] = "Ore";
+  return ResourceType2;
+})(ResourceType || {});
 
 // src/model/city/BuildingType.ts
 var BuildingType = /* @__PURE__ */ ((BuildingType5) => {
@@ -705,10 +809,27 @@ var City = class {
   toString() {
     return `City(vertex=${this.vertex.toString()}, level=${this.level}, owner=${this.owner.toString()})`;
   }
+  /** Sérialise la ville (vertex, owner, level, buildings, buildingProductionTimes). */
+  serialize() {
+    const bpt = {};
+    for (const bt of getResourceProductionBuildings()) {
+      if (this.hasBuilding(bt)) {
+        const t = this.getBuildingProductionTime(bt);
+        if (t !== void 0) bpt[bt] = t;
+      }
+    }
+    return {
+      vertex: this.vertex.serialize(),
+      owner: this.owner.serialize(),
+      level: this.level,
+      buildings: [...this.getBuildings()],
+      buildingProductionTimes: bpt
+    };
+  }
 };
 
 // src/model/map/GameMap.ts
-var GameMap = class {
+var GameMap = class _GameMap {
   // Map<edgeKey, distance>
   /**
    * Crée une nouvelle carte de jeu à partir d'une grille hexagonale.
@@ -771,6 +892,13 @@ var GameMap = class {
    */
   isCivilizationRegistered(civId) {
     return this.registeredCivilizations.has(civId.hashCode());
+  }
+  /**
+   * Retourne les valeurs (getValue) des civilisations enregistrées.
+   * Utilisé pour la sérialisation.
+   */
+  getRegisteredCivilizationValues() {
+    return Array.from(this.registeredCivilizations);
   }
   /**
    * Ajoute une ville sur un sommet pour une civilisation donnée.
@@ -1398,6 +1526,51 @@ var GameMap = class {
       }
     }
   }
+  /** Format sérialisé de la carte (pour GameMap.serialize). */
+  serialize() {
+    const roads = [];
+    for (const s of this.getRegisteredCivilizationValues()) {
+      const civId = CivilizationId.create(s);
+      for (const edge of this.getRoadsForCivilization(civId)) {
+        roads.push({ edge: edge.serialize(), owner: s });
+      }
+    }
+    return {
+      grid: this.grid.serialize(),
+      hexTypes: Object.fromEntries(this.hexTypeMap),
+      civilizations: this.getRegisteredCivilizationValues(),
+      cities: [...this.cityMap.values()].map((c) => c.serialize()),
+      roads
+    };
+  }
+  /** Désérialise depuis l'objet produit par serialize. */
+  static deserialize(data) {
+    const grid = HexGrid.deserialize(data.grid);
+    const map = new _GameMap(grid);
+    for (const [key, type] of Object.entries(data.hexTypes)) {
+      const [q, r] = key.split(",").map(Number);
+      map.setHexType(HexCoord.deserialize([q, r]), type);
+    }
+    for (const s of data.civilizations) {
+      map.registerCivilization(CivilizationId.deserialize(s));
+    }
+    for (const c of data.cities) {
+      const v = Vertex.deserialize(c.vertex);
+      const owner = CivilizationId.deserialize(c.owner);
+      map.addCity(v, owner, c.level);
+      const city = map.getCity(v);
+      for (const b of c.buildings) {
+        city.addBuilding(b);
+      }
+      for (const [bt, time] of Object.entries(c.buildingProductionTimes)) {
+        city.setBuildingProductionTime(bt, time);
+      }
+    }
+    for (const r of data.roads) {
+      map.addRoad(Edge.deserialize(r.edge), CivilizationId.deserialize(r.owner));
+    }
+    return map;
+  }
 };
 
 // src/controller/util/SeededRNG.ts
@@ -1758,98 +1931,39 @@ var MapGenerator = class {
   }
 };
 
-// src/model/map/CivilizationId.ts
-var CivilizationId = class _CivilizationId {
-  constructor(value) {
-    this.value = value;
-    if (!value || value.trim().length === 0) {
-      throw new Error("L'identifiant de civilisation ne peut pas \xEAtre vide.");
-    }
+// src/controller/MainGameController.ts
+var MainGameController = class {
+  constructor(gameState) {
+    this.gameState = gameState;
   }
-  /**
-   * Crée un identifiant de civilisation.
-   * @param value - La valeur unique de l'identifiant
-   */
-  static create(value) {
-    return new _CivilizationId(value.trim());
+  getGameState() {
+    return this.gameState;
   }
-  /**
-   * Retourne la valeur de l'identifiant.
-   */
-  getValue() {
-    return this.value;
+  setGameState(state) {
+    this.gameState = state;
   }
-  /**
-   * Vérifie si cet identifiant est égal à un autre.
-   */
-  equals(other) {
-    return this.value === other.value;
-  }
-  /**
-   * Retourne une représentation en chaîne pour le débogage.
-   */
-  toString() {
-    return `CivilizationId(${this.value})`;
-  }
-  /**
-   * Génère un hash pour utiliser comme clé dans des Maps/Sets.
-   */
-  hashCode() {
-    return this.value;
-  }
-};
-
-// src/model/game/GameState.ts
-var GameState = class {
-  constructor(playerResources, playerCivilizationId, gameClock) {
-    this.playerResources = playerResources;
-    this.playerCivilizationId = playerCivilizationId;
-    this.gameClock = gameClock;
-    this.gameMap = null;
-    this.civilizations = [];
-    /** Seed utilisé pour la génération de la carte (null si non initialisée). */
-    this.seed = null;
-  }
-  /** Ressources du joueur. */
-  getPlayerResources() {
-    return this.playerResources;
-  }
-  /** Identifiant de la civilisation du joueur. */
-  getPlayerCivilizationId() {
-    return this.playerCivilizationId;
-  }
-  /** Liste des civilisations de la partie. */
-  getCivilizations() {
-    return this.civilizations;
-  }
-  /** Carte de jeu, ou null si non initialisée. */
   getGameMap() {
-    return this.gameMap;
+    return this.gameState.getGameMap();
   }
-  /** Horloge de jeu. */
+  getPlayerResources() {
+    return this.gameState.getPlayerResources();
+  }
+  getPlayerCivilizationId() {
+    return this.gameState.getPlayerCivilizationId();
+  }
   getGameClock() {
-    return this.gameClock;
+    return this.gameState.getGameClock();
   }
-  /** Seed de génération de la carte, ou null si non initialisée. */
   getSeed() {
-    return this.seed;
+    return this.gameState.getSeed();
   }
-  /** Définit la carte de jeu (lors d'une nouvelle partie ou régénération). */
-  setGameMap(map) {
-    this.gameMap = map;
-  }
-  /** Définit la liste des civilisations de la partie. */
-  setCivilizations(civs) {
-    this.civilizations = [...civs];
-  }
-  /** Définit le seed de génération (lors d'une nouvelle partie ou régénération). */
-  setSeed(seed) {
-    this.seed = seed;
+  updateGameTime(timeSeconds) {
+    this.gameState.getGameClock().updateTime(timeSeconds);
   }
 };
 
 // src/model/game/PlayerResources.ts
-var PlayerResources = class {
+var PlayerResources = class _PlayerResources {
   /**
    * Crée un inventaire vide.
    */
@@ -1988,10 +2102,24 @@ var PlayerResources = class {
   isHarvestable(resource) {
     return resource === "Wood" /* Wood */ || resource === "Brick" /* Brick */ || resource === "Wheat" /* Wheat */ || resource === "Sheep" /* Sheep */ || resource === "Ore" /* Ore */;
   }
+  /** Sérialise l'inventaire en Record<ResourceType, number>. */
+  serialize() {
+    return Object.fromEntries(this.resources);
+  }
+  /** Désérialise depuis un objet { [ResourceType]: number }. */
+  static deserialize(data) {
+    const pr = new _PlayerResources();
+    pr.clear();
+    for (const rt of Object.values(ResourceType)) {
+      const n = data[rt] ?? 0;
+      if (n > 0) pr.addResource(rt, n);
+    }
+    return pr;
+  }
 };
 
 // src/model/game/GameClock.ts
-var GameClock = class {
+var GameClock = class _GameClock {
   constructor() {
     this.currentTime = 0;
   }
@@ -2019,30 +2147,123 @@ var GameClock = class {
   reset() {
     this.currentTime = 0;
   }
+  /** Sérialise l'horloge en { currentTime }. */
+  serialize() {
+    return { currentTime: this.currentTime };
+  }
+  /** Désérialise depuis { currentTime }. */
+  static deserialize(data) {
+    const gc = new _GameClock();
+    gc.updateTime(data.currentTime);
+    return gc;
+  }
+};
+
+// src/model/game/GameState.ts
+var GameState = class _GameState {
+  constructor(playerResources, playerCivilizationId, gameClock) {
+    this.playerResources = playerResources;
+    this.playerCivilizationId = playerCivilizationId;
+    this.gameClock = gameClock;
+    this.gameMap = null;
+    this.civilizations = [];
+    /** Seed utilisé pour la génération de la carte (null si non initialisée). */
+    this.seed = null;
+  }
+  /** Ressources du joueur. */
+  getPlayerResources() {
+    return this.playerResources;
+  }
+  /** Identifiant de la civilisation du joueur. */
+  getPlayerCivilizationId() {
+    return this.playerCivilizationId;
+  }
+  /** Liste des civilisations de la partie. */
+  getCivilizations() {
+    return this.civilizations;
+  }
+  /** Carte de jeu, ou null si non initialisée. */
+  getGameMap() {
+    return this.gameMap;
+  }
+  /** Horloge de jeu. */
+  getGameClock() {
+    return this.gameClock;
+  }
+  /** Seed de génération de la carte, ou null si non initialisée. */
+  getSeed() {
+    return this.seed;
+  }
+  /** Définit la carte de jeu (lors d'une nouvelle partie ou régénération). */
+  setGameMap(map) {
+    this.gameMap = map;
+  }
+  /** Définit la liste des civilisations de la partie. */
+  setCivilizations(civs) {
+    this.civilizations = [...civs];
+  }
+  /** Définit le seed de génération (lors d'une nouvelle partie ou régénération). */
+  setSeed(seed) {
+    this.seed = seed;
+  }
+  /**
+   * Sérialise l'état en une chaîne JSON.
+   * Chaque sous-objet (PlayerResources, GameClock, GameMap) se sérialise lui-même.
+   */
+  serialize() {
+    const obj = {
+      playerResources: this.playerResources.serialize(),
+      playerCivilizationId: this.playerCivilizationId.serialize(),
+      gameClock: this.gameClock.serialize(),
+      gameMap: this.gameMap?.serialize() ?? null,
+      civilizations: this.civilizations.map((c) => c.serialize()),
+      seed: this.seed
+    };
+    return JSON.stringify(obj);
+  }
+  /**
+   * Désérialise un GameState depuis une chaîne JSON.
+   * Chaque sous-objet est reconstruit via sa méthode deserialize.
+   */
+  static deserialize(json) {
+    const obj = JSON.parse(json);
+    const pr = PlayerResources.deserialize(obj.playerResources);
+    const civId = CivilizationId.deserialize(obj.playerCivilizationId);
+    const gc = GameClock.deserialize(obj.gameClock);
+    const gs = new _GameState(pr, civId, gc);
+    gs.setCivilizations(obj.civilizations.map((s) => CivilizationId.deserialize(s)));
+    gs.setSeed(obj.seed);
+    if (obj.gameMap != null) {
+      gs.setGameMap(GameMap.deserialize(obj.gameMap));
+    }
+    return gs;
+  }
 };
 
 // src/application/MainGame.ts
 var MainGame = class {
   constructor() {
     this.mapGenerator = new MapGenerator();
-    this.gameState = new GameState(
+    const gameState = new GameState(
       new PlayerResources(),
       CivilizationId.create("player1"),
       new GameClock()
     );
+    this.controller = new MainGameController(gameState);
   }
   /**
-   * Retourne l'état de la partie (ressources, civilisations, carte, horloge).
+   * Retourne le contrôleur de partie (accès à la carte, ressources, horloge, etc.).
    */
-  getGameState() {
-    return this.gameState;
+  getController() {
+    return this.controller;
   }
   /**
-   * Initialise une nouvelle partie en générant une carte.
+   * Démarre une nouvelle partie : génère une carte et réinitialise l'état.
    * @param seed - Seed optionnel pour la génération (par défaut: timestamp)
    */
-  initialize(seed) {
+  newGame(seed) {
     const actualSeed = seed ?? Date.now();
+    const state = this.controller.getGameState();
     const resourceDistribution = /* @__PURE__ */ new Map([
       ["Wood" /* Wood */, 5],
       ["Brick" /* Brick */, 5],
@@ -2051,60 +2272,53 @@ var MainGame = class {
       ["Ore" /* Ore */, 5],
       ["Desert" /* Desert */, 1]
     ]);
-    const civilizations = [this.gameState.getPlayerCivilizationId()];
+    const civilizations = [state.getPlayerCivilizationId()];
     const config = {
       resourceDistribution,
       civilizations,
       seed: actualSeed
     };
     const gameMap = this.mapGenerator.generate(config);
-    this.gameState.setGameMap(gameMap);
-    this.gameState.setCivilizations(civilizations);
-    this.gameState.setSeed(actualSeed);
-    this.gameState.getPlayerResources().clear();
-    this.gameState.getGameClock().reset();
+    state.setGameMap(gameMap);
+    state.setCivilizations(civilizations);
+    state.setSeed(actualSeed);
+    state.getPlayerResources().clear();
+    state.getGameClock().reset();
   }
   /**
-   * Retourne la carte de jeu actuelle.
-   * @returns La GameMap, ou null si non initialisée
+   * Sauvegarde la partie en une chaîne (sérialisation de GameState).
    */
+  saveGame() {
+    return this.controller.getGameState().serialize();
+  }
+  /**
+   * Charge une partie depuis une chaîne et remplace l'état du contrôleur.
+   */
+  loadGame(serialized) {
+    const state = GameState.deserialize(serialized);
+    this.controller.setGameState(state);
+  }
+  // ——— Délégations vers le contrôleur (compatibilité / raccourcis) ———
+  getGameState() {
+    return this.controller.getGameState();
+  }
   getGameMap() {
-    return this.gameState.getGameMap();
+    return this.controller.getGameMap();
   }
-  /**
-   * Retourne l'inventaire du joueur.
-   * @returns L'inventaire du joueur
-   */
   getPlayerResources() {
-    return this.gameState.getPlayerResources();
+    return this.controller.getPlayerResources();
   }
-  /**
-   * Retourne l'identifiant de la civilisation du joueur.
-   * @returns L'identifiant de la civilisation
-   */
   getPlayerCivilizationId() {
-    return this.gameState.getPlayerCivilizationId();
+    return this.controller.getPlayerCivilizationId();
   }
-  /**
-   * Génère une nouvelle carte avec un nouveau seed.
-   */
-  regenerate() {
-    this.initialize();
-  }
-  /**
-   * Retourne l'horloge de jeu.
-   * @returns L'horloge de jeu
-   */
   getGameClock() {
-    return this.gameState.getGameClock();
+    return this.controller.getGameClock();
   }
-  /**
-   * Met à jour le temps de l'horloge de jeu.
-   * Doit être appelée par la couche applicative à chaque frame.
-   * @param timeSeconds - Le temps actuel en secondes
-   */
+  getSeed() {
+    return this.controller.getSeed();
+  }
   updateGameTime(timeSeconds) {
-    this.gameState.getGameClock().updateTime(timeSeconds);
+    this.controller.updateGameTime(timeSeconds);
   }
 };
 
@@ -5249,7 +5463,7 @@ function main() {
       resourcesList.appendChild(item);
     }
   }
-  game.initialize();
+  game.newGame();
   const gameMap = game.getGameMap();
   if (gameMap) {
     const civId = game.getPlayerCivilizationId();
@@ -5422,7 +5636,7 @@ function main() {
     }
   });
   regenerateBtn.addEventListener("click", () => {
-    game.regenerate();
+    game.newGame();
     gameStartTime = null;
     const newGameMap = game.getGameMap();
     if (newGameMap) {

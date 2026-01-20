@@ -260,4 +260,14 @@ export class HexGrid {
   hasHex(coord: HexCoord): boolean {
     return this.hexMap.has(coord.hashCode());
   }
+
+  /** Sérialise la grille en { hexes: [coord, ...] }. */
+  serialize(): { hexes: [number, number][] } {
+    return { hexes: this.getAllHexes().map((h) => h.serialize()) };
+  }
+
+  /** Désérialise depuis { hexes }. */
+  static deserialize(data: { hexes: [number, number][] }): HexGrid {
+    return new HexGrid(data.hexes.map((h) => Hex.deserialize(h)));
+  }
 }

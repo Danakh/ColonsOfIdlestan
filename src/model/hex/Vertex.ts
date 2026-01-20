@@ -119,4 +119,18 @@ export class Vertex {
     const normalized = Vertex.normalize(this.hex1, this.hex2, this.hex3);
     return `${normalized[0].hashCode()}-${normalized[1].hashCode()}-${normalized[2].hashCode()}`;
   }
+
+  /** Sérialise le sommet en [h1, h2, h3] (chaque hi = [q, r]). */
+  serialize(): [number, number][] {
+    return this.getHexes().map((h) => h.serialize());
+  }
+
+  /** Désérialise depuis [[q1,r1],[q2,r2],[q3,r3]]. */
+  static deserialize(data: [number, number][]): Vertex {
+    return Vertex.create(
+      HexCoord.deserialize(data[0] as [number, number]),
+      HexCoord.deserialize(data[1] as [number, number]),
+      HexCoord.deserialize(data[2] as [number, number])
+    );
+  }
 }

@@ -178,4 +178,20 @@ export class PlayerResources {
       resource === ResourceType.Ore
     );
   }
+
+  /** Sérialise l'inventaire en Record<ResourceType, number>. */
+  serialize(): Record<string, number> {
+    return Object.fromEntries(this.resources);
+  }
+
+  /** Désérialise depuis un objet { [ResourceType]: number }. */
+  static deserialize(data: Record<string, number>): PlayerResources {
+    const pr = new PlayerResources();
+    pr.clear();
+    for (const rt of Object.values(ResourceType)) {
+      const n = data[rt] ?? 0;
+      if (n > 0) pr.addResource(rt, n);
+    }
+    return pr;
+  }
 }

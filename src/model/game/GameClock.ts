@@ -32,4 +32,16 @@ export class GameClock {
   reset(): void {
     this.currentTime = 0;
   }
+
+  /** Sérialise l'horloge en { currentTime }. */
+  serialize(): { currentTime: number } {
+    return { currentTime: this.currentTime };
+  }
+
+  /** Désérialise depuis { currentTime }. */
+  static deserialize(data: { currentTime: number }): GameClock {
+    const gc = new GameClock();
+    gc.updateTime(data.currentTime);
+    return gc;
+  }
 }

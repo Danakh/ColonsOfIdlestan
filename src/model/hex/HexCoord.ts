@@ -83,4 +83,14 @@ export class HexCoord {
   hashCode(): string {
     return `${this.q},${this.r}`;
   }
+
+  /** Sérialise la coordonnée en [q, r]. */
+  serialize(): [number, number] {
+    return [this.q, this.r];
+  }
+
+  /** Désérialise depuis [q, r]. */
+  static deserialize(data: [number, number]): HexCoord {
+    return new HexCoord(data[0], data[1]);
+  }
 }

@@ -89,4 +89,15 @@ export class Edge {
     const normalized = Edge.normalize(this.hex1, this.hex2);
     return `${normalized[0].hashCode()}-${normalized[1].hashCode()}`;
   }
+
+  /** Sérialise l'arête en [h1, h2] (chaque hi = [q, r]). */
+  serialize(): [[number, number], [number, number]] {
+    const [a, b] = this.getHexes();
+    return [a.serialize(), b.serialize()];
+  }
+
+  /** Désérialise depuis [[q1,r1],[q2,r2]]. */
+  static deserialize(data: [[number, number], [number, number]]): Edge {
+    return Edge.create(HexCoord.deserialize(data[0]), HexCoord.deserialize(data[1]));
+  }
 }

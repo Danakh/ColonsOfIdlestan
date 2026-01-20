@@ -5,8 +5,9 @@ import { Edge } from '../hex/Edge';
 import { Vertex } from '../hex/Vertex';
 import { HexType } from './HexType';
 import { CivilizationId } from './CivilizationId';
-import { City } from '../city/City';
+import { City, CitySerialized } from '../city/City';
 import { CityLevel } from '../city/CityLevel';
+import { BuildingType } from '../city/BuildingType';
 
 /**
  * Carte de jeu construite sur une grille hexagonale.
@@ -92,6 +93,14 @@ export class GameMap {
    */
   isCivilizationRegistered(civId: CivilizationId): boolean {
     return this.registeredCivilizations.has(civId.hashCode());
+  }
+
+  /**
+   * Retourne les valeurs (getValue) des civilisations enregistrées.
+   * Utilisé pour la sérialisation.
+   */
+  getRegisteredCivilizationValues(): string[] {
+    return Array.from(this.registeredCivilizations);
   }
 
   /**
@@ -918,5 +927,66 @@ export class GameMap {
         processed.add(adjRoadKey);
       }
     }
+  }
+
+  /** Format sérialisé de la carte (pour GameMap.serialize). */
+  serialize(): {
+    grid: { hexes: [number, number][] };
+    hexTypes: Record<string, string>;
+    civilizations: string[];
+    cities: CitySerialized[];
+    roads: { edge: [[number, number], [number, number]]; owner: string }[];
+  } {
+    const roads: { edge: [[number, number], [number, number]]; owner: string }[] = [];
+    for (const s of this.getRegisteredCivilizationValues()) {
+      const civId = CivilizationId.create(s);
+      for (const edge of this.getRoadsForCivilization(civId)) {
+        roads.push({ edge: edge.serialize(), owner: s });
+      }
+    }
+    return {
+      grid: this.grid.serialize(),
+      hexTypes: Object.fromEntries(this.hexTypeMap),
+      civilizations: this.getRegisteredCivilizationValues(),
+      cities: [...this.cityMap.values()].map((c) => c.serialize()),
+      roads,
+    };
+  }
+
+  /** Désérialise depuis l'objet produit par serialize. */
+  static deserialize(
+    data: {
+      grid: { hexes: [number, number][] };
+      hexTypes: Record<string, string>;
+      civilizations: string[];
+      cities: CitySerialized[];
+      roads: { edge: [[number, number], [number, number]]; owner: string }[];
+    }
+  ): GameMap {
+    const grid = HexGrid.deserialize(data.grid);
+    const map = new GameMap(grid);
+    for (const [key, type] of Object.entries(data.hexTypes)) {
+      const [q, r] = key.split(',').map(Number);
+      map.setHexType(HexCoord.deserialize([q, r]), type as HexType);
+    }
+    for (const s of data.civilizations) {
+      map.registerCivilization(CivilizationId.deserialize(s));
+    }
+    for (const c of data.cities) {
+      const v = Vertex.deserialize(c.vertex);
+      const owner = CivilizationId.deserialize(c.owner);
+      map.addCity(v, owner, c.level as CityLevel);
+      const city = map.getCity(v)!;
+      for (const b of c.buildings) {
+        city.addBuilding(b as BuildingType);
+      }
+      for (const [bt, time] of Object.entries(c.buildingProductionTimes)) {
+        city.setBuildingProductionTime(bt as BuildingType, time);
+      }
+    }
+    for (const r of data.roads) {
+      map.addRoad(Edge.deserialize(r.edge), CivilizationId.deserialize(r.owner));
+    }
+    return map;
   }
 }

@@ -3,6 +3,15 @@ import { CivilizationId } from '../map/CivilizationId';
 import { CityLevel, isValidCityLevel } from './CityLevel';
 import { BuildingType, getAllBuildingTypes, getResourceProductionBuildings } from './BuildingType';
 
+/** Format sérialisé d'une ville. */
+export interface CitySerialized {
+  vertex: [number, number][];
+  owner: string;
+  level: number;
+  buildings: string[];
+  buildingProductionTimes: Record<string, number>;
+}
+
 /**
  * Représente une ville sur la carte de jeu.
  * 
@@ -239,5 +248,23 @@ export class City {
    */
   toString(): string {
     return `City(vertex=${this.vertex.toString()}, level=${this.level}, owner=${this.owner.toString()})`;
+  }
+
+  /** Sérialise la ville (vertex, owner, level, buildings, buildingProductionTimes). */
+  serialize(): CitySerialized {
+    const bpt: Record<string, number> = {};
+    for (const bt of getResourceProductionBuildings()) {
+      if (this.hasBuilding(bt)) {
+        const t = this.getBuildingProductionTime(bt);
+        if (t !== undefined) bpt[bt] = t;
+      }
+    }
+    return {
+      vertex: this.vertex.serialize(),
+      owner: this.owner.serialize(),
+      level: this.level,
+      buildings: [...this.getBuildings()],
+      buildingProductionTimes: bpt,
+    };
   }
 }

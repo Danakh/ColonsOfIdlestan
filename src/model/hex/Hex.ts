@@ -24,4 +24,14 @@ export class Hex {
   toString(): string {
     return `Hex(${this.coord.toString()})`;
   }
+
+  /** Sérialise l'hexagone (délègue à la coordonnée). */
+  serialize(): [number, number] {
+    return this.coord.serialize();
+  }
+
+  /** Désérialise depuis [q, r]. */
+  static deserialize(data: [number, number]): Hex {
+    return new Hex(HexCoord.deserialize(data));
+  }
 }

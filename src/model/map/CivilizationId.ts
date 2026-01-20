@@ -45,4 +45,14 @@ export class CivilizationId {
   hashCode(): string {
     return this.value;
   }
+
+  /** Sérialise l'identifiant (valeur string). */
+  serialize(): string {
+    return this.value;
+  }
+
+  /** Désérialise depuis une chaîne. */
+  static deserialize(data: string): CivilizationId {
+    return CivilizationId.create(data);
+  }
 }
