@@ -153,6 +153,9 @@ export class City {
     // Règles de disponibilité selon le niveau de la ville
     switch (buildingType) {
       case BuildingType.Seaport:
+      case BuildingType.Warehouse:
+      case BuildingType.Forge:
+      case BuildingType.Library:
         return this.level >= CityLevel.Town; // Niveau 2 (Ville)
       case BuildingType.Market:
       case BuildingType.TownHall:

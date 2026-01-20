@@ -57,9 +57,10 @@ describe('Map7HexesScenario', () => {
     const resources = gs.getPlayerResources();
     const city = map.getCity(cityVertex)!;
 
-    // 1. Récoltes pour bâtiments : 4 Brick (center), 11 Wood (N) → Market, Sawmill, Brickworks
-    advanceAndHarvest(center, 4, gs);
-    advanceAndHarvest(center.neighbor(HexDirection.N), 11, gs);
+    // 1. Récoltes pour bâtiments : 9 Brick (center), 8 Wood (N), 1 Ore (NW) → Market (5 Wood), Sawmill (3 Wood + 4 Brick), Brickworks (1 Ore + 5 Brick)
+    advanceAndHarvest(center, 9, gs);
+    advanceAndHarvest(center.neighbor(HexDirection.N), 8, gs);
+    advanceAndHarvest(center.neighbor(HexDirection.NW), 1, gs);
 
     // 2. Construire Market, Sawmill, Brickworks (TownHall déjà présent)
     BuildingController.buildBuilding(BuildingType.Market, city, map, cityVertex, resources);
