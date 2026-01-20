@@ -5,3 +5,4 @@ coverage/
 .vitest/
 /main.js
 /main.js.map
+deploy/

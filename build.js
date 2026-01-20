@@ -23,6 +23,10 @@ if (existsSync(publicAssetsDir)) {
   cpSync(publicAssetsDir, rootAssetsDir, { recursive: true });
 }
 
+// Créer le fichier .nojekyll pour GitHub Pages (désactive Jekyll)
+const nojekyllPath = join(__dirname, '.nojekyll');
+writeFileSync(nojekyllPath, '');
+
 // Bundler le TypeScript avec esbuild (génération à la racine)
 build({
   entryPoints: ['./src/main.ts'],
