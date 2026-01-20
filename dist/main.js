@@ -528,6 +528,7 @@ var ResourceType = /* @__PURE__ */ ((ResourceType2) => {
 // src/model/city/BuildingType.ts
 var BuildingType = /* @__PURE__ */ ((BuildingType5) => {
   BuildingType5["Seaport"] = "Seaport";
+  BuildingType5["Market"] = "Market";
   BuildingType5["TownHall"] = "TownHall";
   BuildingType5["Sawmill"] = "Sawmill";
   BuildingType5["Brickworks"] = "Brickworks";
@@ -538,6 +539,7 @@ var BuildingType = /* @__PURE__ */ ((BuildingType5) => {
 })(BuildingType || {});
 var BUILDING_TYPE_NAMES = {
   ["Seaport" /* Seaport */]: "Port maritime",
+  ["Market" /* Market */]: "March\xE9",
   ["TownHall" /* TownHall */]: "H\xF4tel de ville",
   ["Sawmill" /* Sawmill */]: "Scierie",
   ["Brickworks" /* Brickworks */]: "Briqueterie",
@@ -547,6 +549,9 @@ var BUILDING_TYPE_NAMES = {
 };
 var BUILDING_COSTS = {
   ["Seaport" /* Seaport */]: /* @__PURE__ */ new Map([
+    ["Wood" /* Wood */, 5]
+  ]),
+  ["Market" /* Market */]: /* @__PURE__ */ new Map([
     ["Wood" /* Wood */, 5]
   ]),
   ["TownHall" /* TownHall */]: /* @__PURE__ */ new Map([
@@ -601,6 +606,8 @@ var BUILDING_REQUIRED_HEX_TYPE = {
   ["Mine" /* Mine */]: "Ore" /* Ore */,
   ["Seaport" /* Seaport */]: "Water" /* Water */,
   // Nécessite de l'eau adjacente
+  ["Market" /* Market */]: null,
+  // Pas de contrainte d'hex
   ["TownHall" /* TownHall */]: null
   // Pas de contrainte d'hex
 };
@@ -610,6 +617,7 @@ function getRequiredHexType(buildingType) {
 function getBuildingAction(buildingType) {
   switch (buildingType) {
     case "Seaport" /* Seaport */:
+    case "Market" /* Market */:
       return "Trade" /* Trade */;
     case "TownHall" /* TownHall */:
       return "Upgrade" /* Upgrade */;
@@ -729,6 +737,7 @@ var City = class {
     }
     switch (buildingType) {
       case "Seaport" /* Seaport */:
+      case "Market" /* Market */:
       case "TownHall" /* TownHall */:
         return this.level >= 0 /* Outpost */;
       case "Sawmill" /* Sawmill */:
@@ -4436,6 +4445,7 @@ var BuildingController = class {
   static checkBuildingLevelRequirement(buildingType, city) {
     switch (buildingType) {
       case "Seaport" /* Seaport */:
+      case "Market" /* Market */:
       case "TownHall" /* TownHall */:
         return city.level >= 0 /* Outpost */;
       case "Sawmill" /* Sawmill */:
@@ -4746,16 +4756,16 @@ var CityPanelView = class {
 // src/controller/TradeController.ts
 var TradeController = class {
   /**
-   * Vérifie si une civilisation a accès au commerce (possède un port maritime).
-   * 
+   * Vérifie si une civilisation a accès au commerce (port maritime ou marché).
+   *
    * @param civId - L'identifiant de la civilisation
    * @param map - La carte de jeu
-   * @returns true si la civilisation a au moins un port maritime
+   * @returns true si la civilisation a au moins un port maritime ou un marché
    */
   static canTrade(civId, map) {
     const cities = map.getCitiesByCivilization(civId);
     for (const city of cities) {
-      if (city.hasBuilding("Seaport" /* Seaport */)) {
+      if (city.hasBuilding("Seaport" /* Seaport */) || city.hasBuilding("Market" /* Market */)) {
         return true;
       }
     }
@@ -4799,7 +4809,7 @@ var TradeController = class {
     if (!this.canPerformTrade(fromResource, toResource, civId, map, resources)) {
       if (!this.canTrade(civId, map)) {
         throw new Error(
-          "Le commerce n'est pas disponible. Vous devez poss\xE9der au moins un port maritime (Seaport) dans une de vos villes."
+          "Le commerce n'est pas disponible. Vous devez poss\xE9der au moins un port maritime ou un march\xE9 dans une de vos villes."
         );
       }
       if (fromResource === toResource) {
@@ -4856,7 +4866,7 @@ var TradeController = class {
   static performBatchTrade(offeredResources, requestedResources, civId, map, playerResources) {
     if (!this.canTrade(civId, map)) {
       throw new Error(
-        "Le commerce n'est pas disponible. Vous devez poss\xE9der au moins un port maritime (Seaport) dans une de vos villes."
+        "Le commerce n'est pas disponible. Vous devez poss\xE9der au moins un port maritime ou un march\xE9 dans une de vos villes."
       );
     }
     for (const [resourceType, quantity] of offeredResources.entries()) {

@@ -5,8 +5,10 @@ import { HexType } from '../map/HexType';
  * Types de bâtiments constructibles dans les villes.
  */
 export enum BuildingType {
-  /** Port maritime - Permet le commerce maritime */
+  /** Port maritime - Permet le commerce maritime (4:1), nécessite de l'eau */
   Seaport = 'Seaport',
+  /** Marché - Permet le commerce (4:1) */
+  Market = 'Market',
   /** Hôtel de ville - Permet l'amélioration de la ville */
   TownHall = 'TownHall',
   /** Scierie - Produit du bois */
@@ -26,6 +28,7 @@ export enum BuildingType {
  */
 export const BUILDING_TYPE_NAMES: Record<BuildingType, string> = {
   [BuildingType.Seaport]: 'Port maritime',
+  [BuildingType.Market]: 'Marché',
   [BuildingType.TownHall]: 'Hôtel de ville',
   [BuildingType.Sawmill]: 'Scierie',
   [BuildingType.Brickworks]: 'Briqueterie',
@@ -39,6 +42,9 @@ export const BUILDING_TYPE_NAMES: Record<BuildingType, string> = {
  */
 export const BUILDING_COSTS: Record<BuildingType, Map<ResourceType, number>> = {
   [BuildingType.Seaport]: new Map([
+    [ResourceType.Wood, 5],
+  ]),
+  [BuildingType.Market]: new Map([
     [ResourceType.Wood, 5],
   ]),
   [BuildingType.TownHall]: new Map([
@@ -119,6 +125,7 @@ export const BUILDING_REQUIRED_HEX_TYPE: Record<BuildingType, HexType | null> = 
   [BuildingType.Sheepfold]: HexType.Sheep,
   [BuildingType.Mine]: HexType.Ore,
   [BuildingType.Seaport]: HexType.Water, // Nécessite de l'eau adjacente
+  [BuildingType.Market]: null, // Pas de contrainte d'hex
   [BuildingType.TownHall]: null, // Pas de contrainte d'hex
 };
 
@@ -149,6 +156,7 @@ export enum BuildingAction {
 export function getBuildingAction(buildingType: BuildingType): BuildingAction | null {
   switch (buildingType) {
     case BuildingType.Seaport:
+    case BuildingType.Market:
       return BuildingAction.Trade;
     case BuildingType.TownHall:
       return BuildingAction.Upgrade;

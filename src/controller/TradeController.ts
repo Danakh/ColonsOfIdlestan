@@ -5,10 +5,10 @@ import { ResourceType } from '../model/map/ResourceType';
 import { BuildingType } from '../model/city/BuildingType';
 
 /**
- * Contrôleur pour gérer le commerce maritime.
- * 
+ * Contrôleur pour gérer le commerce (4:1).
+ *
  * Une civilisation peut échanger 4 ressources identiques contre 1 ressource de son choix
- * si elle possède au moins un port maritime (Seaport) dans une de ses villes.
+ * si elle possède au moins un port maritime (Seaport) ou un marché (Market) dans une de ses villes.
  */
 export class TradeController {
   /**
@@ -22,23 +22,19 @@ export class TradeController {
   private static readonly TRADE_RECEIVED = 1;
 
   /**
-   * Vérifie si une civilisation a accès au commerce (possède un port maritime).
-   * 
+   * Vérifie si une civilisation a accès au commerce (port maritime ou marché).
+   *
    * @param civId - L'identifiant de la civilisation
    * @param map - La carte de jeu
-   * @returns true si la civilisation a au moins un port maritime
+   * @returns true si la civilisation a au moins un port maritime ou un marché
    */
   static canTrade(civId: CivilizationId, map: GameMap): boolean {
-    // Obtenir toutes les villes de cette civilisation
     const cities = map.getCitiesByCivilization(civId);
-
-    // Vérifier si au moins une ville a un port maritime
     for (const city of cities) {
-      if (city.hasBuilding(BuildingType.Seaport)) {
+      if (city.hasBuilding(BuildingType.Seaport) || city.hasBuilding(BuildingType.Market)) {
         return true;
       }
     }
-
     return false;
   }
 
@@ -101,7 +97,7 @@ export class TradeController {
       if (!this.canTrade(civId, map)) {
         throw new Error(
           'Le commerce n\'est pas disponible. ' +
-          'Vous devez posséder au moins un port maritime (Seaport) dans une de vos villes.'
+          'Vous devez posséder au moins un port maritime ou un marché dans une de vos villes.'
         );
       }
 
@@ -178,7 +174,7 @@ export class TradeController {
     if (!this.canTrade(civId, map)) {
       throw new Error(
         'Le commerce n\'est pas disponible. ' +
-        'Vous devez posséder au moins un port maritime (Seaport) dans une de vos villes.'
+        'Vous devez posséder au moins un port maritime ou un marché dans une de vos villes.'
       );
     }
 

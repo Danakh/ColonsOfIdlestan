@@ -229,6 +229,7 @@ export class BuildingController {
     // Vérifier le niveau requis sans tenir compte de la limite ou du fait qu'il est déjà construit
     switch (buildingType) {
       case BuildingType.Seaport:
+      case BuildingType.Market:
       case BuildingType.TownHall:
         return city.level >= CityLevel.Outpost;
       case BuildingType.Sawmill:

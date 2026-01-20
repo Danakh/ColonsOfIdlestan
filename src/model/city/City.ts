@@ -153,8 +153,9 @@ export class City {
     // Règles de disponibilité selon le niveau de la ville
     switch (buildingType) {
       case BuildingType.Seaport:
+      case BuildingType.Market:
       case BuildingType.TownHall:
-        // Port maritime et hôtel de ville disponibles au niveau Outpost (0)
+        // Port maritime, marché et hôtel de ville disponibles au niveau Outpost (0)
         return this.level >= CityLevel.Outpost;
 
       case BuildingType.Sawmill:
