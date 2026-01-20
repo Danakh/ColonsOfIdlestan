@@ -42,7 +42,8 @@ export const BUILDING_TYPE_NAMES: Record<BuildingType, string> = {
  */
 export const BUILDING_COSTS: Record<BuildingType, Map<ResourceType, number>> = {
   [BuildingType.Seaport]: new Map([
-    [ResourceType.Wood, 5],
+    [ResourceType.Ore, 50],
+    [ResourceType.Wood, 40],
   ]),
   [BuildingType.Market]: new Map([
     [ResourceType.Wood, 5],
