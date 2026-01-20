@@ -60,6 +60,7 @@ export class MainGame {
     const gameMap = this.mapGenerator.generate(config);
     this.gameState.setGameMap(gameMap);
     this.gameState.setCivilizations(civilizations);
+    this.gameState.setSeed(actualSeed);
 
     this.gameState.getPlayerResources().clear();
     this.gameState.getGameClock().reset();
@@ -102,6 +103,13 @@ export class MainGame {
    */
   getGameClock(): GameClock {
     return this.gameState.getGameClock();
+  }
+
+  /**
+   * Retourne le seed de génération de la carte, ou null si non initialisée.
+   */
+  getSeed(): number | null {
+    return this.gameState.getSeed();
   }
 
   /**

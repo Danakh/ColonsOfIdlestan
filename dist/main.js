@@ -1807,6 +1807,8 @@ var GameState = class {
     this.gameClock = gameClock;
     this.gameMap = null;
     this.civilizations = [];
+    /** Seed utilisé pour la génération de la carte (null si non initialisée). */
+    this.seed = null;
   }
   /** Ressources du joueur. */
   getPlayerResources() {
@@ -1828,6 +1830,10 @@ var GameState = class {
   getGameClock() {
     return this.gameClock;
   }
+  /** Seed de génération de la carte, ou null si non initialisée. */
+  getSeed() {
+    return this.seed;
+  }
   /** Définit la carte de jeu (lors d'une nouvelle partie ou régénération). */
   setGameMap(map) {
     this.gameMap = map;
@@ -1835,6 +1841,10 @@ var GameState = class {
   /** Définit la liste des civilisations de la partie. */
   setCivilizations(civs) {
     this.civilizations = [...civs];
+  }
+  /** Définit le seed de génération (lors d'une nouvelle partie ou régénération). */
+  setSeed(seed) {
+    this.seed = seed;
   }
 };
 
@@ -2050,6 +2060,7 @@ var MainGame = class {
     const gameMap = this.mapGenerator.generate(config);
     this.gameState.setGameMap(gameMap);
     this.gameState.setCivilizations(civilizations);
+    this.gameState.setSeed(actualSeed);
     this.gameState.getPlayerResources().clear();
     this.gameState.getGameClock().reset();
   }
