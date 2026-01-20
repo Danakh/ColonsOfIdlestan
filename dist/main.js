@@ -2261,6 +2261,7 @@ var MainGame = class {
       new GameClock()
     );
     this.controller = new MainGameController(gameState);
+    console.log("VERSION TEST", Date.now());
   }
   /**
    * Retourne le contrôleur de partie (accès à la carte, ressources, horloge, etc.).
@@ -2499,31 +2500,29 @@ var ResourceHarvest = class {
 
 // src/controller/ResourceHarvestController.ts
 var _ResourceHarvestController = class _ResourceHarvestController {
-  // 1 seconde
   /**
    * Récolte une ressource d'un hexagone pour une civilisation donnée.
    * Applique une limitation de taux de 1 récolte par seconde maximum par hex.
-   * 
+   *
    * @param hexCoord - La coordonnée de l'hexagone à récolter
    * @param civId - L'identifiant de la civilisation
    * @param map - La carte de jeu
    * @param resources - Les ressources du joueur
+   * @param options - Optionnel : { gameClock } pour piloter le temps (tests). Sans options, utilise Date.now()/1000.
    * @returns Un objet indiquant le succès de la récolte et le temps restant
    */
-  static harvest(hexCoord, civId, map, resources) {
+  static harvest(hexCoord, civId, map, resources, options) {
     const hexKey = hexCoord.hashCode();
     const lastHarvestTime = _ResourceHarvestController.hexCooldowns.get(hexKey);
-    if (lastHarvestTime !== void 0) {
-      const now2 = Date.now();
-      const timeSinceLastHarvest = now2 - lastHarvestTime;
-      const remainingTime = Math.max(0, _ResourceHarvestController.MIN_HARVEST_INTERVAL_MS - timeSinceLastHarvest);
-      if (timeSinceLastHarvest < _ResourceHarvestController.MIN_HARVEST_INTERVAL_MS) {
-        return {
-          success: false,
-          remainingTimeMs: remainingTime,
-          cityVertex: null
-        };
-      }
+    const now = options?.gameClock ? options.gameClock.getCurrentTime() : Date.now() / 1e3;
+    const timeSinceLastHarvest = now - (lastHarvestTime ?? 0);
+    if (lastHarvestTime !== void 0 && timeSinceLastHarvest < _ResourceHarvestController.MIN_HARVEST_INTERVAL_S) {
+      const remainingTimeMs = Math.max(0, _ResourceHarvestController.MIN_HARVEST_INTERVAL_S - timeSinceLastHarvest) * 1e3;
+      return {
+        success: false,
+        remainingTimeMs,
+        cityVertex: null
+      };
     }
     if (!ResourceHarvest.canHarvest(hexCoord, map, civId)) {
       return {
@@ -2534,28 +2533,27 @@ var _ResourceHarvestController = class _ResourceHarvestController {
       };
     }
     const harvestResult = ResourceHarvest.harvest(hexCoord, map, civId, resources);
-    const now = Date.now();
     _ResourceHarvestController.hexCooldowns.set(hexKey, now);
     return {
       success: true,
-      remainingTimeMs: _ResourceHarvestController.MIN_HARVEST_INTERVAL_MS,
+      remainingTimeMs: _ResourceHarvestController.MIN_HARVEST_INTERVAL_S * 1e3,
       cityVertex: harvestResult.cityVertex
     };
   }
   /**
    * Retourne le temps restant avant qu'un hexagone puisse être récolté à nouveau.
    * @param hexCoord - La coordonnée de l'hexagone
+   * @param options - Optionnel : { gameClock } pour piloter le temps (tests). Sans options, utilise Date.now()/1000.
    * @returns Le temps restant en millisecondes (0 si prêt à récolter)
    */
-  static getRemainingCooldown(hexCoord) {
+  static getRemainingCooldown(hexCoord, options) {
     const hexKey = hexCoord.hashCode();
-    const lastHarvestTime = _ResourceHarvestController.hexCooldowns.get(hexKey);
-    if (lastHarvestTime === void 0) {
+    const last = _ResourceHarvestController.hexCooldowns.get(hexKey);
+    if (last === void 0) {
       return 0;
     }
-    const now = Date.now();
-    const timeSinceLastHarvest = now - lastHarvestTime;
-    return Math.max(0, _ResourceHarvestController.MIN_HARVEST_INTERVAL_MS - timeSinceLastHarvest);
+    const now = options?.gameClock ? options.gameClock.getCurrentTime() : Date.now() / 1e3;
+    return Math.max(0, _ResourceHarvestController.MIN_HARVEST_INTERVAL_S - (now - last)) * 1e3;
   }
   /**
    * Réinitialise tous les cooldowns. Utile pour les tests.
@@ -2565,8 +2563,8 @@ var _ResourceHarvestController = class _ResourceHarvestController {
   }
 };
 _ResourceHarvestController.hexCooldowns = /* @__PURE__ */ new Map();
-// Map<hexCoord.hashCode(), timestamp>
-_ResourceHarvestController.MIN_HARVEST_INTERVAL_MS = 1e3;
+// Map<hexCoord.hashCode(), lastHarvestTime en secondes>
+_ResourceHarvestController.MIN_HARVEST_INTERVAL_S = 1;
 var ResourceHarvestController = _ResourceHarvestController;
 
 // src/controller/BuildingProductionController.ts
