@@ -9,23 +9,18 @@ import { CivilizationId } from '../../src/model/map/CivilizationId';
 import { CityLevel } from '../../src/model/city/CityLevel';
 import { BuildingType } from '../../src/model/city/BuildingType';
 import { GameClock } from '../../src/model/game/GameClock';
-
-/** Résultat de Make7HexesMap : carte, horloge et civilisation. */
-export interface Make7HexesMapResult {
-  gameMap: GameMap;
-  gameClock: GameClock;
-  civilizationId: CivilizationId;
-}
+import { GameState } from '../../src/model/game/GameState';
+import { PlayerResources } from '../../src/model/game/PlayerResources';
 
 /**
  * Utilitaire de test (couche model uniquement).
- * Make7HexesMap crée une carte de 7 hexagones :
+ * Make7HexesMap crée un GameState avec une carte de 7 hexagones :
  * - Centre (0,0) : Brick (argile)
  * - 6 voisins : 5 types de ressources avec Wood en double (Wood, Wood, Wheat, Sheep, Ore)
  * - Une civilisation avec une ville au nord de (0,0), niveau Colony (1), avec un hôtel de ville
  * - GameClock initialisé à 123 s
  */
-export function Make7HexesMap(): Make7HexesMapResult {
+export function Make7HexesMap(): GameState {
   const center = new HexCoord(0, 0);
   const hexes = [
     new Hex(center),
@@ -67,5 +62,9 @@ export function Make7HexesMap(): Make7HexesMapResult {
   const gameClock = new GameClock();
   gameClock.updateTime(123);
 
-  return { gameMap, gameClock, civilizationId: civId };
+  const gs = new GameState(new PlayerResources(), civId, gameClock);
+  gs.setGameMap(gameMap);
+  gs.setCivilizations([civId]);
+  gs.setSeed(null);
+  return gs;
 }
