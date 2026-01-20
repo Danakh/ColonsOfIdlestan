@@ -26,8 +26,8 @@ const server = createServer((req, res) => {
   if (req.url === '/') {
     filePath = './index.html';
   } else if (req.url.startsWith('/assets/')) {
-    // Permet l'accès via /assets/ qui pointe vers public/assets/
-    filePath = './public' + req.url;
+    // Permet l'accès via /assets/ qui pointe vers assets/ à la racine
+    filePath = '.' + req.url;
   } else if (req.url.startsWith('/public/')) {
     // Si l'URL commence par /public/, servir depuis le répertoire public
     filePath = '.' + req.url;
