@@ -1,6 +1,6 @@
 import { City } from '../model/city/City';
 import { CityLevel } from '../model/city/CityLevel';
-import { BuildingType, getBuildingTypeName, getBuildingAction, BUILDING_ACTION_NAMES, BuildingAction, getAllBuildingTypes, getBuildingCost, getRequiredHexType } from '../model/city/BuildingType';
+import { BuildingType, getBuildingTypeName, getBuildingAction, BUILDING_ACTION_NAMES, BuildingAction, getAllBuildingTypes } from '../model/city/BuildingType';
 import { ResourceType } from '../model/map/ResourceType';
 import { Vertex } from '../model/hex/Vertex';
 import { GameMap } from '../model/map/GameMap';
@@ -35,7 +35,7 @@ export class CityPanelView {
   private lastSelectedVertexHash: string | null = null;
   private lastNoSelectionRendered: boolean = false;
   private lastResourcesHash: string | null = null;
-  private lastCityBuildings: BuildingType[] | null = null;
+  private lastCityBuildings: string[] | null = null;
   private lastCityLevel: CityLevel | null = null;
 
   constructor(cityPanelId: string = 'city-panel') {
@@ -200,7 +200,10 @@ export class CityPanelView {
     // Calculer les hash pour comparer avec l'état précédent
     const currentVertexHash = selectedVertex.hashCode();
     const currentResourcesHash = this.getResourcesHash(playerResources);
-    const currentCityBuildings = [...city.getBuildings()].sort(); // Copie triée pour comparaison
+    // Inclure les niveaux pour détecter les upgrades (sinon la liste de types ne change pas)
+    const currentCityBuildings = [...city.getBuildings()]
+      .sort()
+      .map((bt) => `${bt}:${city.getBuildingLevel(bt) ?? 0}`);
     const currentCityLevel = city.level;
 
     // Vérifier si quelque chose a changé
@@ -325,7 +328,13 @@ export class CityPanelView {
       // Nom du bâtiment
       const nameSpan = document.createElement('span');
       nameSpan.className = 'building-name';
-      nameSpan.textContent = getBuildingTypeName(buildingType);
+      if (isBuilt) {
+        const building = city.getBuilding(buildingType);
+        const lvl = building?.level ?? 1;
+        nameSpan.textContent = `${getBuildingTypeName(buildingType)} (Niv. ${lvl})`;
+      } else {
+        nameSpan.textContent = getBuildingTypeName(buildingType);
+      }
       infoContainer.appendChild(nameSpan);
 
       // Si le bâtiment n'est pas construit et est constructible, afficher le coût
@@ -344,25 +353,43 @@ export class CityPanelView {
 
       // Si le bâtiment est construit, afficher les boutons d'action
       if (isBuilt) {
+        const building = city.getBuilding(buildingType);
+        const canUpgrade = Boolean(building && building.canUpgrade());
+
+        // Afficher le coût d'amélioration comme les coûts de construction (si améliorable)
+        if (building && canUpgrade) {
+          const upgradeCost = building.getUpgradeCost();
+          const costSpan = document.createElement('span');
+          costSpan.className = 'building-cost';
+          const costParts: string[] = [];
+          for (const [resource, amount] of upgradeCost.entries()) {
+            costParts.push(`${amount} ${resourceNames[resource]}`);
+          }
+          costSpan.textContent = `${costParts.join(', ')}`;
+          infoContainer.appendChild(costSpan);
+        }
+
+        // Bouton Commerce si applicable
         const buildingAction = getBuildingAction(buildingType);
-        if (buildingAction !== null) {
+        if (buildingAction === BuildingAction.Trade) {
           const actionBtn = document.createElement('button');
           actionBtn.className = 'building-action-btn';
           actionBtn.textContent = BUILDING_ACTION_NAMES[buildingAction];
-
-          // Désactiver le bouton d'amélioration si la ville ne peut pas être améliorée
-          if (buildingAction === BuildingAction.Upgrade) {
-            actionBtn.disabled = !city.canUpgradeBuilding(buildingType);
-          } else {
-            // Pour l'instant, le bouton Trade est toujours activé (à implémenter plus tard)
-            actionBtn.disabled = false;
-          }
-
-          // Stocker l'action et le type de bâtiment dans le bouton
+          actionBtn.disabled = false;
           actionBtn.dataset.buildingAction = buildingAction;
           actionBtn.dataset.buildingType = buildingType;
-
           item.appendChild(actionBtn);
+        }
+
+        // Bouton Améliorer uniquement si le bâtiment n'est pas au niveau max
+        if (canUpgrade) {
+          const upgradeBtn = document.createElement('button');
+          upgradeBtn.className = 'building-action-btn';
+          upgradeBtn.textContent = BUILDING_ACTION_NAMES[BuildingAction.Upgrade];
+          upgradeBtn.disabled = false;
+          upgradeBtn.dataset.buildingAction = BuildingAction.Upgrade;
+          upgradeBtn.dataset.buildingType = buildingType;
+          item.appendChild(upgradeBtn);
         }
       } else {
         // Si le bâtiment n'est pas construit, afficher le bouton de construction s'il est constructible

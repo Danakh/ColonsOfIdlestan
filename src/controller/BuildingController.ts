@@ -29,6 +29,58 @@ export interface BuildableBuildingStatus {
  */
 export class BuildingController {
   /**
+   * Vérifie si un bâtiment peut être amélioré ET si le joueur a les ressources.
+   * @param buildingType - Le type de bâtiment
+   * @param city - La ville
+   * @param resources - Les ressources du joueur
+   * @returns true si l'amélioration est possible
+   */
+  static canUpgrade(
+    buildingType: BuildingType,
+    city: City,
+    resources: PlayerResources
+  ): boolean {
+    const building = city.getBuilding(buildingType);
+    if (!building) {
+      return false;
+    }
+    if (!building.canUpgrade()) {
+      return false;
+    }
+    const cost = building.getUpgradeCost();
+    return resources.canAfford(cost);
+  }
+
+  /**
+   * Améliore un bâtiment en consommant les ressources nécessaires.
+   * @param buildingType - Le type de bâtiment à améliorer
+   * @param city - La ville
+   * @param resources - Les ressources du joueur
+   * @throws Error si l'amélioration est impossible ou si les ressources sont insuffisantes
+   */
+  static upgradeBuilding(
+    buildingType: BuildingType,
+    city: City,
+    resources: PlayerResources
+  ): void {
+    const building = city.getBuilding(buildingType);
+    if (!building) {
+      throw new Error(`Le bâtiment ${buildingType} n'est pas construit dans cette ville.`);
+    }
+    if (!building.canUpgrade()) {
+      throw new Error(`Le bâtiment ${buildingType} est déjà au niveau maximum (${building.getMaxLevel()}).`);
+    }
+
+    const cost = building.getUpgradeCost();
+    if (!resources.canAfford(cost)) {
+      throw new Error(`Ressources insuffisantes. Coût requis: ${this.formatCost(cost)}.`);
+    }
+
+    resources.payCost(cost);
+    city.upgradeBuilding(buildingType);
+  }
+
+  /**
    * Vérifie si un bâtiment peut être construit dans une ville donnée.
    * Vérifie à la fois les conditions de la ville, les ressources disponibles
    * et la présence d'un hex adjacent du type requis (pour les bâtiments de ressources).
