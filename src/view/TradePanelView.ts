@@ -132,6 +132,16 @@ export class TradePanelView {
         );
       }
     });
+
+    // Touche Escape pour fermer le panneau
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !this.tradePanel.classList.contains('hidden')) {
+        this.hide();
+        if (this.callbacks.onCancel) {
+          this.callbacks.onCancel();
+        }
+      }
+    });
   }
 
   /**
@@ -267,24 +277,24 @@ export class TradePanelView {
       // Gestionnaires de clic (gauche et droit)
       if (!item.classList.contains('disabled')) {
         if (isOffered) {
-          // Clic gauche : ajouter un batch
-          item.addEventListener('click', () => {
-            this.handleOfferedClick(resourceType);
+          // Clic gauche : ajouter un batch (Ctrl: 10, Shift: 100)
+          item.addEventListener('click', (e) => {
+            this.handleOfferedClick(resourceType, e);
           });
-          // Clic droit : retirer un batch
+          // Clic droit : retirer un batch (Ctrl: 10, Shift: 100)
           item.addEventListener('contextmenu', (e) => {
             e.preventDefault();
-            this.handleOfferedRightClick(resourceType);
+            this.handleOfferedRightClick(resourceType, e);
           });
         } else {
-          // Clic gauche : ajouter une ressource
-          item.addEventListener('click', () => {
-            this.handleRequestedClick(resourceType);
+          // Clic gauche : ajouter une ressource (Ctrl: 10, Shift: 100)
+          item.addEventListener('click', (e) => {
+            this.handleRequestedClick(resourceType, e);
           });
-          // Clic droit : retirer une ressource
+          // Clic droit : retirer une ressource (Ctrl: 10, Shift: 100)
           item.addEventListener('contextmenu', (e) => {
             e.preventDefault();
-            this.handleRequestedRightClick(resourceType);
+            this.handleRequestedRightClick(resourceType, e);
           });
         }
       }
@@ -296,7 +306,7 @@ export class TradePanelView {
   /**
    * Gère le clic sur une ressource dans la liste des ressources offertes.
    */
-  private handleOfferedClick(resourceType: ResourceType): void {
+  private handleOfferedClick(resourceType: ResourceType, event: MouseEvent): void {
     if (!this.playerResources) {
       return;
     }
@@ -304,36 +314,71 @@ export class TradePanelView {
     const rate = (this.civId && this.gameMap)
       ? TradeController.getTradeRateForCivilization(this.civId, this.gameMap)
       : 4;
+    
+    // Déterminer le nombre de batches à ajouter selon les modificateurs
+    let batchesToAdd = 1;
+    if (event.ctrlKey) {
+      batchesToAdd = 10;
+    } else if (event.shiftKey) {
+      batchesToAdd = 100;
+    }
+    
     const current = this.offeredResources.get(resourceType) || 0;
     const available = this.playerResources.getResource(resourceType);
-    const newQuantity = current + rate;
+    const quantityToAdd = batchesToAdd * rate;
+    const newQuantity = current + quantityToAdd;
 
     // Vérifier qu'on ne dépasse pas les ressources disponibles
     if (newQuantity <= available) {
       this.offeredResources.set(resourceType, newQuantity);
       this.update();
+    } else {
+      // Si on dépasse, ajouter le maximum possible
+      const maxPossible = Math.floor(available / rate) * rate;
+      if (maxPossible > current) {
+        this.offeredResources.set(resourceType, maxPossible);
+        this.update();
+      }
     }
   }
 
   /**
    * Gère le clic sur une ressource dans la liste des ressources demandées.
    */
-  private handleRequestedClick(resourceType: ResourceType): void {
+  private handleRequestedClick(resourceType: ResourceType, event: MouseEvent): void {
+    // Déterminer le nombre de batches à ajouter selon les modificateurs
+    let batchesToAdd = 1;
+    if (event.ctrlKey) {
+      batchesToAdd = 10;
+    } else if (event.shiftKey) {
+      batchesToAdd = 100;
+    }
+    
     const current = this.requestedResources.get(resourceType) || 0;
-    this.requestedResources.set(resourceType, current + 1);
+    this.requestedResources.set(resourceType, current + batchesToAdd);
     this.update();
   }
 
   /**
    * Gère le clic droit sur une ressource dans la liste des ressources offertes (retire un batch).
    */
-  private handleOfferedRightClick(resourceType: ResourceType): void {
+  private handleOfferedRightClick(resourceType: ResourceType, event: MouseEvent): void {
     const current = this.offeredResources.get(resourceType) || 0;
     if (current > 0) {
       const rate = (this.civId && this.gameMap)
         ? TradeController.getTradeRateForCivilization(this.civId, this.gameMap)
         : 4;
-      const newQuantity = Math.max(0, current - rate);
+      
+      // Déterminer le nombre de batches à retirer selon les modificateurs
+      let batchesToRemove = 1;
+      if (event.ctrlKey) {
+        batchesToRemove = 10;
+      } else if (event.shiftKey) {
+        batchesToRemove = 100;
+      }
+      
+      const quantityToRemove = batchesToRemove * rate;
+      const newQuantity = Math.max(0, current - quantityToRemove);
       this.offeredResources.set(resourceType, newQuantity);
       this.update();
     }
@@ -342,10 +387,19 @@ export class TradePanelView {
   /**
    * Gère le clic droit sur une ressource dans la liste des ressources demandées (retire une unité).
    */
-  private handleRequestedRightClick(resourceType: ResourceType): void {
+  private handleRequestedRightClick(resourceType: ResourceType, event: MouseEvent): void {
     const current = this.requestedResources.get(resourceType) || 0;
     if (current > 0) {
-      this.requestedResources.set(resourceType, current - 1);
+      // Déterminer le nombre de batches à retirer selon les modificateurs
+      let batchesToRemove = 1;
+      if (event.ctrlKey) {
+        batchesToRemove = 10;
+      } else if (event.shiftKey) {
+        batchesToRemove = 100;
+      }
+      
+      const newQuantity = Math.max(0, current - batchesToRemove);
+      this.requestedResources.set(resourceType, newQuantity);
       this.update();
     }
   }
