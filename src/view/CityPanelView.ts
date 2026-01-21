@@ -4,8 +4,10 @@ import { BuildingType, getBuildingTypeName, getBuildingAction, BUILDING_ACTION_N
 import { ResourceType } from '../model/map/ResourceType';
 import { Vertex } from '../model/hex/Vertex';
 import { GameMap } from '../model/map/GameMap';
+import { CivilizationId } from '../model/map/CivilizationId';
 import { PlayerResources } from '../model/game/PlayerResources';
 import { BuildingController } from '../controller/BuildingController';
+import { TradeController } from '../controller/TradeController';
 import { HexMapRenderer } from './HexMapRenderer';
 
 /**
@@ -28,8 +30,11 @@ export class CityPanelView {
   private cityPanelTitle: HTMLHeadingElement;
   private cityBuildingsList: HTMLUListElement;
   private cityBuildingsTitle: HTMLHeadingElement;
+  private tradeBtn: HTMLButtonElement | null = null;
   private callbacks: CityPanelCallbacks = {};
   private renderer: HexMapRenderer | null = null;
+  private playerCivId: CivilizationId | null = null;
+  private lastTradeKey: string | null = null;
   
   // Cache de l'état précédent pour éviter les rendus inutiles
   private lastSelectedVertexHash: string | null = null;
@@ -43,6 +48,7 @@ export class CityPanelView {
     const title = document.getElementById('city-panel-title') as HTMLHeadingElement;
     const buildingsList = document.getElementById('city-buildings-list') as HTMLUListElement;
     const buildingsTitle = document.querySelector('#city-buildings-section h3') as HTMLHeadingElement;
+    const tradeBtn = document.getElementById('city-trade-btn') as HTMLButtonElement;
 
     if (!panel) {
       throw new Error(`Élément avec l'id "${cityPanelId}" introuvable`);
@@ -61,6 +67,7 @@ export class CityPanelView {
     this.cityPanelTitle = title;
     this.cityBuildingsList = buildingsList;
     this.cityBuildingsTitle = buildingsTitle;
+    this.tradeBtn = tradeBtn ?? null;
 
     // Configurer les gestionnaires d'événements
     this.setupEventListeners();
@@ -78,6 +85,13 @@ export class CityPanelView {
    */
   setCallbacks(callbacks: CityPanelCallbacks): void {
     this.callbacks = callbacks;
+  }
+
+  /**
+   * Définit la civilisation du joueur pour activer/désactiver le bouton Commerce global.
+   */
+  setPlayerCivilizationId(civId: CivilizationId): void {
+    this.playerCivId = civId;
   }
 
   /**
@@ -153,6 +167,49 @@ export class CityPanelView {
         this.cityPanel.dispatchEvent(event);
       }
     });
+
+    // Bouton Commerce global (footer du panneau)
+    if (this.tradeBtn) {
+      this.tradeBtn.addEventListener('click', () => {
+        if (this.tradeBtn?.disabled) {
+          return;
+        }
+        const event = new CustomEvent('openTrade', {
+          bubbles: true,
+        });
+        this.cityPanel.dispatchEvent(event);
+      });
+    }
+  }
+
+  /**
+   * Met à jour le bouton Commerce global (footer). Retourne true si l'état a changé.
+   */
+  private updateTradeFooter(gameMap: GameMap | null): boolean {
+    if (!this.tradeBtn) {
+      return false;
+    }
+
+    const canTrade = Boolean(gameMap && this.playerCivId && TradeController.canTrade(this.playerCivId, gameMap));
+    const rate = (canTrade && gameMap && this.playerCivId)
+      ? TradeController.getTradeRateForCivilization(this.playerCivId, gameMap)
+      : null;
+
+    const tradeKey = canTrade ? `1:${rate}` : '0';
+    if (tradeKey === this.lastTradeKey) {
+      return false;
+    }
+    this.lastTradeKey = tradeKey;
+
+    // Le bouton doit être caché tant que le commerce n'est pas disponible (l'espace est réservé par le footer).
+    this.tradeBtn.hidden = !canTrade;
+    this.tradeBtn.disabled = !canTrade;
+    if (canTrade && rate) {
+      this.tradeBtn.textContent = `Commerce (${rate}:1)`;
+      this.tradeBtn.title = `Échanger au taux ${rate}:1.`;
+    }
+
+    return true;
   }
 
   /**
@@ -172,9 +229,11 @@ export class CityPanelView {
     city: City | null,
     playerResources: PlayerResources
   ): void {
+    const tradeChanged = this.updateTradeFooter(gameMap);
+
     if (!selectedVertex || !gameMap || !city) {
       // Sidebar fixe : afficher un état "aucune sélection" au lieu de masquer.
-      if (this.lastNoSelectionRendered) {
+      if (this.lastNoSelectionRendered && !tradeChanged) {
         return;
       }
 

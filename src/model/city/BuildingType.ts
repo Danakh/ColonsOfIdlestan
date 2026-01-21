@@ -254,9 +254,6 @@ export enum BuildingAction {
  */
 export function getBuildingAction(buildingType: BuildingType): BuildingAction | null {
   switch (buildingType) {
-    case BuildingType.Seaport:
-    case BuildingType.Market:
-      return BuildingAction.Trade;
     case BuildingType.TownHall:
       return BuildingAction.Upgrade;
     default:

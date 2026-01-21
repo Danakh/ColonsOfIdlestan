@@ -82,6 +82,8 @@ function main(): void {
 
   // Créer le jeu principal
   const game = new MainGame();
+  // Donner la civilisation du joueur au panneau (bouton Commerce global)
+  cityPanelView.setPlayerCivilizationId(game.getPlayerCivilizationId());
 
   // Créer le renderer
   const renderer = new HexMapRenderer(canvas);
@@ -366,6 +368,17 @@ function main(): void {
       return;
     }
     cityPanelView.handleBuildBuilding(e.detail.buildingType, city, currentGameMap, selectedVertex);
+  }) as EventListener);
+
+  // Bouton Commerce global (footer du panneau de ville)
+  panelElement.addEventListener('openTrade', (() => {
+    const currentGameMap = game.getGameMap();
+    if (!currentGameMap) {
+      return;
+    }
+    const civId = game.getPlayerCivilizationId();
+    tradePanelView.setGameContext(currentGameMap, civId);
+    tradePanelView.show(game.getPlayerResources());
   }) as EventListener);
 
   panelElement.addEventListener('buildingAction', ((e: CustomEvent) => {

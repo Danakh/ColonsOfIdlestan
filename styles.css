@@ -198,13 +198,58 @@ main {
     width: 350px;
     flex: 0 0 350px;
     max-height: 100%;
-    overflow-y: auto;
+    overflow: hidden; /* scroll géré par la section bâtiments pour garder un footer visible */
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
     position: relative; /* Fait partie du layout (sidebar fixe) */
     z-index: 10;
     box-sizing: border-box; /* Inclure la bordure dans les dimensions */
+}
+
+.city-panel #city-buildings-section {
+    flex: 1 1 auto;
+    min-height: 0; /* requis pour que overflow fonctionne en flex */
+    overflow-y: auto;
+    padding-right: 0.25rem; /* un peu d'air si scrollbar */
+}
+
+.city-panel-footer {
+    flex: 0 0 auto;
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(102, 126, 234, 0.25);
+    min-height: 56px; /* réserve l'espace même si désactivé/caché */
+    display: flex;
+    align-items: center;
+}
+
+.city-trade-btn {
+    width: 100%;
+    padding: 0.6rem 1rem;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: background-color 0.2s, transform 0.05s;
+}
+
+.city-trade-btn:hover:not(:disabled) {
+    background: #5568d3;
+}
+
+.city-trade-btn:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+.city-trade-btn:disabled {
+    background: #ccc;
+    color: #999;
+    cursor: not-allowed;
+    opacity: 0.85;
 }
 
 /* Panneau de commerce */
