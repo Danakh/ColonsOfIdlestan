@@ -3,6 +3,7 @@ import { HexMapRenderer } from './view/HexMapRenderer';
 import { CityPanelView } from './view/CityPanelView';
 import { TradePanelView } from './view/TradePanelView';
 import { ResourceSprites } from './view/ResourceSprites';
+import { InventoryView } from './view/InventoryView';
 import { ResourceHarvest } from './model/game/ResourceHarvest';
 import { RoadConstruction } from './model/game/RoadConstruction';
 import { RoadController } from './controller/RoadController';
@@ -19,7 +20,6 @@ import { BuildingType, BuildingAction, getResourceProductionBuildings } from './
 import { City } from './model/city/City';
 import { GameMap } from './model/map/GameMap';
 import { APP_VERSION, APP_NAME } from './config/version';
-import { calculateInventoryCapacity } from './model/game/InventoryCapacity';
 
 /**
  * Point d'entrée principal de l'application web.
@@ -42,7 +42,6 @@ function main(): void {
   const exportBtn = document.getElementById('export-btn') as HTMLButtonElement;
   const importBtn = document.getElementById('import-btn') as HTMLButtonElement;
   const cheatBtn = document.getElementById('cheat-btn') as HTMLButtonElement;
-  const resourcesList = document.getElementById('resources-list') as HTMLDivElement;
   // Créer la vue du panneau de ville
   const cityPanelView = new CityPanelView('city-panel');
 
@@ -77,10 +76,6 @@ function main(): void {
     throw new Error('Bouton cheat introuvable');
   }
 
-  if (!resourcesList) {
-    throw new Error('Panneau de ressources introuvable');
-  }
-
   // Créer le jeu principal
   const game = new MainGame();
   // Donner la civilisation du joueur au panneau (bouton Commerce global)
@@ -98,6 +93,10 @@ function main(): void {
   
   // Charger les sprites de ressources
   const resourceSprites = new ResourceSprites();
+  
+  // Créer la vue de l'inventaire
+  const inventoryView = new InventoryView('resources-list', resourceSprites);
+  
   resourceSprites.onAllLoaded(() => {
     // Mettre à jour l'affichage des ressources une fois les sprites chargés
     updateResourcesDisplay();
@@ -122,84 +121,10 @@ function main(): void {
    * Met à jour l'affichage des ressources du joueur.
    */
   function updateResourcesDisplay(): void {
-    if (!resourcesList) return;
-
     const playerResources = game.getPlayerResources();
     const gameMap = game.getGameMap();
     const civId = game.getPlayerCivilizationId();
-    
-    // Calculer la capacité maximale d'inventaire
-    const maxCapacity = gameMap ? calculateInventoryCapacity(gameMap, civId) : 10;
-    
-    // Noms des ressources en français
-    const resourceNames: Record<ResourceType, string> = {
-      [ResourceType.Wood]: 'Bois',
-      [ResourceType.Brick]: 'Brique',
-      [ResourceType.Wheat]: 'Blé',
-      [ResourceType.Sheep]: 'Mouton',
-      [ResourceType.Ore]: 'Minerai',
-    };
-
-    // Ordre d'affichage des ressources
-    const resourceOrder: ResourceType[] = [
-      ResourceType.Wood,
-      ResourceType.Brick,
-      ResourceType.Wheat,
-      ResourceType.Sheep,
-      ResourceType.Ore,
-    ];
-
-    // Vider la liste
-    resourcesList.innerHTML = '';
-
-    // Ajouter toutes les ressources (même à 0)
-    for (const resourceType of resourceOrder) {
-      const count = playerResources.getResource(resourceType);
-      
-      const item = document.createElement('div');
-      item.className = 'resource-item';
-
-      // Utiliser le sprite si disponible, sinon fallback sur la couleur
-      const sprite = resourceSprites.getSprite(resourceType);
-      const spriteReady = resourceSprites.isSpriteReady(resourceType);
-      
-      if (spriteReady && sprite) {
-        const spriteImg = document.createElement('img');
-        spriteImg.src = sprite.src;
-        spriteImg.className = 'resource-sprite';
-        spriteImg.alt = resourceNames[resourceType];
-        spriteImg.style.width = '24px';
-        spriteImg.style.height = '24px';
-        spriteImg.style.objectFit = 'contain';
-        item.appendChild(spriteImg);
-      } else {
-        // Fallback : carré de couleur si le sprite n'est pas encore chargé
-        const color = document.createElement('div');
-        color.className = 'resource-color';
-        // Couleurs de fallback
-        const resourceColors: Record<ResourceType, string> = {
-          [ResourceType.Wood]: '#8B4513',
-          [ResourceType.Brick]: '#CD5C5C',
-          [ResourceType.Wheat]: '#FFD700',
-          [ResourceType.Sheep]: '#90EE90',
-          [ResourceType.Ore]: '#708090',
-        };
-        color.style.backgroundColor = resourceColors[resourceType];
-        item.appendChild(color);
-      }
-
-      const name = document.createElement('span');
-      name.className = 'resource-name';
-      name.textContent = resourceNames[resourceType];
-
-      const countEl = document.createElement('span');
-      countEl.className = 'resource-count';
-      countEl.textContent = `${count} / ${maxCapacity}`;
-      
-      item.appendChild(name);
-      item.appendChild(countEl);
-      resourcesList.appendChild(item);
-    }
+    inventoryView.updateDisplay(playerResources, gameMap, civId);
   }
 
   // Clé pour la sauvegarde automatique dans localStorage

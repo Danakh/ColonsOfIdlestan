@@ -592,6 +592,35 @@ main {
     font-weight: bold;
 }
 
+.civilization-points {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    margin-left: auto;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.civilization-points-label {
+    font-size: 0.85rem;
+    opacity: 0.9;
+}
+
+.civilization-points-value {
+    font-size: 1rem;
+    font-weight: bold;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    min-width: 2rem;
+    text-align: center;
+}
+
 footer {
     display: none; /* Footer masqué car vide */
 }
