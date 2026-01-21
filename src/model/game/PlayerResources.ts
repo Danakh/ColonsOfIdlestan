@@ -42,6 +42,33 @@ export class PlayerResources {
   }
 
   /**
+   * Ajoute une quantité de ressource à l'inventaire, avec une limite max par ressource.
+   * Retourne la quantité réellement ajoutée (peut être 0 si déjà au cap).
+   *
+   * @param resource - Le type de ressource
+   * @param amount - La quantité à ajouter (doit être positive)
+   * @param maxPerResource - Cap maximum autorisé pour cette ressource (>= 0)
+   * @returns La quantité effectivement ajoutée
+   */
+  addResourceCapped(resource: ResourceType, amount: number, maxPerResource: number): number {
+    if (!this.isHarvestable(resource)) {
+      throw new Error(`La ressource ${resource} n'est pas récoltable.`);
+    }
+    if (amount < 0) {
+      throw new Error('La quantité à ajouter doit être positive.');
+    }
+    if (!Number.isFinite(maxPerResource) || maxPerResource < 0) {
+      throw new Error('La capacité maximale doit être un nombre fini et positif.');
+    }
+
+    const current = this.resources.get(resource) || 0;
+    const next = Math.min(maxPerResource, current + amount);
+    const added = next - current;
+    this.resources.set(resource, next);
+    return added;
+  }
+
+  /**
    * Retire une quantité de ressource de l'inventaire.
    * @param resource - Le type de ressource
    * @param amount - La quantité à retirer (doit être positive)

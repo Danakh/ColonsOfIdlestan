@@ -19,6 +19,7 @@ import { BuildingType, BuildingAction, getResourceProductionBuildings } from './
 import { City } from './model/city/City';
 import { GameMap } from './model/map/GameMap';
 import { APP_VERSION, APP_NAME } from './config/version';
+import { calculateInventoryCapacity } from './model/game/InventoryCapacity';
 
 /**
  * Point d'entrée principal de l'application web.
@@ -124,6 +125,11 @@ function main(): void {
     if (!resourcesList) return;
 
     const playerResources = game.getPlayerResources();
+    const gameMap = game.getGameMap();
+    const civId = game.getPlayerCivilizationId();
+    
+    // Calculer la capacité maximale d'inventaire
+    const maxCapacity = gameMap ? calculateInventoryCapacity(gameMap, civId) : 10;
     
     // Noms des ressources en français
     const resourceNames: Record<ResourceType, string> = {
@@ -188,7 +194,7 @@ function main(): void {
 
       const countEl = document.createElement('span');
       countEl.className = 'resource-count';
-      countEl.textContent = count.toString();
+      countEl.textContent = `${count} / ${maxCapacity}`;
       
       item.appendChild(name);
       item.appendChild(countEl);

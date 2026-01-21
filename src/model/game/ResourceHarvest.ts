@@ -5,6 +5,7 @@ import { HexType } from '../map/HexType';
 import { GameMap } from '../map/GameMap';
 import { CivilizationId } from '../map/CivilizationId';
 import { PlayerResources } from './PlayerResources';
+import { calculateInventoryCapacity } from './InventoryCapacity';
 
 /**
  * Gère la logique de récolte de ressources par clic sur les hexagones.
@@ -232,10 +233,15 @@ export class ResourceHarvest {
     const gain = this.calculateGain(hexType);
     
     if (gain > 0) {
-      // Ajouter la ressource à l'inventaire
-      playerResources.addResource(resourceType, gain);
+      // Calculer la capacité d'inventaire maximale
+      const maxCapacity = calculateInventoryCapacity(gameMap, civId);
+      
+      // Ajouter la ressource à l'inventaire avec limitation de capacité
+      const actualGain = playerResources.addResourceCapped(resourceType, gain, maxCapacity);
+      
+      return { gain: actualGain, cityVertex: actualCityVertex };
     }
 
-    return { gain, cityVertex: actualCityVertex };
+    return { gain: 0, cityVertex: actualCityVertex };
   }
 }

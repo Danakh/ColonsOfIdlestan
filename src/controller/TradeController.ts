@@ -3,6 +3,7 @@ import { CivilizationId } from '../model/map/CivilizationId';
 import { PlayerResources } from '../model/game/PlayerResources';
 import { ResourceType } from '../model/map/ResourceType';
 import { BuildingType } from '../model/city/BuildingType';
+import { calculateInventoryCapacity } from '../model/game/InventoryCapacity';
 
 /**
  * Contrôleur pour gérer le commerce.
@@ -116,8 +117,11 @@ export class TradeController {
     const tradeRate = this.getTradeRateForCivilization(civId, map);
     resources.removeResource(fromResource, tradeRate);
 
-    // Ajouter la ressource reçue
-    resources.addResource(toResource, this.TRADE_RECEIVED);
+    // Calculer la capacité d'inventaire maximale
+    const maxCapacity = calculateInventoryCapacity(map, civId);
+    
+    // Ajouter la ressource reçue avec limitation de capacité
+    resources.addResourceCapped(toResource, this.TRADE_RECEIVED, maxCapacity);
   }
 
   /**

@@ -11,6 +11,9 @@ import { HexCoord } from '../../../src/model/hex/HexCoord';
 import { HexDirection } from '../../../src/model/hex/HexDirection';
 import { Vertex } from '../../../src/model/hex/Vertex';
 import { Edge } from '../../../src/model/hex/Edge';
+import { BuildingController } from '../../../src/controller/BuildingController';
+import { BuildingType } from '../../../src/model/city/BuildingType';
+import { CityLevel } from '../../../src/model/city/CityLevel';
 
 describe('ResourceHarvest', () => {
   describe('calculateGain', () => {
@@ -562,6 +565,83 @@ describe('ResourceHarvest', () => {
       expect(() => {
         ResourceHarvest.harvest(center, map, civId, playerResources, distantVertex);
       }).toThrow();
+    });
+
+    it('devrait limiter la récolte à la capacité d\'inventaire (outpost = 10)', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+      const northeast = center.neighbor(HexDirection.NE);
+
+      const grid = new HexGrid([
+        new Hex(center),
+        new Hex(north),
+        new Hex(northeast),
+      ]);
+      const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+      map.registerCivilization(civId);
+
+      const vertex = Vertex.create(center, north, northeast);
+      map.addCity(vertex, civId); // Outpost (niveau 0) = capacité 10
+      map.setHexType(center, HexType.Wood);
+
+      const playerResources = new PlayerResources();
+
+      // Récolter 10 fois (devrait toutes réussir)
+      for (let i = 0; i < 10; i++) {
+        const result = ResourceHarvest.harvest(center, map, civId, playerResources);
+        expect(result.gain).toBe(1);
+      }
+      expect(playerResources.getResource(ResourceType.Wood)).toBe(10);
+
+      // La 11ème récolte devrait retourner 0 de gain (capacité atteinte)
+      const result11 = ResourceHarvest.harvest(center, map, civId, playerResources);
+      expect(result11.gain).toBe(0);
+      expect(playerResources.getResource(ResourceType.Wood)).toBe(10); // Toujours à 10
+    });
+
+    it('devrait limiter la récolte à la capacité d\'inventaire avec entrepôt', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+      const northeast = center.neighbor(HexDirection.NE);
+
+      const grid = new HexGrid([
+        new Hex(center),
+        new Hex(north),
+        new Hex(northeast),
+      ]);
+      const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+      map.registerCivilization(civId);
+
+      const vertex = Vertex.create(center, north, northeast);
+      map.addCity(vertex, civId, CityLevel.Town); // Niveau 2 = 90 de base
+
+      const city = map.getCity(vertex);
+      expect(city).toBeTruthy();
+
+      // Construire un entrepôt (+500)
+      const resources = new PlayerResources();
+      resources.addResource(ResourceType.Wood, 10);
+      resources.addResource(ResourceType.Brick, 10);
+      BuildingController.buildBuilding(BuildingType.Warehouse, city!, map, vertex, resources);
+
+      map.setHexType(center, HexType.Wood);
+
+      const playerResources = new PlayerResources();
+
+      // Capacité totale = 90 + 500 = 590
+      // Récolter 590 fois (devrait toutes réussir)
+      for (let i = 0; i < 590; i++) {
+        const result = ResourceHarvest.harvest(center, map, civId, playerResources);
+        expect(result.gain).toBe(1);
+      }
+      expect(playerResources.getResource(ResourceType.Wood)).toBe(590);
+
+      // La 591ème récolte devrait retourner 0 de gain (capacité atteinte)
+      const result591 = ResourceHarvest.harvest(center, map, civId, playerResources);
+      expect(result591.gain).toBe(0);
+      expect(playerResources.getResource(ResourceType.Wood)).toBe(590); // Toujours à 590
     });
   });
 });
