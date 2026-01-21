@@ -43,6 +43,11 @@ export class BuildingProductionController {
   private static readonly LEVEL_TIME_REDUCTION_FACTOR = 0.8;
 
   /**
+   * Intervalle de production pour le marché niveau 2 (en secondes).
+   */
+  private static readonly MARKET_LEVEL_2_PRODUCTION_INTERVAL_SECONDS = 10.0;
+
+  /**
    * Calcule l'intervalle de production pour un bâtiment en fonction de son niveau.
    * Formule: intervalle_base * 0.8^(niveau-1)
    * @param buildingLevel - Le niveau du bâtiment (1 = niveau de base)
@@ -108,12 +113,6 @@ export class BuildingProductionController {
     for (const building of productionBuildings) {
       const buildingType = building.type;
       
-      // Obtenir le type d'hex requis pour ce bâtiment
-      const requiredHexType = getRequiredHexType(buildingType);
-      if (requiredHexType === null) {
-        continue; // Ne devrait pas arriver pour les bâtiments de ressources
-      }
-      
       // Vérifier si le temps de production est écoulé
       const currentTime = gameClock.getCurrentTime();
       const lastProductionTime = building.getProductionTimeSeconds();
@@ -126,6 +125,43 @@ export class BuildingProductionController {
       
       // Calculer le temps écoulé depuis la dernière production
       const timeElapsed = currentTime - lastProductionTime;
+      
+      // Gestion spéciale pour le marché niveau 2 : production de ressource aléatoire
+      if (buildingType === BuildingType.Market && building.level === 2) {
+        const productionInterval = this.MARKET_LEVEL_2_PRODUCTION_INTERVAL_SECONDS;
+        
+        if (timeElapsed >= productionInterval) {
+          // Générer une ressource aléatoire
+          const randomResource = this.getRandomResource();
+          
+          // Ajouter la ressource directement au joueur
+          resources.addResource(randomResource, 1);
+          
+          // Ajouter le résultat pour notifier la vue
+          // Pour le marché, on utilise le premier hexagone adjacent à la ville pour l'animation
+          const cityHexes = city.vertex.getHexes();
+          const hexCoord = cityHexes.length > 0 ? cityHexes[0] : new HexCoord(0, 0);
+          
+          results.push({
+            cityVertex: city.vertex,
+            buildingType,
+            hexCoord,
+            resourceType: randomResource,
+          });
+          
+          // Mettre à jour le timer de production
+          const newProductionTime = lastProductionTime + productionInterval;
+          building.updateProductionTimeSeconds(newProductionTime);
+        }
+        continue; // Passer au bâtiment suivant
+      }
+      
+      // Logique normale pour les autres bâtiments de production
+      // Obtenir le type d'hex requis pour ce bâtiment
+      const requiredHexType = getRequiredHexType(buildingType);
+      if (requiredHexType === null) {
+        continue; // Ne devrait pas arriver pour les bâtiments de ressources normaux
+      }
       
       // Calculer l'intervalle de production basé sur le niveau du bâtiment
       const productionInterval = this.getProductionInterval(building.level);
@@ -267,5 +303,15 @@ export class BuildingProductionController {
     }
     
     return false;
+  }
+
+  /**
+   * Génère une ressource aléatoire parmi toutes les ressources disponibles.
+   * @returns Un type de ressource aléatoire
+   */
+  private static getRandomResource(): ResourceType {
+    const allResources = Object.values(ResourceType);
+    const randomIndex = Math.floor(Math.random() * allResources.length);
+    return allResources[randomIndex];
   }
 }

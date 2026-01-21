@@ -20,6 +20,7 @@ export class Building {
   private static readonly DEFAULT_MAX_LEVEL = 1;
   private static readonly PRODUCTION_MAX_LEVEL = 5;
   private static readonly TOWN_HALL_MAX_LEVEL = 4;
+  private static readonly MARKET_MAX_LEVEL = 2;
 
   /**
    * Crée un nouveau bâtiment.
@@ -58,6 +59,9 @@ export class Building {
   private static getMaxLevel(type: BuildingType): number {
     if (type === BuildingType.TownHall) {
       return Building.TOWN_HALL_MAX_LEVEL;
+    }
+    if (type === BuildingType.Market) {
+      return Building.MARKET_MAX_LEVEL;
     }
     return getResourceProductionBuildings().includes(type)
       ? Building.PRODUCTION_MAX_LEVEL

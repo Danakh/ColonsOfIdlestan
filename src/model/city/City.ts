@@ -147,6 +147,7 @@ export class City {
 
   /**
    * Retourne la liste des bâtiments de production de ressources construits dans cette ville.
+   * Inclut les bâtiments de production de ressources normaux et le marché niveau 2.
    * @returns Un tableau des bâtiments de production
    */
   getProductionBuildings(): Building[] {
@@ -154,6 +155,9 @@ export class City {
     const result: Building[] = [];
     for (const [type, building] of this.buildings) {
       if (productionTypes.includes(type)) {
+        result.push(building);
+      } else if (type === BuildingType.Market && building.level === 2) {
+        // Le marché niveau 2 produit des ressources aléatoires
         result.push(building);
       }
     }

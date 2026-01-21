@@ -594,15 +594,25 @@ function main(): void {
     if (productionResults.length > 0) {
       // Déclencher les animations pour chaque production
       for (const result of productionResults) {
-        // Effet visuel sur l'hex récolté (automatique, donc sans effet de réduction)
-        renderer.triggerHarvestEffect(result.hexCoord, true);
-        
-        // Animation de la particule de ressource vers la ville ayant déclenché le harvest
-        renderer.triggerResourceHarvestAnimation(
-          result.hexCoord,
-          result.resourceType,
-          result.cityVertex
-        );
+        // Vérifier si c'est un marché niveau 2 (production spéciale)
+        if (result.buildingType === BuildingType.Market) {
+          // Pour le marché niveau 2, animation spéciale : particule qui monte depuis la ville
+          renderer.triggerMarketProductionAnimation(
+            result.cityVertex,
+            result.resourceType
+          );
+        } else {
+          // Pour les autres bâtiments, animation normale : hex vers ville
+          // Effet visuel sur l'hex récolté (automatique, donc sans effet de réduction)
+          renderer.triggerHarvestEffect(result.hexCoord, true);
+          
+          // Animation de la particule de ressource vers la ville ayant déclenché le harvest
+          renderer.triggerResourceHarvestAnimation(
+            result.hexCoord,
+            result.resourceType,
+            result.cityVertex
+          );
+        }
       }
 
       // Mettre à jour l'affichage des ressources

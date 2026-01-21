@@ -563,6 +563,48 @@ export class HexMapRenderer {
   }
 
   /**
+   * Déclenche une animation de particule pour le marché niveau 2 : la particule apparaît à la ville et monte vers le haut.
+   * @param cityVertex - Le vertex (ville) où la particule apparaît
+   * @param resourceType - Le type de ressource produite
+   */
+  triggerMarketProductionAnimation(cityVertex: Vertex, resourceType: ResourceType): void {
+    if (!this.currentConfig || !this.currentGameMap) {
+      return;
+    }
+
+    // Calculer la position de départ (position de la ville)
+    const cityPosition = this.getVertexPosition(cityVertex, this.currentConfig);
+    const startX = cityPosition.x;
+    const startY = cityPosition.y;
+
+    // Calculer la position de destination (haut de l'hex, environ la hauteur d'un hex)
+    // La hauteur d'un hex est 2 * hexSize, on monte d'environ la moitié de cette hauteur
+    const { hexSize } = this.currentConfig;
+    const endX = startX; // Même position X (monte verticalement)
+    const endY = startY - hexSize; // Monte d'une hauteur d'hex
+
+    // Créer la particule
+    const particle: ResourceParticle = {
+      x: startX,
+      y: startY,
+      startX,
+      startY,
+      endX,
+      endY,
+      resourceType,
+      progress: 0,
+      createdAt: Date.now(),
+    };
+
+    this.resourceParticles.push(particle);
+
+    // Démarrer l'animation si elle n'est pas déjà en cours
+    if (this.animationFrameId === null) {
+      this.animateParticles();
+    }
+  }
+
+  /**
    * Anime les particules de ressources en utilisant requestAnimationFrame.
    */
   private animateParticles(): void {
@@ -575,30 +617,37 @@ export class HexMapRenderer {
 
     // Mettre à jour les particules
     const activeParticles: ResourceParticle[] = [];
+    const previousCount = this.resourceParticles.length;
     
     for (const particle of this.resourceParticles) {
       const elapsed = now - particle.createdAt;
-      particle.progress = Math.min(elapsed / ANIMATION_DURATION_MS, 1);
+      const progress = Math.min(elapsed / ANIMATION_DURATION_MS, 1);
       
-      if (particle.progress < 1) {
+      // Ne garder que les particules qui ne sont pas encore terminées
+      if (progress < 1) {
+        particle.progress = progress;
         // Calculer la position interpolée avec easing
-        const easedProgress = EASING_FUNCTION(particle.progress);
+        const easedProgress = EASING_FUNCTION(progress);
         particle.x = particle.startX + (particle.endX - particle.startX) * easedProgress;
         particle.y = particle.startY + (particle.endY - particle.startY) * easedProgress;
         activeParticles.push(particle);
       }
+      // Les particules avec progress >= 1 sont automatiquement exclues (disparues)
     }
 
+    const hasParticlesRemoved = activeParticles.length < previousCount;
     this.resourceParticles = activeParticles;
 
-    // Dessiner les particules
-    if (this.resourceParticles.length > 0) {
-      // Re-rendre la carte pour afficher les particules
+    // Toujours re-rendre si on a des particules actives ou si des particules viennent d'être supprimées
+    if (this.resourceParticles.length > 0 || hasParticlesRemoved) {
+      // Re-rendre la carte pour afficher les particules (ou nettoyer les particules supprimées)
       if (this.renderCallback) {
         this.renderCallback();
       }
-      
-      // Continuer l'animation
+    }
+
+    // Continuer l'animation s'il reste des particules actives
+    if (this.resourceParticles.length > 0) {
       this.animationFrameId = requestAnimationFrame(() => this.animateParticles());
     } else {
       // Arrêter l'animation si toutes les particules sont terminées
@@ -611,6 +660,11 @@ export class HexMapRenderer {
    */
   private drawResourceParticles(): void {
     for (const particle of this.resourceParticles) {
+      // Ne dessiner que les particules qui ne sont pas encore terminées
+      if (particle.progress >= 1) {
+        continue;
+      }
+      
       const color = HexMapRenderer.RESOURCE_COLORS[particle.resourceType] || '#000000';
       const size = 8; // Taille de la particule
       
