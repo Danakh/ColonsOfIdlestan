@@ -16,6 +16,34 @@ import { GameClock } from '../../src/model/game/GameClock';
 import { ResourceType } from '../../src/model/map/ResourceType';
 
 describe('BuildingProductionController', () => {
+  describe('getProductionInterval', () => {
+    it('devrait retourner 1.0 seconde pour un bâtiment niveau 1', () => {
+      const interval = BuildingProductionController.getProductionInterval(1);
+      expect(interval).toBe(1.0);
+    });
+
+    it('devrait retourner 0.8 seconde pour un bâtiment niveau 2 (1.0 * 0.8)', () => {
+      const interval = BuildingProductionController.getProductionInterval(2);
+      expect(interval).toBeCloseTo(0.8, 5);
+    });
+
+    it('devrait retourner 0.64 seconde pour un bâtiment niveau 3 (1.0 * 0.8^2)', () => {
+      const interval = BuildingProductionController.getProductionInterval(3);
+      expect(interval).toBeCloseTo(0.64, 5);
+    });
+
+    it('devrait retourner 0.512 seconde pour un bâtiment niveau 4 (1.0 * 0.8^3)', () => {
+      const interval = BuildingProductionController.getProductionInterval(4);
+      expect(interval).toBeCloseTo(0.512, 5);
+    });
+
+    it('devrait retourner environ 0.107 seconde pour un bâtiment niveau 10 (1.0 * 0.8^9)', () => {
+      const interval = BuildingProductionController.getProductionInterval(10);
+      expect(interval).toBeCloseTo(Math.pow(0.8, 9), 5);
+    });
+  });
+
+
   describe('isHexAutoHarvested', () => {
     let map: GameMap;
     let civId: CivilizationId;
@@ -328,6 +356,71 @@ describe('BuildingProductionController', () => {
       
       // Vérifier que les ressources ont été ajoutées (2 récoltes = 2 bois)
       expect(resources.getResource(ResourceType.Wood)).toBe(2);
+    });
+
+    it('devrait produire plus vite avec un bâtiment de niveau supérieur', () => {
+      const city1 = map.getCity(vertex1)!;
+      const city2 = map.getCity(vertex2)!;
+      
+      // Améliorer le bâtiment au niveau 2 (intervalle = 0.8s au lieu de 1.0s)
+      city1.upgradeBuilding(BuildingType.Sawmill);
+      expect(city1.getBuildingLevel(BuildingType.Sawmill)).toBe(2);
+      
+      // Initialiser le temps de production pour les deux villes
+      gameClock.updateTime(0.0);
+      city1.setBuildingProductionTime(BuildingType.Sawmill, 0.0);
+      // City2 reste au niveau 1 (intervalle 1.0s), donc ne produira pas à t=0.8s
+      city2.setBuildingProductionTime(BuildingType.Sawmill, 0.0);
+      
+      // À t=0.5s, aucun bâtiment ne produit encore
+      gameClock.updateTime(0.5);
+      let results = BuildingProductionController.processAutomaticProduction(
+        civId,
+        map,
+        resources,
+        gameClock
+      );
+      expect(results.length).toBe(0);
+      
+      // À t=0.8s, le bâtiment niveau 2 devrait produire (city1 uniquement)
+      gameClock.updateTime(0.8);
+      results = BuildingProductionController.processAutomaticProduction(
+        civId,
+        map,
+        resources,
+        gameClock
+      );
+      expect(results.length).toBe(1);
+      expect(results[0].cityVertex.equals(vertex1)).toBe(true);
+      expect(resources.getResource(ResourceType.Wood)).toBe(1);
+    });
+
+    it('devrait produire encore plus vite avec un bâtiment de niveau 3', () => {
+      const city1 = map.getCity(vertex1)!;
+      const city2 = map.getCity(vertex2)!;
+      
+      // Améliorer le bâtiment au niveau 3 (intervalle = 0.64s)
+      city1.upgradeBuilding(BuildingType.Sawmill); // niveau 2
+      city1.upgradeBuilding(BuildingType.Sawmill); // niveau 3
+      expect(city1.getBuildingLevel(BuildingType.Sawmill)).toBe(3);
+      
+      // Initialiser le temps de production pour les deux villes
+      gameClock.updateTime(0.0);
+      city1.setBuildingProductionTime(BuildingType.Sawmill, 0.0);
+      // City2 reste au niveau 1 (intervalle 1.0s), donc ne produira pas à t=0.65s
+      city2.setBuildingProductionTime(BuildingType.Sawmill, 0.0);
+      
+      // À t=0.65s (> 0.64s), le bâtiment niveau 3 devrait produire (city1 uniquement)
+      gameClock.updateTime(0.65);
+      const results = BuildingProductionController.processAutomaticProduction(
+        civId,
+        map,
+        resources,
+        gameClock
+      );
+      expect(results.length).toBe(1);
+      expect(results[0].cityVertex.equals(vertex1)).toBe(true);
+      expect(resources.getResource(ResourceType.Wood)).toBe(1);
     });
 
     it('devrait permettre à deux villes de récolter le même hex à des moments différents', () => {

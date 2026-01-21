@@ -978,7 +978,12 @@ export class GameMap {
       map.addCity(v, owner, c.level as CityLevel);
       const city = map.getCity(v)!;
       for (const b of c.buildings) {
-        city.addBuilding(b as BuildingType);
+        // Support ancien format (string) et nouveau format (BuildingSerialized)
+        if (typeof b === 'string') {
+          city.addBuildingWithLevel(b as BuildingType, 1);
+        } else {
+          city.addBuildingWithLevel(b.type as BuildingType, b.level);
+        }
       }
       for (const [bt, time] of Object.entries(c.buildingProductionTimes)) {
         city.setBuildingProductionTime(bt as BuildingType, time);

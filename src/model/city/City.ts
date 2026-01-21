@@ -2,13 +2,14 @@ import { Vertex } from '../hex/Vertex';
 import { CivilizationId } from '../map/CivilizationId';
 import { CityLevel, isValidCityLevel } from './CityLevel';
 import { BuildingType, getAllBuildingTypes, getResourceProductionBuildings } from './BuildingType';
+import { Building, BuildingSerialized } from './Building';
 
 /** Format sérialisé d'une ville. */
 export interface CitySerialized {
   vertex: [number, number][];
   owner: string;
   level: number;
-  buildings: string[];
+  buildings: BuildingSerialized[];
   buildingProductionTimes: Record<string, number>;
 }
 
@@ -19,7 +20,7 @@ export interface CitySerialized {
  * Elle a un niveau qui détermine ses capacités et le nombre de bâtiments qu'elle peut construire.
  */
 export class City {
-  private readonly buildings: BuildingType[] = [];
+  private readonly buildings: Map<BuildingType, Building> = new Map();
   /** Temps de dernière production pour chaque bâtiment de ressource (en secondes depuis le début) */
   private readonly buildingProductionTimes: Map<BuildingType, number> = new Map();
 
@@ -58,7 +59,7 @@ export class City {
    * @returns Le nombre de bâtiments construits
    */
   getBuildingCount(): number {
-    return this.buildings.length;
+    return this.buildings.size;
   }
 
   /**
@@ -93,18 +94,39 @@ export class City {
       throw new Error(`Le bâtiment ${buildingType} est déjà construit dans cette ville.`);
     }
 
-    this.buildings.push(buildingType);
+    this.buildings.set(buildingType, new Building(buildingType));
     
     // Si c'est un bâtiment de ressource, initialiser son temps de production
     // Le temps initial sera défini lors de la construction via setBuildingProductionTime
   }
 
   /**
-   * Retourne la liste des bâtiments construits.
+   * Ajoute un bâtiment à la ville avec un niveau spécifique (utilisé pour la désérialisation).
+   * @param buildingType - Le type de bâtiment à ajouter
+   * @param level - Le niveau du bâtiment
+   */
+  addBuildingWithLevel(buildingType: BuildingType, level: number): void {
+    if (this.hasBuilding(buildingType)) {
+      throw new Error(`Le bâtiment ${buildingType} est déjà construit dans cette ville.`);
+    }
+    this.buildings.set(buildingType, new Building(buildingType, level));
+  }
+
+  /**
+   * Retourne la liste des types de bâtiments construits.
    * @returns Un tableau des types de bâtiments construits
    */
   getBuildings(): readonly BuildingType[] {
-    return [...this.buildings];
+    return [...this.buildings.keys()];
+  }
+
+  /**
+   * Retourne un bâtiment par son type.
+   * @param buildingType - Le type de bâtiment
+   * @returns Le bâtiment, ou undefined si non construit
+   */
+  getBuilding(buildingType: BuildingType): Building | undefined {
+    return this.buildings.get(buildingType);
   }
 
   /**
@@ -113,7 +135,7 @@ export class City {
    * @returns true si le bâtiment est construit
    */
   hasBuilding(buildingType: BuildingType): boolean {
-    return this.buildings.includes(buildingType);
+    return this.buildings.has(buildingType);
   }
 
   /**
@@ -241,6 +263,55 @@ export class City {
   }
 
   /**
+   * Retourne le niveau d'un bâtiment.
+   * @param buildingType - Le type de bâtiment
+   * @returns Le niveau du bâtiment (1 = niveau de base), ou undefined si non construit
+   */
+  getBuildingLevel(buildingType: BuildingType): number | undefined {
+    const building = this.buildings.get(buildingType);
+    return building?.level;
+  }
+
+  /**
+   * Vérifie si un bâtiment peut être amélioré.
+   * @param buildingType - Le type de bâtiment
+   * @returns true si le bâtiment peut être amélioré
+   */
+  canUpgradeBuilding(buildingType: BuildingType): boolean {
+    const building = this.buildings.get(buildingType);
+    if (!building) {
+      return false;
+    }
+    return building.canUpgrade();
+  }
+
+  /**
+   * Améliore un bâtiment au niveau suivant.
+   * @param buildingType - Le type de bâtiment à améliorer
+   * @throws Error si le bâtiment n'est pas construit
+   */
+  upgradeBuilding(buildingType: BuildingType): void {
+    const building = this.buildings.get(buildingType);
+    if (!building) {
+      throw new Error(`Le bâtiment ${buildingType} n'est pas construit dans cette ville.`);
+    }
+    building.upgrade();
+  }
+
+  /**
+   * Définit le niveau d'un bâtiment (utilisé pour la désérialisation).
+   * @param buildingType - Le type de bâtiment
+   * @param level - Le niveau à définir
+   */
+  setBuildingLevel(buildingType: BuildingType, level: number): void {
+    const building = this.buildings.get(buildingType);
+    if (!building) {
+      throw new Error(`Le bâtiment ${buildingType} n'est pas construit dans cette ville.`);
+    }
+    building.setLevel(level);
+  }
+
+  /**
    * Vérifie l'égalité avec une autre ville (basé sur le vertex).
    */
   equals(other: City): boolean {
@@ -267,7 +338,7 @@ export class City {
       vertex: this.vertex.serialize(),
       owner: this.owner.serialize(),
       level: this.level,
-      buildings: [...this.getBuildings()],
+      buildings: [...this.buildings.values()].map(b => b.serialize()),
       buildingProductionTimes: bpt,
     };
   }

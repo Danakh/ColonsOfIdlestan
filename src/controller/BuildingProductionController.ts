@@ -33,9 +33,24 @@ export interface BuildingProductionResult {
  */
 export class BuildingProductionController {
   /**
-   * Intervalle entre deux productions pour un bâtiment (en secondes).
+   * Intervalle de base entre deux productions pour un bâtiment (en secondes).
    */
-  private static readonly PRODUCTION_INTERVAL_SECONDS = 1.0;
+  private static readonly BASE_PRODUCTION_INTERVAL_SECONDS = 1.0;
+
+  /**
+   * Facteur de réduction du temps de production par niveau (0.8 = -20% par niveau).
+   */
+  private static readonly LEVEL_TIME_REDUCTION_FACTOR = 0.8;
+
+  /**
+   * Calcule l'intervalle de production pour un bâtiment en fonction de son niveau.
+   * Formule: intervalle_base * 0.8^(niveau-1)
+   * @param buildingLevel - Le niveau du bâtiment (1 = niveau de base)
+   * @returns L'intervalle de production en secondes
+   */
+  static getProductionInterval(buildingLevel: number): number {
+    return this.BASE_PRODUCTION_INTERVAL_SECONDS * Math.pow(this.LEVEL_TIME_REDUCTION_FACTOR, buildingLevel - 1);
+  }
 
   /**
    * Traite la production automatique pour toutes les villes d'une civilisation.
@@ -116,8 +131,12 @@ export class BuildingProductionController {
       // Calculer le temps écoulé depuis la dernière production
       const timeElapsed = currentTime - lastProductionTime;
       
+      // Obtenir le niveau du bâtiment et calculer l'intervalle de production
+      const buildingLevel = city.getBuildingLevel(buildingType) ?? 1;
+      const productionInterval = this.getProductionInterval(buildingLevel);
+      
       // Vérifier si l'intervalle de production est écoulé
-      if (timeElapsed < this.PRODUCTION_INTERVAL_SECONDS) {
+      if (timeElapsed < productionInterval) {
         // Pas encore le temps de produire
         continue;
       }
@@ -146,9 +165,9 @@ export class BuildingProductionController {
           // Convertir le type d'hex en type de ressource
           const resourceType = ResourceHarvest.hexTypeToResourceType(hexType);
           if (resourceType) {
-            // Calculer le nouveau temps de production : ancien temps + intervalle
-            // Cela garantit qu'une production par seconde est bien faite une fois par seconde
-            const newProductionTime = lastProductionTime + this.PRODUCTION_INTERVAL_SECONDS;
+            // Calculer le nouveau temps de production : ancien temps + intervalle (basé sur le niveau)
+            // Cela garantit que la production respecte l'intervalle calculé selon le niveau
+            const newProductionTime = lastProductionTime + productionInterval;
             city.updateBuildingProductionTime(buildingType, newProductionTime);
             
             results.push({

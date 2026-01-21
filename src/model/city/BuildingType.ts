@@ -109,6 +109,77 @@ export function getBuildingCost(buildingType: BuildingType): Map<ResourceType, n
 }
 
 /**
+ * Coûts d'amélioration des bâtiments (par niveau).
+ * Le coût est multiplié par le niveau actuel pour obtenir le coût d'amélioration au niveau suivant.
+ */
+export const BUILDING_UPGRADE_COSTS: Record<BuildingType, Map<ResourceType, number>> = {
+  [BuildingType.Seaport]: new Map([
+    [ResourceType.Ore, 8],
+    [ResourceType.Wood, 12],
+    [ResourceType.Brick, 8],
+  ]),
+  [BuildingType.Market]: new Map([
+    [ResourceType.Wood, 4],
+    [ResourceType.Brick, 2],
+  ]),
+  [BuildingType.TownHall]: new Map([
+    [ResourceType.Wood, 4],
+    [ResourceType.Brick, 4],
+    [ResourceType.Ore, 2],
+  ]),
+  [BuildingType.Sawmill]: new Map([
+    [ResourceType.Wood, 2],
+    [ResourceType.Brick, 3],
+  ]),
+  [BuildingType.Brickworks]: new Map([
+    [ResourceType.Ore, 1],
+    [ResourceType.Brick, 4],
+  ]),
+  [BuildingType.Mill]: new Map([
+    [ResourceType.Wood, 2],
+    [ResourceType.Brick, 4],
+  ]),
+  [BuildingType.Sheepfold]: new Map([
+    [ResourceType.Wood, 4],
+    [ResourceType.Brick, 2],
+  ]),
+  [BuildingType.Mine]: new Map([
+    [ResourceType.Wood, 2],
+    [ResourceType.Ore, 2],
+  ]),
+  [BuildingType.Warehouse]: new Map([
+    [ResourceType.Wood, 8],
+    [ResourceType.Brick, 8],
+  ]),
+  [BuildingType.Forge]: new Map([
+    [ResourceType.Wood, 4],
+    [ResourceType.Brick, 10],
+    [ResourceType.Ore, 4],
+  ]),
+  [BuildingType.Library]: new Map([
+    [ResourceType.Wood, 5],
+    [ResourceType.Brick, 3],
+    [ResourceType.Sheep, 5],
+  ]),
+};
+
+/**
+ * Retourne le coût d'amélioration d'un bâtiment pour passer au niveau suivant.
+ * Le coût de base est multiplié par le niveau actuel.
+ * @param buildingType - Le type de bâtiment
+ * @param currentLevel - Le niveau actuel du bâtiment (1 = niveau de base)
+ * @returns Le coût sous forme de Map
+ */
+export function getBuildingUpgradeCost(buildingType: BuildingType, currentLevel: number): Map<ResourceType, number> {
+  const baseCost = BUILDING_UPGRADE_COSTS[buildingType];
+  const result = new Map<ResourceType, number>();
+  for (const [resource, cost] of baseCost) {
+    result.set(resource, cost * currentLevel);
+  }
+  return result;
+}
+
+/**
  * Retourne le nom d'un type de bâtiment en français.
  * @param buildingType - Le type de bâtiment
  * @returns Le nom en français
