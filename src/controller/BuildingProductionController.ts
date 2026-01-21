@@ -9,6 +9,7 @@ import { HexCoord } from '../model/hex/HexCoord';
 import { Vertex } from '../model/hex/Vertex';
 import { ResourceHarvest } from '../model/game/ResourceHarvest';
 import { ResourceType } from '../model/map/ResourceType';
+import { calculateInventoryCapacity } from '../model/game/InventoryCapacity';
 
 /**
  * Résultat d'une production automatique d'un bâtiment.
@@ -134,20 +135,25 @@ export class BuildingProductionController {
           // Générer une ressource aléatoire
           const randomResource = this.getRandomResource();
           
-          // Ajouter la ressource directement au joueur
-          resources.addResource(randomResource, 1);
+          // Calculer la capacité d'inventaire maximale
+          const maxCapacity = calculateInventoryCapacity(map, civId);
           
-          // Ajouter le résultat pour notifier la vue
-          // Pour le marché, on utilise le premier hexagone adjacent à la ville pour l'animation
-          const cityHexes = city.vertex.getHexes();
-          const hexCoord = cityHexes.length > 0 ? cityHexes[0] : new HexCoord(0, 0);
+          // Ajouter la ressource avec limitation de capacité
+          const actualGain = resources.addResourceCapped(randomResource, 1, maxCapacity);
           
-          results.push({
-            cityVertex: city.vertex,
-            buildingType,
-            hexCoord,
-            resourceType: randomResource,
-          });
+          // Ajouter le résultat pour notifier la vue seulement si la ressource a été ajoutée
+          if (actualGain > 0) {
+            // Pour le marché, on utilise le premier hexagone adjacent à la ville pour l'animation
+            const cityHexes = city.vertex.getHexes();
+            const hexCoord = cityHexes.length > 0 ? cityHexes[0] : new HexCoord(0, 0);
+            
+            results.push({
+              cityVertex: city.vertex,
+              buildingType,
+              hexCoord,
+              resourceType: randomResource,
+            });
+          }
           
           // Mettre à jour le timer de production
           const newProductionTime = lastProductionTime + productionInterval;
