@@ -27,11 +27,28 @@ export interface HarvestResult {
  */
 export class ResourceHarvestController {
   private static hexCooldowns: Map<string, number> = new Map(); // Map<hexCoord.hashCode(), lastHarvestTime en secondes>
-  private static readonly MIN_HARVEST_INTERVAL_S = 1;
+  private static readonly MIN_HARVEST_INTERVAL_S = 2;
+
+  /**
+   * Intervalle actuel entre deux récoltes manuelles (en secondes).
+   *
+   * Centralisé ici pour que l'UI (renderer) et les tests puissent
+   * le récupérer dynamiquement (ex: futur upgrade qui réduit ce délai).
+   */
+  static getHarvestIntervalSeconds(): number {
+    return ResourceHarvestController.MIN_HARVEST_INTERVAL_S;
+  }
+
+  /**
+   * Intervalle actuel entre deux récoltes manuelles (en millisecondes).
+   */
+  static getHarvestIntervalMs(): number {
+    return ResourceHarvestController.getHarvestIntervalSeconds() * 1000;
+  }
 
   /**
    * Récolte une ressource d'un hexagone pour une civilisation donnée.
-   * Applique une limitation de taux de 1 récolte par seconde maximum par hex.
+   * Applique une limitation de taux de 1 récolte toutes les 2 secondes maximum par hex.
    *
    * @param hexCoord - La coordonnée de l'hexagone à récolter
    * @param civId - L'identifiant de la civilisation
@@ -53,9 +70,10 @@ export class ResourceHarvestController {
     const timeSinceLastHarvest = now - (lastHarvestTime ?? 0);
 
     // Si première récolte sur cet hex (lastHarvestTime === undefined), pas de blocage. Sinon vérifier le cooldown.
-    if (lastHarvestTime !== undefined && timeSinceLastHarvest < ResourceHarvestController.MIN_HARVEST_INTERVAL_S) {
+    const harvestIntervalSeconds = ResourceHarvestController.getHarvestIntervalSeconds();
+    if (lastHarvestTime !== undefined && timeSinceLastHarvest < harvestIntervalSeconds) {
       const remainingTimeMs =
-        Math.max(0, ResourceHarvestController.MIN_HARVEST_INTERVAL_S - timeSinceLastHarvest) * 1000;
+        Math.max(0, harvestIntervalSeconds - timeSinceLastHarvest) * 1000;
       return {
         success: false,
         remainingTimeMs,
@@ -80,7 +98,7 @@ export class ResourceHarvestController {
 
     return {
       success: true,
-      remainingTimeMs: ResourceHarvestController.MIN_HARVEST_INTERVAL_S * 1000,
+      remainingTimeMs: ResourceHarvestController.getHarvestIntervalMs(),
       cityVertex: harvestResult.cityVertex,
     };
   }
@@ -98,7 +116,7 @@ export class ResourceHarvestController {
       return 0;
     }
     const now = options?.gameClock ? options.gameClock.getCurrentTime() : Date.now() / 1000;
-    return Math.max(0, ResourceHarvestController.MIN_HARVEST_INTERVAL_S - (now - last)) * 1000;
+    return Math.max(0, ResourceHarvestController.getHarvestIntervalSeconds() - (now - last)) * 1000;
   }
 
   /**

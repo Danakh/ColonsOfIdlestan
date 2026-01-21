@@ -770,8 +770,11 @@ export class HexMapRenderer {
       return; // Pas de cooldown, ne rien afficher
     }
 
-    const MIN_HARVEST_INTERVAL_MS = 1000; // Doit correspondre à ResourceHarvestController.MIN_HARVEST_INTERVAL_MS
-    const progress = remainingCooldown / MIN_HARVEST_INTERVAL_MS;
+    const harvestIntervalMs = ResourceHarvestController.getHarvestIntervalMs();
+    if (harvestIntervalMs <= 0) {
+      return; // Sécurité (évite division par 0)
+    }
+    const progress = Math.min(1, remainingCooldown / harvestIntervalMs);
     
     // Taille du timer (cercle au centre de l'hex)
     const timerRadius = hexSize * 0.3;

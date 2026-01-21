@@ -32,7 +32,7 @@ function advanceAndHarvest(hex: HexCoord, n: number, gs: GameState): void {
   const clock = gs.getGameClock();
   for (let i = 0; i < n; i++) {
     if (i > 0) {
-      clock.updateTime(clock.getCurrentTime() + 1);
+      clock.updateTime(clock.getCurrentTime() + ResourceHarvestController.getHarvestIntervalSeconds());
     }
     const result = ResourceHarvestController.harvest(hex, civId, map, resources, {
       gameClock: clock,
