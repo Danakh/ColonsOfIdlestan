@@ -458,4 +458,52 @@ describe('BuildingProductionController', () => {
       expect(resources.getResource(ResourceType.Wood)).toBe(2);
     });
   });
+
+  describe('processAutomaticProduction - plusieurs hexs adjacents de même ressource', () => {
+    it('devrait récolter plusieurs hexs Wood adjacents avec un seul bâtiment', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+      const northeast = center.neighbor(HexDirection.NE);
+
+      const grid = new HexGrid([
+        new Hex(center),
+        new Hex(north),
+        new Hex(northeast),
+      ]);
+
+      const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+      map.registerCivilization(civId);
+
+      const vertex = Vertex.create(center, north, northeast);
+      map.addCity(vertex, civId, CityLevel.Colony);
+      const city = map.getCity(vertex)!;
+      city.addBuilding(BuildingType.Sawmill);
+
+      // Deux hexs Wood autour de la ville
+      map.setHexType(center, HexType.Wood);
+      map.setHexType(north, HexType.Wood);
+
+      const resources = new PlayerResources();
+      const gameClock = new GameClock();
+
+      // Bâtiment prêt à produire
+      gameClock.updateTime(2.0);
+      city.getBuilding(BuildingType.Sawmill)!.setProductionTimeSeconds(0.5);
+
+      const results = BuildingProductionController.processAutomaticProduction(
+        civId,
+        map,
+        resources,
+        gameClock
+      );
+
+      // Doit produire 2 fois (une par hex Wood adjacent)
+      expect(results.length).toBe(2);
+      expect(results.every(r => r.resourceType === ResourceType.Wood)).toBe(true);
+      expect(results.some(r => r.hexCoord.equals(center))).toBe(true);
+      expect(results.some(r => r.hexCoord.equals(north))).toBe(true);
+      expect(resources.getResource(ResourceType.Wood)).toBe(2);
+    });
+  });
 });
