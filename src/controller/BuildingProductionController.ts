@@ -140,7 +140,6 @@ export class BuildingProductionController {
       const adjacentHexes = this.getAdjacentHexesOfType(city.vertex, requiredHexType, map);
       
       // Pour chaque hex adjacent, vérifier s'il peut être récolté automatiquement
-      let didHarvestAtLeastOne = false;
       for (const hexCoord of adjacentHexes) {
         // Vérifier que la récolte est possible (visible, etc.)
         if (!ResourceHarvest.canHarvest(hexCoord, map, civId)) {
@@ -161,7 +160,6 @@ export class BuildingProductionController {
           // Convertir le type d'hex en type de ressource
           const resourceType = ResourceHarvest.hexTypeToResourceType(hexType);
           if (resourceType) {
-            didHarvestAtLeastOne = didHarvestAtLeastOne || harvestResult.gain > 0;
             results.push({
               cityVertex: city.vertex,
               buildingType,
@@ -175,12 +173,12 @@ export class BuildingProductionController {
         }
       }
 
-      // Si au moins un hex a été récolté, avancer le timer de production du bâtiment une seule fois.
-      // Le bâtiment "tick" à un intervalle fixe, mais son rendement peut dépendre du nombre d'hex adjacents du bon type.
-      if (didHarvestAtLeastOne) {
-        const newProductionTime = lastProductionTime + productionInterval;
-        building.updateProductionTimeSeconds(newProductionTime);
-      }
+      // IMPORTANT: Toujours mettre à jour le timer de production une fois l'intervalle écoulé,
+      // même si aucun hex n'a été récolté (pour éviter de réessayer à chaque frame).
+      // On utilise lastProductionTime + productionInterval pour permettre de "rattraper"
+      // plusieurs cycles si le jeu a ramé entre deux frames.
+      const newProductionTime = lastProductionTime + productionInterval;
+      building.updateProductionTimeSeconds(newProductionTime);
     }
     
     return results;
