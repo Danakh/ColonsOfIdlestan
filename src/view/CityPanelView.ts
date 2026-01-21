@@ -21,6 +21,15 @@ export interface CityPanelCallbacks {
 }
 
 /**
+ * Source de vérité minimale pour permettre au panneau de se rendre tout seul.
+ * Évite de dupliquer la logique "selectedVertex + city + resources" dans main.ts.
+ */
+export interface CityPanelStateProvider {
+  getGameMap: () => GameMap | null;
+  getPlayerResources: () => PlayerResources;
+}
+
+/**
  * Vue pour le panneau d'affichage des détails d'une ville.
  * Gère l'affichage des informations de la ville, des bâtiments constructibles et construits,
  * et des actions disponibles.
@@ -35,13 +44,29 @@ export class CityPanelView {
   private renderer: HexMapRenderer | null = null;
   private playerCivId: CivilizationId | null = null;
   private lastTradeKey: string | null = null;
+
+  private stateProvider: CityPanelStateProvider | null = null;
+  private pendingScheduledUpdate: boolean = false;
   
   // Cache de l'état précédent pour éviter les rendus inutiles
   private lastSelectedVertexHash: string | null = null;
   private lastNoSelectionRendered: boolean = false;
   private lastResourcesHash: string | null = null;
+  /** Liste des types de bâtiments construits (structure) */
   private lastCityBuildings: string[] | null = null;
+  /** Niveau de la ville (structure) */
   private lastCityLevel: CityLevel | null = null;
+  /** Niveaux des bâtiments construits (dynamique) */
+  private lastCityBuildingLevelsKey: string | null = null;
+
+  // Noms des ressources en français pour l'affichage (centralisé)
+  private static readonly RESOURCE_NAMES: Record<ResourceType, string> = {
+    [ResourceType.Wood]: 'Bois',
+    [ResourceType.Brick]: 'Brique',
+    [ResourceType.Wheat]: 'Blé',
+    [ResourceType.Sheep]: 'Mouton',
+    [ResourceType.Ore]: 'Minerai',
+  };
 
   constructor(cityPanelId: string = 'city-panel') {
     const panel = document.getElementById(cityPanelId);
@@ -78,6 +103,60 @@ export class CityPanelView {
    */
   setRenderer(renderer: HexMapRenderer): void {
     this.renderer = renderer;
+  }
+
+  /**
+   * Connecte le panneau à un renderer + un provider d'état.
+   * Le panneau se mettra à jour automatiquement quand la sélection change, et pourra
+   * être rafraîchi à la demande quand les ressources changent.
+   */
+  bind(renderer: HexMapRenderer, stateProvider: CityPanelStateProvider): void {
+    this.setRenderer(renderer);
+    this.stateProvider = stateProvider;
+
+    // La sélection change: c'est un événement "rare" → update immédiat.
+    renderer.setOnSelectionChangeCallback(() => {
+      this.refreshNow();
+    });
+
+    // Assets prêts (sprites/texture): rafraîchir en coalesçant pour éviter du DOM churn.
+    renderer.setAssetsChangedCallback(() => {
+      this.scheduleRefresh();
+    });
+  }
+
+  /**
+   * Demande un rafraîchissement du panneau (coalescé sur une frame).
+   * À appeler quand les ressources changent (récolte auto, trade, cheat, etc.).
+   */
+  scheduleRefresh(): void {
+    if (this.pendingScheduledUpdate) {
+      return;
+    }
+    this.pendingScheduledUpdate = true;
+    requestAnimationFrame(() => {
+      this.pendingScheduledUpdate = false;
+      this.refreshNow();
+    });
+  }
+
+  /**
+   * Rafraîchit le panneau immédiatement depuis le renderer + provider (si bind()).
+   */
+  refreshNow(): void {
+    if (!this.renderer || !this.stateProvider) {
+      return;
+    }
+
+    const selectedVertex = this.renderer.getSelectedVertex();
+    const gameMap = this.stateProvider.getGameMap();
+    const city =
+      selectedVertex && gameMap && gameMap.hasCity(selectedVertex)
+        ? gameMap.getCity(selectedVertex) || null
+        : null;
+    const playerResources = this.stateProvider.getPlayerResources();
+
+    this.update(selectedVertex, gameMap, city, playerResources);
   }
 
   /**
@@ -252,6 +331,7 @@ export class CityPanelView {
       this.lastResourcesHash = null;
       this.lastCityBuildings = null;
       this.lastCityLevel = null;
+      this.lastCityBuildingLevelsKey = null;
       this.lastNoSelectionRendered = true;
       return;
     }
@@ -259,37 +339,37 @@ export class CityPanelView {
     // Calculer les hash pour comparer avec l'état précédent
     const currentVertexHash = selectedVertex.hashCode();
     const currentResourcesHash = this.getResourcesHash(playerResources);
-    // Inclure les niveaux pour détecter les upgrades (sinon la liste de types ne change pas)
-    const currentCityBuildings = [...city.getBuildings()]
-      .sort()
-      .map((bt) => `${bt}:${city.getBuildingLevel(bt) ?? 0}`);
+    // Structure: uniquement les types de bâtiments construits
+    const currentBuiltBuildingTypes = [...city.getBuildings()].sort();
+    // Dynamique: niveaux des bâtiments construits (upgrade)
+    const currentCityBuildingLevelsKey = currentBuiltBuildingTypes
+      .map((bt) => `${bt}:${city.getBuildingLevel(bt) ?? city.getBuilding(bt)?.level ?? 0}`)
+      .join(',');
     const currentCityLevel = city.level;
 
-    // Vérifier si quelque chose a changé
-    // Si le cache est null, c'est le premier affichage, donc on doit rendre
+    // Découpage demandé:
+    // - si la ville change OU si un bâtiment est construit (structure change) => on refait la section HTML
+    // - sinon => mise à jour incrémentale (ne remplace pas les boutons, ne casse pas les hovers)
     const isFirstRender = this.lastSelectedVertexHash === null;
     const vertexChanged = this.lastSelectedVertexHash !== currentVertexHash;
+    const builtTypesChanged = !this.arraysEqual(this.lastCityBuildings, currentBuiltBuildingTypes);
+    const cityLevelChanged = this.lastCityLevel !== currentCityLevel;
+    const structureChanged = isFirstRender || vertexChanged || builtTypesChanged || cityLevelChanged || this.lastNoSelectionRendered;
+
     const resourcesChanged = this.lastResourcesHash !== currentResourcesHash;
-    const buildingsChanged = !this.arraysEqual(this.lastCityBuildings, currentCityBuildings);
-    const levelChanged = this.lastCityLevel !== currentCityLevel;
+    const buildingLevelsChanged = this.lastCityBuildingLevelsKey !== currentCityBuildingLevelsKey;
 
-    const hasChanged =
-      isFirstRender ||
-      vertexChanged ||
-      resourcesChanged ||
-      buildingsChanged ||
-      levelChanged;
-
-    // Si rien n'a changé, éviter le rendu
-    if (!hasChanged) {
+    // Rien à faire si aucun changement pertinent
+    if (!structureChanged && !resourcesChanged && !buildingLevelsChanged && !tradeChanged) {
       return;
     }
 
-    // Mettre à jour le cache
+    // Mise à jour des caches
     this.lastSelectedVertexHash = currentVertexHash;
     this.lastResourcesHash = currentResourcesHash;
-    this.lastCityBuildings = currentCityBuildings;
+    this.lastCityBuildings = currentBuiltBuildingTypes;
     this.lastCityLevel = currentCityLevel;
+    this.lastCityBuildingLevelsKey = currentCityBuildingLevelsKey;
     this.lastNoSelectionRendered = false;
 
     // Sidebar fixe : toujours visible quand une ville est sélectionnée
@@ -331,30 +411,22 @@ export class CityPanelView {
     nameSpan.textContent = levelName;
     this.cityPanelTitle.appendChild(nameSpan);
 
-    // Mettre à jour la liste des bâtiments
-    this.updateBuildingsList(city, gameMap, selectedVertex, playerResources);
+    if (structureChanged) {
+      // Recrée la structure HTML de la liste (li + spans + boutons)
+      this.renderBuildingsListStructure(city, gameMap, selectedVertex, playerResources);
+    }
+
+    // Mise à jour incrémentale (ne remplace pas les boutons existants)
+    this.updateBuildingsListDynamic(city, gameMap, selectedVertex, playerResources);
   }
 
   /**
-   * Met à jour la liste des bâtiments dans le panneau.
-   * Affiche tous les bâtiments dans un ordre fixe, sans séparer les constructibles des construits.
+   * Construit la structure HTML de la liste des bâtiments.
+   * À appeler uniquement quand la ville change ou que la structure change (bâtiment construit, niveau de ville, etc.).
    */
-  private updateBuildingsList(city: City, gameMap: GameMap, vertex: Vertex, playerResources: PlayerResources): void {
-    // Mettre à jour le titre avec le nombre de bâtiments construits / maximum
-    const buildingCount = city.getBuildingCount();
-    const maxBuildings = city.getMaxBuildings();
-    this.cityBuildingsTitle.textContent = `Bâtiments ${buildingCount}/${maxBuildings}`;
-
+  private renderBuildingsListStructure(city: City, gameMap: GameMap, vertex: Vertex, playerResources: PlayerResources): void {
+    // Note: le titre/état dynamique est géré dans updateBuildingsListDynamic
     this.cityBuildingsList.innerHTML = '';
-
-    // Noms des ressources en français pour l'affichage
-    const resourceNames: Record<ResourceType, string> = {
-      [ResourceType.Wood]: 'Bois',
-      [ResourceType.Brick]: 'Brique',
-      [ResourceType.Wheat]: 'Blé',
-      [ResourceType.Sheep]: 'Mouton',
-      [ResourceType.Ore]: 'Minerai',
-    };
 
     // Obtenir tous les bâtiments possibles dans un ordre fixe
     const allBuildingTypes = getAllBuildingTypes();
@@ -379,6 +451,8 @@ export class CityPanelView {
 
       const item = document.createElement('li');
       item.className = isBuilt ? 'built-building' : 'buildable-building';
+      item.dataset.buildingType = buildingType;
+      item.dataset.buildingState = isBuilt ? 'built' : 'buildable';
 
       // Conteneur pour le nom et le coût
       const infoContainer = document.createElement('div');
@@ -387,22 +461,19 @@ export class CityPanelView {
       // Nom du bâtiment
       const nameSpan = document.createElement('span');
       nameSpan.className = 'building-name';
-      if (isBuilt) {
-        const building = city.getBuilding(buildingType);
-        const lvl = building?.level ?? 1;
-        nameSpan.textContent = `${getBuildingTypeName(buildingType)} (Niv. ${lvl})`;
-      } else {
-        nameSpan.textContent = getBuildingTypeName(buildingType);
-      }
+      nameSpan.dataset.role = 'name';
+      // Le contenu exact est rempli dans updateBuildingsListDynamic
+      nameSpan.textContent = getBuildingTypeName(buildingType);
       infoContainer.appendChild(nameSpan);
 
       // Si le bâtiment n'est pas construit et est constructible, afficher le coût
       if (!isBuilt && buildableStatus) {
         const costSpan = document.createElement('span');
         costSpan.className = 'building-cost';
+        costSpan.dataset.role = 'cost-build';
         const costParts: string[] = [];
         for (const [resource, amount] of buildableStatus.cost.entries()) {
-          costParts.push(`${amount} ${resourceNames[resource]}`);
+          costParts.push(`${amount} ${CityPanelView.RESOURCE_NAMES[resource]}`);
         }
         costSpan.textContent = costParts.join(', ');
         infoContainer.appendChild(costSpan);
@@ -412,21 +483,12 @@ export class CityPanelView {
 
       // Si le bâtiment est construit, afficher les boutons d'action
       if (isBuilt) {
-        const building = city.getBuilding(buildingType);
-        const canUpgrade = Boolean(building && building.canUpgrade());
-
-        // Afficher le coût d'amélioration comme les coûts de construction (si améliorable)
-        if (building && canUpgrade) {
-          const upgradeCost = building.getUpgradeCost();
-          const costSpan = document.createElement('span');
-          costSpan.className = 'building-cost';
-          const costParts: string[] = [];
-          for (const [resource, amount] of upgradeCost.entries()) {
-            costParts.push(`${amount} ${resourceNames[resource]}`);
-          }
-          costSpan.textContent = `${costParts.join(', ')}`;
-          infoContainer.appendChild(costSpan);
-        }
+        // Coût d'amélioration (placeholder, rempli/masqué dynamiquement)
+        const upgradeCostSpan = document.createElement('span');
+        upgradeCostSpan.className = 'building-cost';
+        upgradeCostSpan.dataset.role = 'cost-upgrade';
+        upgradeCostSpan.textContent = '';
+        infoContainer.appendChild(upgradeCostSpan);
 
         // Bouton Commerce si applicable
         const buildingAction = getBuildingAction(buildingType);
@@ -440,26 +502,19 @@ export class CityPanelView {
           item.appendChild(actionBtn);
         }
 
-        // Bouton Améliorer uniquement si le bâtiment n'est pas au niveau max
-        if (canUpgrade) {
-          const upgradeBtn = document.createElement('button');
-          upgradeBtn.className = 'building-action-btn';
-          upgradeBtn.textContent = BUILDING_ACTION_NAMES[BuildingAction.Upgrade];
-          upgradeBtn.disabled = false;
-          upgradeBtn.dataset.buildingAction = BuildingAction.Upgrade;
-          upgradeBtn.dataset.buildingType = buildingType;
-          item.appendChild(upgradeBtn);
-        }
+        // Bouton Améliorer (placeholder stable pour ne pas casser les hovers)
+        const upgradeBtn = document.createElement('button');
+        upgradeBtn.className = 'building-action-btn';
+        upgradeBtn.textContent = BUILDING_ACTION_NAMES[BuildingAction.Upgrade];
+        upgradeBtn.dataset.buildingAction = BuildingAction.Upgrade;
+        upgradeBtn.dataset.buildingType = buildingType;
+        item.appendChild(upgradeBtn);
       } else {
         // Si le bâtiment n'est pas construit, afficher le bouton de construction s'il est constructible
         if (buildableStatus) {
           const buildBtn = document.createElement('button');
           buildBtn.className = 'build-btn';
           buildBtn.textContent = 'Construire';
-          // Désactiver uniquement si bloqué par la limite de bâtiments
-          // (les autres raisons ne doivent pas griser le bouton)
-          buildBtn.disabled = buildableStatus.blockedByBuildingLimit;
-
           // Stocker le buildingType dans le bouton pour le gestionnaire d'événement
           buildBtn.dataset.buildingType = buildingType;
 
@@ -468,6 +523,91 @@ export class CityPanelView {
       }
 
       this.cityBuildingsList.appendChild(item);
+    }
+  }
+
+  /**
+   * Met à jour uniquement les parties dynamiques du panneau (sans reconstruire le DOM).
+   * Objectif: conserver les mêmes boutons/éléments pour éviter de casser les mouseover.
+   */
+  private updateBuildingsListDynamic(city: City, gameMap: GameMap, vertex: Vertex, playerResources: PlayerResources): void {
+    // Titre avec le nombre de bâtiments construits / maximum
+    const buildingCount = city.getBuildingCount();
+    const maxBuildings = city.getMaxBuildings();
+    this.cityBuildingsTitle.textContent = `Bâtiments ${buildingCount}/${maxBuildings}`;
+
+    const builtBuildings = new Set(city.getBuildings());
+    const buildableBuildings = BuildingController.getBuildableBuildingsWithStatus(city, gameMap, vertex, playerResources);
+    const buildableBuildingsMap = new Map<BuildingType, { canBuild: boolean; blockedByBuildingLimit: boolean; cost: Map<ResourceType, number> }>();
+    for (const status of buildableBuildings) {
+      buildableBuildingsMap.set(status.buildingType, { canBuild: status.canBuild, blockedByBuildingLimit: status.blockedByBuildingLimit, cost: status.cost });
+    }
+
+    for (const li of Array.from(this.cityBuildingsList.querySelectorAll('li'))) {
+      const buildingType = li.dataset.buildingType as BuildingType | undefined;
+      const state = li.dataset.buildingState as 'built' | 'buildable' | undefined;
+      if (!buildingType || !state) {
+        continue;
+      }
+
+      const nameEl = li.querySelector('[data-role="name"]') as HTMLSpanElement | null;
+      if (nameEl) {
+        if (state === 'built') {
+          const building = city.getBuilding(buildingType);
+          const lvl = building?.level ?? 1;
+          nameEl.textContent = `${getBuildingTypeName(buildingType)} (Niv. ${lvl})`;
+        } else {
+          nameEl.textContent = getBuildingTypeName(buildingType);
+        }
+      }
+
+      if (state === 'buildable') {
+        const status = buildableBuildingsMap.get(buildingType);
+        const buildBtn = li.querySelector('button.build-btn') as HTMLButtonElement | null;
+        if (buildBtn) {
+          // Désactiver uniquement si bloqué par la limite de bâtiments (pour garder un comportement stable)
+          buildBtn.disabled = Boolean(status?.blockedByBuildingLimit);
+        }
+        continue;
+      }
+
+      // state === 'built'
+      if (!builtBuildings.has(buildingType)) {
+        // Si la structure a changé sans rebuild (théoriquement rare), ne rien faire ici.
+        continue;
+      }
+
+      const building = city.getBuilding(buildingType);
+      const canUpgrade = Boolean(building && building.canUpgrade());
+
+      // Coût d'amélioration
+      const upgradeCostEl = li.querySelector('[data-role="cost-upgrade"]') as HTMLSpanElement | null;
+      if (upgradeCostEl) {
+        if (building && canUpgrade) {
+          const upgradeCost = building.getUpgradeCost();
+          const costParts: string[] = [];
+          for (const [resource, amount] of upgradeCost.entries()) {
+            costParts.push(`${amount} ${CityPanelView.RESOURCE_NAMES[resource]}`);
+          }
+          upgradeCostEl.textContent = costParts.join(', ');
+          upgradeCostEl.hidden = false;
+        } else {
+          upgradeCostEl.textContent = '';
+          upgradeCostEl.hidden = true;
+        }
+      }
+
+      // Bouton upgrade: rester stable, mais activer/désactiver selon possibilité/ressources
+      const upgradeBtn = li.querySelector('button.building-action-btn[data-building-action="Upgrade"]') as HTMLButtonElement | null;
+      if (upgradeBtn) {
+        // Garder le bouton en place pour ne pas casser les hovers
+        upgradeBtn.hidden = !canUpgrade;
+        if (!canUpgrade) {
+          upgradeBtn.disabled = true;
+        } else {
+          upgradeBtn.disabled = !BuildingController.canUpgrade(buildingType, city, playerResources);
+        }
+      }
     }
   }
 

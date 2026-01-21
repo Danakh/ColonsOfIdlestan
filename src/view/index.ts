@@ -3,5 +3,5 @@
  */
 
 export { HexMapRenderer } from './HexMapRenderer';
-export { CityPanelView, CityPanelCallbacks } from './CityPanelView';
+export { CityPanelView, CityPanelCallbacks, CityPanelStateProvider } from './CityPanelView';
 export { TradePanelView, TradePanelCallbacks } from './TradePanelView';

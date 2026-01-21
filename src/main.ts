@@ -90,6 +90,10 @@ function main(): void {
   
   // Configurer le renderer pour le panneau de ville
   cityPanelView.setRenderer(renderer);
+  cityPanelView.bind(renderer, {
+    getGameMap: () => game.getGameMap(),
+    getPlayerResources: () => game.getPlayerResources(),
+  });
   
   // Charger les sprites de ressources
   const resourceSprites = new ResourceSprites();
@@ -253,21 +257,7 @@ function main(): void {
   
   // Mettre à jour l'affichage après le chargement
   updateResourcesDisplay();
-  updateCityPanel();
-
-  /**
-   * Met à jour l'affichage du panneau de la ville sélectionnée.
-   */
-  function updateCityPanel(): void {
-    const selectedVertex = renderer.getSelectedVertex();
-    const currentGameMap = game.getGameMap();
-    const city = selectedVertex && currentGameMap && currentGameMap.hasCity(selectedVertex)
-      ? currentGameMap.getCity(selectedVertex) || null
-      : null;
-    const playerResources = game.getPlayerResources();
-
-    cityPanelView.update(selectedVertex, currentGameMap, city, playerResources);
-  }
+  cityPanelView.refreshNow();
 
   // Configurer les callbacks du panneau de ville
   cityPanelView.setCallbacks({
@@ -285,7 +275,7 @@ function main(): void {
         }
         
         updateResourcesDisplay();
-        updateCityPanel();
+        cityPanelView.refreshNow();
         const civId = game.getPlayerCivilizationId();
         renderer.render(gameMap, civId);
       } catch (error) {
@@ -298,6 +288,7 @@ function main(): void {
           const playerResources = game.getPlayerResources();
           BuildingController.upgradeBuilding(buildingType, city, playerResources);
           updateResourcesDisplay();
+          cityPanelView.scheduleRefresh();
         } else if (action === BuildingAction.Trade) {
           // Mettre à jour le contexte de jeu pour le panneau de commerce
           const currentGameMap = game.getGameMap();
@@ -311,7 +302,7 @@ function main(): void {
           tradePanelView.show(playerResources);
           return; // Ne pas mettre à jour le panneau de ville ni re-rendre
         }
-        updateCityPanel();
+        cityPanelView.refreshNow();
         const currentGameMap = game.getGameMap();
         if (currentGameMap) {
           const civId = game.getPlayerCivilizationId();
@@ -340,6 +331,7 @@ function main(): void {
 
         // Mettre à jour l'affichage des ressources
         updateResourcesDisplay();
+        cityPanelView.scheduleRefresh();
 
         // Fermer le panneau de commerce
         tradePanelView.hide();
@@ -400,7 +392,6 @@ function main(): void {
     if (currentGameMap) {
       const civId = game.getPlayerCivilizationId();
       renderer.render(currentGameMap, civId);
-      updateCityPanel();
     }
   });
 
@@ -423,12 +414,13 @@ function main(): void {
       
       // Mettre à jour l'affichage des ressources
       updateResourcesDisplay();
+      cityPanelView.scheduleRefresh();
       
       // Re-rendre la carte pour afficher la nouvelle ville
       renderer.render(currentGameMap, civId);
       
       // Mettre à jour le panneau de ville si une ville était sélectionnée
-      updateCityPanel();
+      cityPanelView.refreshNow();
     } catch (error) {
       // Ignorer silencieusement les erreurs de construction
       // On pourrait afficher un message à l'utilisateur si nécessaire
@@ -451,6 +443,7 @@ function main(): void {
       
       // Mettre à jour l'affichage des ressources
       updateResourcesDisplay();
+      cityPanelView.scheduleRefresh();
       
       // Re-rendre la carte pour afficher la nouvelle route
       renderer.render(currentGameMap, civId);
@@ -489,6 +482,7 @@ function main(): void {
       
       // Mettre à jour l'affichage des ressources
       updateResourcesDisplay();
+      cityPanelView.scheduleRefresh();
     }
     // Si result.success est false, la récolte a échoué (limitation de taux ou autre raison)
     // On pourrait afficher un message à l'utilisateur avec result.remainingTimeMs si nécessaire
@@ -521,7 +515,7 @@ function main(): void {
       const civId = game.getPlayerCivilizationId();
       renderer.render(newGameMap, civId);
       updateResourcesDisplay(); // Réinitialiser l'affichage des ressources
-      updateCityPanel(); // Masquer le panneau de la ville
+      cityPanelView.refreshNow(); // Mettre à jour le panneau de la ville
     }
     // Fermer le menu après l'action
     settingsMenu.classList.add('hidden');
@@ -580,7 +574,7 @@ function main(): void {
             const civId = game.getPlayerCivilizationId();
             renderer.render(newGameMap, civId);
             updateResourcesDisplay();
-            updateCityPanel();
+            cityPanelView.refreshNow();
           }
         } catch (error) {
           console.error('Erreur lors de l\'import:', error);
@@ -612,14 +606,15 @@ function main(): void {
     
     // Mettre à jour l'affichage des ressources
     updateResourcesDisplay();
+    cityPanelView.scheduleRefresh();
     
     // Fermer le menu après l'action
     settingsMenu.classList.add('hidden');
   });
 
 
-  // Initialiser le panneau (masqué par défaut)
-  updateCityPanel();
+  // Initialiser le panneau (sidebar fixe)
+  cityPanelView.refreshNow();
 
   /**
    * Traite la production automatique des bâtiments et déclenche les animations.
@@ -659,6 +654,7 @@ function main(): void {
 
       // Mettre à jour l'affichage des ressources
       updateResourcesDisplay();
+      cityPanelView.scheduleRefresh();
     }
   }
 

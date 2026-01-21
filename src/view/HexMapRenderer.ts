@@ -75,6 +75,11 @@ export class HexMapRenderer {
   private onHexClickCallback: ((hexCoord: HexCoord) => void) | null = null;
   private onEdgeClickCallback: ((edge: Edge) => void) | null = null;
   private onVertexClickCallback: ((vertex: Vertex) => void) | null = null;
+  /**
+   * Callback appelé quand la sélection de ville (vertex) change.
+   * Permet de mettre à jour la sidebar sans la recalc à chaque frame de rendu.
+   */
+  private onSelectionChangeCallback: ((selectedVertex: Vertex | null) => void) | null = null;
   private onOutpostVertexClickCallback: ((vertex: Vertex) => void) | null = null;
   private hoveredEdge: Edge | null = null;
   private hoveredVertex: Vertex | null = null;
@@ -82,6 +87,11 @@ export class HexMapRenderer {
   private selectedVertex: Vertex | null = null;
   private currentCivilizationId: CivilizationId | null = null;
   private renderCallback: (() => void) | null = null;
+  /**
+   * Callback appelé lors de changements d'assets (sprites/texture) pour permettre
+   * de rafraîchir des éléments UI (ex: titre de ville avec sprite) sans coupler au rendu.
+   */
+  private assetsChangedCallback: (() => void) | null = null;
   private harvestedHexes: Map<string, number> = new Map(); // Map<hexCoord.hashCode(), timestamp>
   private citySprites: Map<CityLevel, HTMLImageElement> = new Map();
   private citySpritesLoaded: boolean = false;
@@ -132,9 +142,13 @@ export class HexMapRenderer {
       loadedCount++;
       if (loadedCount === totalSprites) {
         this.citySpritesLoaded = true;
-        // Re-rendre si nécessaire pour mettre à jour le panneau
+        // Re-rendre si nécessaire pour mettre à jour la carte
         if (this.renderCallback) {
           this.renderCallback();
+        }
+        // Notifier l'UI (sidebar) une fois, sans dépendre des frames d'animation
+        if (this.assetsChangedCallback) {
+          this.assetsChangedCallback();
         }
       }
     };
@@ -178,6 +192,9 @@ export class HexMapRenderer {
       if (this.renderCallback) {
         this.renderCallback();
       }
+      if (this.assetsChangedCallback) {
+        this.assetsChangedCallback();
+      }
     };
     
     img.onerror = () => {
@@ -212,6 +229,9 @@ export class HexMapRenderer {
         // Re-rendre si nécessaire pour mettre à jour la carte
         if (this.renderCallback) {
           this.renderCallback();
+        }
+        if (this.assetsChangedCallback) {
+          this.assetsChangedCallback();
         }
       }
     };
@@ -415,6 +435,22 @@ export class HexMapRenderer {
    */
   setRenderCallback(callback: () => void): void {
     this.renderCallback = callback;
+  }
+
+  /**
+   * Définit un callback à appeler quand la sélection de ville change (sélection/désélection).
+   * Permet de mettre à jour le panneau latéral sans le re-rendre à chaque frame.
+   */
+  setOnSelectionChangeCallback(callback: (selectedVertex: Vertex | null) => void): void {
+    this.onSelectionChangeCallback = callback;
+  }
+
+  /**
+   * Définit un callback à appeler quand des assets du renderer deviennent disponibles.
+   * Utile pour rafraîchir l'UI (ex: afficher les sprites dans le titre du panneau).
+   */
+  setAssetsChangedCallback(callback: () => void): void {
+    this.assetsChangedCallback = callback;
   }
 
   /**
@@ -1933,6 +1969,7 @@ export class HexMapRenderer {
     // PRIORITÉ 1: Vérifier d'abord si on a cliqué sur une ville (vertex avec ville)
     const vertex = this.pixelToVertex(pixelX, pixelY);
     if (vertex && this.currentGameMap && this.currentGameMap.hasCity(vertex)) {
+      const previousSelection = this.selectedVertex;
       // Sélectionner/désélectionner la ville
       if (this.selectedVertex && this.selectedVertex.equals(vertex)) {
         // Désélectionner si on reclique sur la même ville
@@ -1940,6 +1977,15 @@ export class HexMapRenderer {
       } else {
         // Sélectionner la nouvelle ville
         this.selectedVertex = vertex;
+      }
+
+      // Notifier si la sélection a changé
+      const selectionChanged =
+        (previousSelection === null && this.selectedVertex !== null) ||
+        (previousSelection !== null && this.selectedVertex === null) ||
+        (previousSelection !== null && this.selectedVertex !== null && !previousSelection.equals(this.selectedVertex));
+      if (selectionChanged && this.onSelectionChangeCallback) {
+        this.onSelectionChangeCallback(this.selectedVertex);
       }
       
       // Appeler le callback si défini
@@ -1958,6 +2004,9 @@ export class HexMapRenderer {
     // Si on a cliqué ailleurs que sur une ville, désélectionner
     if (this.selectedVertex !== null) {
       this.selectedVertex = null;
+      if (this.onSelectionChangeCallback) {
+        this.onSelectionChangeCallback(null);
+      }
       if (this.renderCallback) {
         this.renderCallback();
       }
