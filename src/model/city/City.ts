@@ -8,7 +8,6 @@ import { Building, type BuildingSerialized } from './Building';
 export interface CitySerialized {
   vertex: [number, number][];
   owner: string;
-  level: number;
   buildings: BuildingSerialized[];
 }
 
@@ -25,16 +24,36 @@ export class City {
    * Crée une nouvelle ville.
    * @param vertex - Le sommet où se trouve la ville
    * @param owner - L'identifiant de la civilisation propriétaire
-   * @param level - Le niveau de la ville (par défaut: Outpost)
+   * @param initialLevel - Niveau initial (Outpost par défaut). Si > 0, cela crée un TownHall au niveau correspondant.
    */
   constructor(
     public readonly vertex: Vertex,
     public readonly owner: CivilizationId,
-    public level: CityLevel = CityLevel.Outpost
+    initialLevel: CityLevel = CityLevel.Outpost
   ) {
-    if (!isValidCityLevel(level)) {
-      throw new Error(`Niveau de ville invalide: ${level}. Doit être entre ${CityLevel.Outpost} et ${CityLevel.Capital}.`);
+    if (!isValidCityLevel(initialLevel)) {
+      throw new Error(`Niveau de ville invalide: ${initialLevel}. Doit être entre ${CityLevel.Outpost} et ${CityLevel.Capital}.`);
     }
+    // Le niveau de ville est dérivé du TownHall. Un Outpost n'a pas de TownHall.
+    if (initialLevel > CityLevel.Outpost) {
+      this.buildings.set(BuildingType.TownHall, new Building(BuildingType.TownHall, initialLevel));
+    }
+  }
+
+  /**
+   * Niveau actuel de la ville.
+   * Dérivé du niveau du TownHall (1..4). Sans TownHall, la ville est Outpost (0).
+   */
+  get level(): CityLevel {
+    const townHall = this.getBuilding(BuildingType.TownHall);
+    if (!townHall) {
+      return CityLevel.Outpost;
+    }
+    const lvl = townHall.level;
+    if (!isValidCityLevel(lvl)) {
+      throw new Error(`Niveau de TownHall invalide: ${lvl}.`);
+    }
+    return lvl;
   }
 
   /**
@@ -209,25 +228,6 @@ export class City {
   }
 
   /**
-   * Vérifie si la ville peut être améliorée au niveau suivant.
-   * @returns true si la ville peut être améliorée
-   */
-  canUpgrade(): boolean {
-    return this.level < CityLevel.Capital;
-  }
-
-  /**
-   * Améliore la ville au niveau suivant.
-   * @throws Error si la ville ne peut pas être améliorée (déjà au niveau maximum)
-   */
-  upgrade(): void {
-    if (!this.canUpgrade()) {
-      throw new Error(`La ville ne peut pas être améliorée au-delà du niveau ${CityLevel.Capital} (Capitale).`);
-    }
-    this.level = this.level + 1;
-  }
-
-  /**
    * Vérifie si la ville a un hôtel de ville (requis pour l'amélioration).
    * @returns true si la ville a un hôtel de ville
    */
@@ -298,12 +298,11 @@ export class City {
     return `City(vertex=${this.vertex.toString()}, level=${this.level}, owner=${this.owner.toString()})`;
   }
 
-  /** Sérialise la ville (vertex, owner, level, buildings). */
+  /** Sérialise la ville (vertex, owner, buildings). */
   serialize(): CitySerialized {
     return {
       vertex: this.vertex.serialize(),
       owner: this.owner.serialize(),
-      level: this.level,
       buildings: [...this.buildings.values()].map(b => b.serialize()),
     };
   }

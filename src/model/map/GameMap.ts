@@ -231,30 +231,6 @@ export class GameMap {
   }
 
   /**
-   * Améliore une ville au niveau suivant.
-   * @param vertex - Le sommet où se trouve la ville à améliorer
-   * @throws Error si aucune ville n'existe sur ce sommet
-   * @throws Error si la ville ne peut pas être améliorée (déjà au niveau maximum)
-   * @throws Error si une capitale existe déjà sur l'île et que la ville devient capitale
-   */
-  upgradeCity(vertex: Vertex): void {
-    const city = this.cityMap.get(vertex.hashCode());
-    if (!city) {
-      throw new Error(`Aucune ville n'existe sur le sommet ${vertex.toString()}.`);
-    }
-
-    // Vérifier si la ville va devenir une capitale
-    if (city.level === CityLevel.Metropolis) {
-      // Vérifier s'il y a déjà une capitale sur l'île
-      if (this.hasCapital()) {
-        throw new Error('Une seule capitale est autorisée par île.');
-      }
-    }
-
-    city.upgrade();
-  }
-
-  /**
    * Vérifie s'il existe une capitale sur cette carte (île).
    * @returns true s'il existe au moins une capitale
    */
@@ -975,7 +951,8 @@ export class GameMap {
     for (const c of data.cities) {
       const v = Vertex.deserialize(c.vertex);
       const owner = CivilizationId.deserialize(c.owner);
-      map.addCity(v, owner, c.level as CityLevel);
+      // Le niveau est dérivé du TownHall dans la liste de bâtiments
+      map.addCity(v, owner, CityLevel.Outpost);
       const city = map.getCity(v)!;
       for (const b of c.buildings) {
         // Nouveau format uniquement: BuildingSerialized

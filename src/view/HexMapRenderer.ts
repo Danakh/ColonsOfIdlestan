@@ -1279,23 +1279,24 @@ export class HexMapRenderer {
    * Redimensionne le canvas pour qu'il s'adapte à la fenêtre.
    */
   resize(): void {
-    // Ajuster la taille du canvas en tenant compte du header et footer uniquement
-    // Le panneau de ville est en position absolue, donc il n'affecte pas la taille du canvas
-    const header = document.querySelector('header');
-    const footer = document.querySelector('footer');
-    const main = document.querySelector('main');
-    const headerHeight = header ? header.offsetHeight : 0;
-    const footerHeight = footer ? footer.offsetHeight : 0;
-    
-    // Calculer le padding du main (2rem de chaque côté)
-    const mainStyle = main ? window.getComputedStyle(main) : null;
-    const mainPaddingX = mainStyle ? (parseFloat(mainStyle.paddingLeft) || 32) + (parseFloat(mainStyle.paddingRight) || 32) : 64;
-    const mainPaddingY = mainStyle ? (parseFloat(mainStyle.paddingTop) || 32) + (parseFloat(mainStyle.paddingBottom) || 32) : 64;
-    
-    // Largeur disponible = largeur fenêtre - padding main
-    // Hauteur disponible = hauteur fenêtre - header - footer - padding main
-    this.canvas.width = window.innerWidth - mainPaddingX;
-    this.canvas.height = window.innerHeight - headerHeight - footerHeight - mainPaddingY;
+    // Ajuster la taille du canvas en fonction de son conteneur réel.
+    // Depuis l'introduction de la sidebar fixe à droite, la largeur disponible dépend du layout.
+    const container = this.canvas.parentElement as HTMLElement | null;
+    if (!container) {
+      // Fallback (ne devrait pas arriver) : conserver l'ancien comportement minimal
+      this.canvas.width = window.innerWidth;
+      this.canvas.height = window.innerHeight;
+      return;
+    }
+
+    const rect = container.getBoundingClientRect();
+
+    // Éviter des tailles nulles lors d'un layout transitoire
+    const width = Math.max(0, Math.floor(rect.width));
+    const height = Math.max(0, Math.floor(rect.height));
+
+    this.canvas.width = width;
+    this.canvas.height = height;
   }
 
   /**

@@ -33,6 +33,7 @@ export class CityPanelView {
   
   // Cache de l'état précédent pour éviter les rendus inutiles
   private lastSelectedVertexHash: string | null = null;
+  private lastNoSelectionRendered: boolean = false;
   private lastResourcesHash: string | null = null;
   private lastCityBuildings: BuildingType[] | null = null;
   private lastCityLevel: CityLevel | null = null;
@@ -172,15 +173,27 @@ export class CityPanelView {
     playerResources: PlayerResources
   ): void {
     if (!selectedVertex || !gameMap || !city) {
-      // Masquer le panneau si aucune ville n'est sélectionnée
-      if (this.lastSelectedVertexHash !== null) {
-        this.cityPanel.classList.add('hidden');
-        // Réinitialiser le cache
-        this.lastSelectedVertexHash = null;
-        this.lastResourcesHash = null;
-        this.lastCityBuildings = null;
-        this.lastCityLevel = null;
+      // Sidebar fixe : afficher un état "aucune sélection" au lieu de masquer.
+      if (this.lastNoSelectionRendered) {
+        return;
       }
+
+      this.cityPanel.classList.remove('hidden');
+      this.cityPanelTitle.textContent = 'Aucune ville sélectionnée';
+      this.cityBuildingsTitle.textContent = 'Bâtiments';
+      this.cityBuildingsList.innerHTML = '';
+
+      const emptyItem = document.createElement('li');
+      emptyItem.className = 'empty';
+      emptyItem.textContent = 'Sélectionnez une ville sur la carte pour afficher ses détails.';
+      this.cityBuildingsList.appendChild(emptyItem);
+
+      // Réinitialiser le cache lié à une ville
+      this.lastSelectedVertexHash = null;
+      this.lastResourcesHash = null;
+      this.lastCityBuildings = null;
+      this.lastCityLevel = null;
+      this.lastNoSelectionRendered = true;
       return;
     }
 
@@ -215,8 +228,9 @@ export class CityPanelView {
     this.lastResourcesHash = currentResourcesHash;
     this.lastCityBuildings = currentCityBuildings;
     this.lastCityLevel = currentCityLevel;
+    this.lastNoSelectionRendered = false;
 
-    // Afficher le panneau (l'animation CSS gère la transition)
+    // Sidebar fixe : toujours visible quand une ville est sélectionnée
     this.cityPanel.classList.remove('hidden');
 
     // Noms des niveaux de ville en français
@@ -338,7 +352,7 @@ export class CityPanelView {
 
           // Désactiver le bouton d'amélioration si la ville ne peut pas être améliorée
           if (buildingAction === BuildingAction.Upgrade) {
-            actionBtn.disabled = !city.canUpgrade();
+            actionBtn.disabled = !city.canUpgradeBuilding(buildingType);
           } else {
             // Pour l'instant, le bouton Trade est toujours activé (à implémenter plus tard)
             actionBtn.disabled = false;

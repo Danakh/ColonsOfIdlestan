@@ -111,7 +111,8 @@ describe('City - Niveaux de bâtiments', () => {
       const serialized = city.serialize();
       
       expect(serialized.buildings).toBeDefined();
-      expect(serialized.buildings.length).toBe(1);
+      // La ville (Colony) a déjà un TownHall au niveau 1
+      expect(serialized.buildings.length).toBe(2);
       const sawmill = serialized.buildings.find(b => b.type === BuildingType.Sawmill);
       expect(sawmill).toBeDefined();
       expect(sawmill!.level).toBe(3);
@@ -124,7 +125,8 @@ describe('City - Niveaux de bâtiments', () => {
       
       const serialized = city.serialize();
       
-      expect(serialized.buildings.length).toBe(2);
+      // TownHall + Sawmill + Mine
+      expect(serialized.buildings.length).toBe(3);
       const sawmill = serialized.buildings.find(b => b.type === BuildingType.Sawmill);
       const mine = serialized.buildings.find(b => b.type === BuildingType.Mine);
       expect(sawmill!.level).toBe(2);

@@ -61,7 +61,7 @@ export function Make7HexesMap(): GameState {
 
   const city = gameMap.getCity(cityVertex);
   if (!city) throw new Error('Ville non trouvée après addCity');
-  city.addBuilding(BuildingType.TownHall);
+  // Le TownHall est créé automatiquement quand la ville est ajoutée au niveau Colony (1)
 
   const gameClock = new GameClock();
   gameClock.updateTime(123);

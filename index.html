@@ -29,14 +29,18 @@
             </div>
         </header>
         <main>
-            <canvas id="map-canvas"></canvas>
-            <aside id="city-panel" class="city-panel hidden">
+            <div class="game-layout">
+                <div id="map-container" class="map-container">
+                    <canvas id="map-canvas"></canvas>
+                </div>
+                <aside id="city-panel" class="city-panel">
                 <h2 id="city-panel-title">Détails de la ville</h2>
                 <div id="city-buildings-section">
                     <h3>Bâtiments</h3>
                     <ul id="city-buildings-list"></ul>
                 </div>
             </aside>
+            </div>
             <aside id="trade-panel" class="trade-panel hidden">
                 <h2>Commerce</h2>
                 <div class="trade-content">

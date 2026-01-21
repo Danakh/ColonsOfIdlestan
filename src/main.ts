@@ -293,10 +293,10 @@ function main(): void {
     onBuildingAction: (action: BuildingAction, buildingType: BuildingType, city: City) => {
       try {
         if (action === BuildingAction.Upgrade) {
-          if (!city.canUpgrade()) {
+          if (!city.canUpgradeBuilding(buildingType)) {
             return;
           }
-          city.upgrade();
+          city.upgradeBuilding(buildingType);
         } else if (action === BuildingAction.Trade) {
           // Mettre à jour le contexte de jeu pour le panneau de commerce
           const currentGameMap = game.getGameMap();
