@@ -2,19 +2,14 @@ import { Vertex } from '../hex/Vertex';
 import { CivilizationId } from '../map/CivilizationId';
 import { CityLevel, isValidCityLevel } from './CityLevel';
 import { BuildingType, getAllBuildingTypes, getResourceProductionBuildings } from './BuildingType';
-import { Building } from './Building';
+import { Building, type BuildingSerialized } from './Building';
 
 /** Format sérialisé d'une ville. */
 export interface CitySerialized {
   vertex: [number, number][];
   owner: string;
   level: number;
-  buildings: Array<{
-    type: string;
-    level: number;
-    /** Temps de dernière production (en secondes depuis le début), si applicable */
-    productionTimeSeconds?: number;
-  }>;
+  buildings: BuildingSerialized[];
 }
 
 /**
@@ -309,11 +304,7 @@ export class City {
       vertex: this.vertex.serialize(),
       owner: this.owner.serialize(),
       level: this.level,
-      buildings: [...this.buildings.values()].map(b => ({
-        type: b.type,
-        level: b.level,
-        productionTimeSeconds: b.getProductionTimeSeconds(),
-      })),
+      buildings: [...this.buildings.values()].map(b => b.serialize()),
     };
   }
 }

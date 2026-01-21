@@ -1,6 +1,13 @@
 import { BuildingType, getBuildingUpgradeCost, getResourceProductionBuildings } from './BuildingType';
 import { ResourceType } from '../map/ResourceType';
 
+/** Format sérialisé d'un bâtiment (généré par `Building.serialize()`). */
+export interface BuildingSerialized {
+  type: string;
+  level: number;
+  productionTimeSeconds?: number;
+}
+
 /**
  * Représente un bâtiment construit dans une ville.
  * 
@@ -132,5 +139,17 @@ export class Building {
    */
   toString(): string {
     return `Building(type=${this.type}, level=${this._level})`;
+  }
+
+  /**
+   * Sérialise le bâtiment. La sérialisation globale est orchestrée par `City.serialize()`,
+   * mais le format de chaque bâtiment est défini ici.
+   */
+  serialize(): BuildingSerialized {
+    return {
+      type: this.type,
+      level: this._level,
+      productionTimeSeconds: this._productionTimeSeconds,
+    };
   }
 }

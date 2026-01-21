@@ -167,6 +167,18 @@ describe('Building', () => {
     });
   });
 
+  describe('serialize', () => {
+    it('devrait déléguer la sérialisation du building', () => {
+      const building = new Building(BuildingType.Sawmill, 3);
+      building.setProductionTimeSeconds(42);
+
+      const serialized = building.serialize();
+      expect(serialized.type).toBe(BuildingType.Sawmill);
+      expect(serialized.level).toBe(3);
+      expect(serialized.productionTimeSeconds).toBe(42);
+    });
+  });
+
   describe('toString', () => {
     it('devrait retourner une représentation lisible', () => {
       const building = new Building(BuildingType.Sawmill, 3);
