@@ -845,38 +845,43 @@ export class HexMapRenderer {
   }
 
   /**
-   * Dessine les coordonnées (q, r) au centre d'un hexagone.
+   * Dessine les coordonnées (q, r) en haut d'un hexagone.
    */
   private drawCoordinates(hex: Hex, config: RenderConfig): void {
     const { hexSize, offsetX, offsetY } = config;
     const coord = hex.coord;
 
     // Convertir les coordonnées axiales en coordonnées pixel (centre de l'hexagone)
-    const x = offsetX + Math.sqrt(3) * (coord.q + coord.r / 2) * hexSize;
-    const y = offsetY + (3 / 2) * coord.r * hexSize;
+    const centerX = offsetX + Math.sqrt(3) * (coord.q + coord.r / 2) * hexSize;
+    const centerY = offsetY + (3 / 2) * coord.r * hexSize;
+
+    // Positionner le texte en haut de l'hexagone (au-dessus du centre)
+    // Pour un hexagone pointy-top, le haut est à environ -hexSize pixels du centre
+    const textY = centerY - hexSize * 0.4; // Légèrement au-dessus du haut de l'hexagone
 
     // Dessiner le texte des coordonnées
     const text = `(${coord.q},${coord.r})`;
-    this.ctx.fillStyle = '#000000';
-    this.ctx.font = `${Math.max(8, hexSize / 4)}px Arial`;
+    const fontSize = Math.max(8, hexSize * 0.25);
+    this.ctx.font = `${fontSize}px Arial`;
     this.ctx.textAlign = 'center';
-    this.ctx.textBaseline = 'middle';
+    this.ctx.textBaseline = 'bottom';
     
     // Dessiner un fond semi-transparent pour améliorer la lisibilité
     const metrics = this.ctx.measureText(text);
     const textWidth = metrics.width;
     const textHeight = parseInt(this.ctx.font) || 12;
     
-    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
     this.ctx.fillRect(
-      x - textWidth / 2 - 2,
-      y - textHeight / 2 - 2,
+      centerX - textWidth / 2 - 2,
+      textY - textHeight - 2,
       textWidth + 4,
       textHeight + 4
     );
     
+    
     this.ctx.fillStyle = '#000000';
-    this.ctx.fillText(text, x, y);
+    this.ctx.fillText(text, centerX, textY);
   }
 
   /**

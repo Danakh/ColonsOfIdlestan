@@ -42,6 +42,7 @@ function main(): void {
   const exportBtn = document.getElementById('export-btn') as HTMLButtonElement;
   const importBtn = document.getElementById('import-btn') as HTMLButtonElement;
   const cheatBtn = document.getElementById('cheat-btn') as HTMLButtonElement;
+  const showHexCoordsBtn = document.getElementById('show-hex-coords-btn') as HTMLButtonElement;
   // Créer la vue du panneau de ville
   const cityPanelView = new CityPanelView('city-panel');
 
@@ -74,6 +75,10 @@ function main(): void {
 
   if (!cheatBtn) {
     throw new Error('Bouton cheat introuvable');
+  }
+
+  if (!showHexCoordsBtn) {
+    throw new Error('Bouton afficher coordonnées hexs introuvable');
   }
 
   // Créer le jeu principal
@@ -538,6 +543,23 @@ function main(): void {
     // Mettre à jour l'affichage des ressources
     updateResourcesDisplay();
     cityPanelView.scheduleRefresh();
+    
+    // Fermer le menu après l'action
+    settingsMenu.classList.add('hidden');
+  });
+
+  // Gérer le bouton d'affichage des coordonnées des hexs
+  let showHexCoords = false;
+  showHexCoordsBtn.addEventListener('click', () => {
+    showHexCoords = !showHexCoords;
+    renderer.setShowCoordinates(showHexCoords);
+    
+    // Re-rendre la carte pour afficher/masquer les coordonnées
+    const gameMap = game.getGameMap();
+    if (gameMap) {
+      const civId = game.getPlayerCivilizationId();
+      renderer.render(gameMap, civId);
+    }
     
     // Fermer le menu après l'action
     settingsMenu.classList.add('hidden');
