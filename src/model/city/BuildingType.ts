@@ -27,6 +27,8 @@ export enum BuildingType {
   Forge = 'Forge',
   /** Bibliothèque - Augmente la production de connaissances et permet des améliorations */
   Library = 'Library',
+  /** Temple - Ajoute des points de civilisation */
+  Temple = 'Temple',
 }
 
 /**
@@ -44,6 +46,7 @@ export const BUILDING_TYPE_NAMES: Record<BuildingType, string> = {
   [BuildingType.Warehouse]: 'Entrepôt',
   [BuildingType.Forge]: 'Forge',
   [BuildingType.Library]: 'Bibliothèque',
+  [BuildingType.Temple]: 'Temple',
 };
 
 /**
@@ -96,6 +99,11 @@ export const BUILDING_COSTS: Record<BuildingType, Map<ResourceType, number>> = {
     [ResourceType.Wood, 6],
     [ResourceType.Brick, 4],
     [ResourceType.Sheep, 6],
+  ]),
+  [BuildingType.Temple]: new Map([
+    [ResourceType.Wood, 8],
+    [ResourceType.Brick, 10],
+    [ResourceType.Ore, 3],
   ]),
 };
 
@@ -160,6 +168,11 @@ export const BUILDING_UPGRADE_COSTS: Record<BuildingType, Map<ResourceType, numb
     [ResourceType.Wood, 5],
     [ResourceType.Brick, 3],
     [ResourceType.Sheep, 5],
+  ]),
+  [BuildingType.Temple]: new Map([
+    [ResourceType.Wood, 6],
+    [ResourceType.Brick, 8],
+    [ResourceType.Ore, 2],
   ]),
 };
 
@@ -226,6 +239,7 @@ export const BUILDING_REQUIRED_HEX_TYPE: Record<BuildingType, HexType | null> = 
   [BuildingType.Warehouse]: null, // Pas de contrainte d'hex
   [BuildingType.Forge]: null, // Pas de contrainte d'hex (mais nécessite une Mine pour être utile)
   [BuildingType.Library]: null, // Pas de contrainte d'hex
+  [BuildingType.Temple]: null, // Pas de contrainte d'hex
 };
 
 /**

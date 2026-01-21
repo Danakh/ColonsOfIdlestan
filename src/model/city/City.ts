@@ -210,6 +210,8 @@ export class City {
       case BuildingType.Forge:
       case BuildingType.Library:
         return this.level >= CityLevel.Town; // Niveau 2 (Ville)
+      case BuildingType.Temple:
+        return this.level >= CityLevel.Metropolis; // Niveau 3 (Métropole)
       case BuildingType.Market:
       case BuildingType.TownHall:
         return this.level >= CityLevel.Outpost;

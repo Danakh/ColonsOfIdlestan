@@ -1,7 +1,6 @@
 import { GameMap } from '../map/GameMap';
 import { CivilizationId } from '../map/CivilizationId';
 import { BuildingType } from '../city/BuildingType';
-import { CityLevel } from '../city/CityLevel';
 
 /**
  * Calcule les points de civilisation pour une civilisation.
@@ -27,6 +26,11 @@ export function calculateCivilizationPoints(
 
     // Points pour les bibliothèques (1 point par bibliothèque)
     if (city.hasBuilding(BuildingType.Library)) {
+      points += 1;
+    }
+
+    // Points pour les temples (1 point par temple)
+    if (city.hasBuilding(BuildingType.Temple)) {
       points += 1;
     }
   }

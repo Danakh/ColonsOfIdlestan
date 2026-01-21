@@ -252,4 +252,123 @@ describe('CivilizationPoints', () => {
       expect(hasLibrary(map, civId)).toBe(true);
     });
   });
+
+  describe('Temple', () => {
+    it('devrait ajouter 1 point de civilisation par temple', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+      const northeast = center.neighbor(HexDirection.NE);
+
+      const grid = new HexGrid([
+        new Hex(center),
+        new Hex(north),
+        new Hex(northeast),
+      ]);
+      const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+      map.registerCivilization(civId);
+
+      const vertex = Vertex.create(center, north, northeast);
+      map.addCity(vertex, civId, CityLevel.Metropolis); // Niveau 3 = 3 points
+
+      const city = map.getCity(vertex);
+      expect(city).toBeTruthy();
+
+      // Construire un temple
+      const resources = new PlayerResources();
+      resources.addResource(ResourceType.Wood, 8);
+      resources.addResource(ResourceType.Brick, 10);
+      resources.addResource(ResourceType.Ore, 3);
+      BuildingController.buildBuilding(BuildingType.Temple, city!, map, vertex, resources);
+
+      const points = calculateCivilizationPoints(map, civId);
+      expect(points).toBe(4); // 3 (métropole) + 1 (temple) = 4
+    });
+
+    it('devrait être disponible seulement au niveau Metropolis (3) ou supérieur', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+      const northeast = center.neighbor(HexDirection.NE);
+
+      const grid = new HexGrid([
+        new Hex(center),
+        new Hex(north),
+        new Hex(northeast),
+      ]);
+      const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+      map.registerCivilization(civId);
+
+      // Tester avec Town (niveau 2) - ne devrait pas pouvoir construire
+      const vertex1 = Vertex.create(center, north, northeast);
+      map.addCity(vertex1, civId, CityLevel.Town);
+      const city1 = map.getCity(vertex1);
+      expect(city1).toBeTruthy();
+
+      const resources = new PlayerResources();
+      resources.addResource(ResourceType.Wood, 8);
+      resources.addResource(ResourceType.Brick, 10);
+      resources.addResource(ResourceType.Ore, 3);
+
+      expect(() => {
+        BuildingController.buildBuilding(BuildingType.Temple, city1!, map, vertex1, resources);
+      }).toThrow();
+
+      // Tester avec Metropolis (niveau 3) - devrait pouvoir construire
+      const southeast = center.neighbor(HexDirection.SE);
+      const grid2 = new HexGrid([
+        new Hex(center),
+        new Hex(north),
+        new Hex(northeast),
+        new Hex(southeast),
+      ]);
+      const map2 = new GameMap(grid2);
+      map2.registerCivilization(civId);
+      const vertex2 = Vertex.create(center, northeast, southeast);
+      map2.addCity(vertex2, civId, CityLevel.Metropolis);
+      const city2 = map2.getCity(vertex2);
+      expect(city2).toBeTruthy();
+
+      BuildingController.buildBuilding(BuildingType.Temple, city2!, map2, vertex2, resources);
+      expect(city2!.hasBuilding(BuildingType.Temple)).toBe(true);
+    });
+
+    it('devrait compter les temples et bibliothèques ensemble', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighbor(HexDirection.N);
+      const northeast = center.neighbor(HexDirection.NE);
+
+      const grid = new HexGrid([
+        new Hex(center),
+        new Hex(north),
+        new Hex(northeast),
+      ]);
+      const map = new GameMap(grid);
+      const civId = CivilizationId.create('civ1');
+      map.registerCivilization(civId);
+
+      const vertex = Vertex.create(center, north, northeast);
+      map.addCity(vertex, civId, CityLevel.Metropolis); // Niveau 3 = 3 points
+
+      const city = map.getCity(vertex);
+      expect(city).toBeTruthy();
+
+      // Construire une bibliothèque
+      let resources = new PlayerResources();
+      resources.addResource(ResourceType.Wood, 6);
+      resources.addResource(ResourceType.Brick, 4);
+      resources.addResource(ResourceType.Sheep, 6);
+      BuildingController.buildBuilding(BuildingType.Library, city!, map, vertex, resources);
+
+      // Construire un temple
+      resources = new PlayerResources();
+      resources.addResource(ResourceType.Wood, 8);
+      resources.addResource(ResourceType.Brick, 10);
+      resources.addResource(ResourceType.Ore, 3);
+      BuildingController.buildBuilding(BuildingType.Temple, city!, map, vertex, resources);
+
+      const points = calculateCivilizationPoints(map, civId);
+      expect(points).toBe(5); // 3 (métropole) + 1 (bibliothèque) + 1 (temple) = 5
+    });
+  });
 });
