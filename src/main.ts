@@ -279,7 +279,7 @@ function main(): void {
         const resourceBuildings = getResourceProductionBuildings();
         if (resourceBuildings.includes(buildingType)) {
           const currentTime = gameClock.getCurrentTime();
-          city.setBuildingProductionTime(buildingType, currentTime);
+          city.getBuilding(buildingType)?.setProductionTimeSeconds(currentTime);
         }
         
         updateResourcesDisplay();

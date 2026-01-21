@@ -64,12 +64,13 @@ describe('City - Niveaux de bâtiments', () => {
       expect(city.canUpgradeBuilding(BuildingType.Sawmill)).toBe(true);
     });
 
-    it('devrait retourner true même pour un bâtiment de haut niveau', () => {
+    it('devrait retourner false quand un bâtiment de production est au niveau max (5)', () => {
       city.addBuilding(BuildingType.Sawmill);
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 4; i++) {
         city.upgradeBuilding(BuildingType.Sawmill);
       }
-      expect(city.canUpgradeBuilding(BuildingType.Sawmill)).toBe(true);
+      expect(city.getBuildingLevel(BuildingType.Sawmill)).toBe(5);
+      expect(city.canUpgradeBuilding(BuildingType.Sawmill)).toBe(false);
     });
   });
 
@@ -90,6 +91,13 @@ describe('City - Niveaux de bâtiments', () => {
       city.addBuilding(BuildingType.Sawmill);
       expect(() => city.setBuildingLevel(BuildingType.Sawmill, 0)).toThrow(
         'Le niveau doit être au moins 1.'
+      );
+    });
+
+    it('devrait lever une erreur si le niveau dépasse le max (5) pour un bâtiment de production', () => {
+      city.addBuilding(BuildingType.Sawmill);
+      expect(() => city.setBuildingLevel(BuildingType.Sawmill, 6)).toThrow(
+        'Le niveau ne peut pas dépasser 5.'
       );
     });
   });
@@ -121,6 +129,22 @@ describe('City - Niveaux de bâtiments', () => {
       const mine = serialized.buildings.find(b => b.type === BuildingType.Mine);
       expect(sawmill!.level).toBe(2);
       expect(mine!.level).toBe(1);
+    });
+
+    it('devrait inclure productionTimeSeconds dans le building sérialisé si défini', () => {
+      city.addBuilding(BuildingType.Sawmill);
+      city.getBuilding(BuildingType.Sawmill)!.setProductionTimeSeconds(42);
+
+      const serialized = city.serialize();
+      const sawmill = serialized.buildings.find(b => b.type === BuildingType.Sawmill);
+      expect(sawmill).toBeDefined();
+      expect(sawmill!.productionTimeSeconds).toBe(42);
+    });
+
+    it('ne devrait pas gérer buildingProductionTimes séparément', () => {
+      city.addBuilding(BuildingType.Sawmill);
+      const serialized = city.serialize();
+      expect('buildingProductionTimes' in (serialized as any)).toBe(false);
     });
   });
 });

@@ -331,8 +331,8 @@ describe('BuildingProductionController', () => {
       
       // Définir un temps de production dans le passé pour que les deux villes soient prêtes
       gameClock.updateTime(2.0);
-      city1.setBuildingProductionTime(BuildingType.Sawmill, 0.5);
-      city2.setBuildingProductionTime(BuildingType.Sawmill, 0.5);
+      city1.getBuilding(BuildingType.Sawmill)!.setProductionTimeSeconds(0.5);
+      city2.getBuilding(BuildingType.Sawmill)!.setProductionTimeSeconds(0.5);
 
       // Traiter la production automatique
       const results = BuildingProductionController.processAutomaticProduction(
@@ -368,9 +368,9 @@ describe('BuildingProductionController', () => {
       
       // Initialiser le temps de production pour les deux villes
       gameClock.updateTime(0.0);
-      city1.setBuildingProductionTime(BuildingType.Sawmill, 0.0);
+      city1.getBuilding(BuildingType.Sawmill)!.setProductionTimeSeconds(0.0);
       // City2 reste au niveau 1 (intervalle 1.0s), donc ne produira pas à t=0.8s
-      city2.setBuildingProductionTime(BuildingType.Sawmill, 0.0);
+      city2.getBuilding(BuildingType.Sawmill)!.setProductionTimeSeconds(0.0);
       
       // À t=0.5s, aucun bâtiment ne produit encore
       gameClock.updateTime(0.5);
@@ -406,9 +406,9 @@ describe('BuildingProductionController', () => {
       
       // Initialiser le temps de production pour les deux villes
       gameClock.updateTime(0.0);
-      city1.setBuildingProductionTime(BuildingType.Sawmill, 0.0);
+      city1.getBuilding(BuildingType.Sawmill)!.setProductionTimeSeconds(0.0);
       // City2 reste au niveau 1 (intervalle 1.0s), donc ne produira pas à t=0.65s
-      city2.setBuildingProductionTime(BuildingType.Sawmill, 0.0);
+      city2.getBuilding(BuildingType.Sawmill)!.setProductionTimeSeconds(0.0);
       
       // À t=0.65s (> 0.64s), le bâtiment niveau 3 devrait produire (city1 uniquement)
       gameClock.updateTime(0.65);
@@ -429,8 +429,8 @@ describe('BuildingProductionController', () => {
       
       // Première ville prête à t=1.0
       gameClock.updateTime(1.0);
-      city1.setBuildingProductionTime(BuildingType.Sawmill, 0.0);
-      city2.setBuildingProductionTime(BuildingType.Sawmill, 0.5); // Pas encore prête
+      city1.getBuilding(BuildingType.Sawmill)!.setProductionTimeSeconds(0.0);
+      city2.getBuilding(BuildingType.Sawmill)!.setProductionTimeSeconds(0.5); // Pas encore prête
 
       // Première récolte
       let results = BuildingProductionController.processAutomaticProduction(

@@ -978,15 +978,11 @@ export class GameMap {
       map.addCity(v, owner, c.level as CityLevel);
       const city = map.getCity(v)!;
       for (const b of c.buildings) {
-        // Support ancien format (string) et nouveau format (BuildingSerialized)
-        if (typeof b === 'string') {
-          city.addBuildingWithLevel(b as BuildingType, 1);
-        } else {
-          city.addBuildingWithLevel(b.type as BuildingType, b.level);
+        // Nouveau format uniquement: BuildingSerialized
+        city.addBuildingWithLevel(b.type as BuildingType, b.level);
+        if (b.productionTimeSeconds !== undefined) {
+          city.getBuilding(b.type as BuildingType)?.setProductionTimeSeconds(b.productionTimeSeconds);
         }
-      }
-      for (const [bt, time] of Object.entries(c.buildingProductionTimes)) {
-        city.setBuildingProductionTime(bt as BuildingType, time);
       }
     }
     for (const r of data.roads) {

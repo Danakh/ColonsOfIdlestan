@@ -3,7 +3,7 @@ import { CivilizationId } from '../model/map/CivilizationId';
 import { PlayerResources } from '../model/game/PlayerResources';
 import { GameClock } from '../model/game/GameClock';
 import { City } from '../model/city/City';
-import { BuildingType, getRequiredHexType, getResourceProductionBuildings } from '../model/city/BuildingType';
+import { BuildingType, getRequiredHexType } from '../model/city/BuildingType';
 import { HexType } from '../model/map/HexType';
 import { HexCoord } from '../model/hex/HexCoord';
 import { Vertex } from '../model/hex/Vertex';
@@ -103,14 +103,10 @@ export class BuildingProductionController {
     const results: BuildingProductionResult[] = [];
     
     // Obtenir les bâtiments de production de ressources construits dans cette ville
-    const resourceBuildings = getResourceProductionBuildings();
-    const cityBuildings = city.getBuildings();
+    const productionBuildings = city.getProductionBuildings();
     
-    for (const buildingType of cityBuildings) {
-      // Vérifier si c'est un bâtiment de production de ressources
-      if (!resourceBuildings.includes(buildingType)) {
-        continue;
-      }
+    for (const building of productionBuildings) {
+      const buildingType = building.type;
       
       // Obtenir le type d'hex requis pour ce bâtiment
       const requiredHexType = getRequiredHexType(buildingType);
@@ -120,20 +116,19 @@ export class BuildingProductionController {
       
       // Vérifier si le temps de production est écoulé
       const currentTime = gameClock.getCurrentTime();
-      const lastProductionTime = city.getBuildingProductionTime(buildingType);
+      const lastProductionTime = building.getProductionTimeSeconds();
       
       // Si le bâtiment n'a jamais produit, initialiser son temps de production au temps actuel
       if (lastProductionTime === undefined) {
-        city.setBuildingProductionTime(buildingType, currentTime);
+        building.setProductionTimeSeconds(currentTime);
         continue; // Ne pas produire immédiatement à la construction
       }
       
       // Calculer le temps écoulé depuis la dernière production
       const timeElapsed = currentTime - lastProductionTime;
       
-      // Obtenir le niveau du bâtiment et calculer l'intervalle de production
-      const buildingLevel = city.getBuildingLevel(buildingType) ?? 1;
-      const productionInterval = this.getProductionInterval(buildingLevel);
+      // Calculer l'intervalle de production basé sur le niveau du bâtiment
+      const productionInterval = this.getProductionInterval(building.level);
       
       // Vérifier si l'intervalle de production est écoulé
       if (timeElapsed < productionInterval) {
@@ -168,7 +163,7 @@ export class BuildingProductionController {
             // Calculer le nouveau temps de production : ancien temps + intervalle (basé sur le niveau)
             // Cela garantit que la production respecte l'intervalle calculé selon le niveau
             const newProductionTime = lastProductionTime + productionInterval;
-            city.updateBuildingProductionTime(buildingType, newProductionTime);
+            building.updateProductionTimeSeconds(newProductionTime);
             
             results.push({
               cityVertex: city.vertex,
@@ -257,17 +252,12 @@ export class BuildingProductionController {
       }
 
       // Obtenir les bâtiments de production de ressources de cette ville
-      const resourceBuildings = getResourceProductionBuildings();
-      const cityBuildings = city.getBuildings();
+      const productionBuildings = city.getProductionBuildings();
       
       // Vérifier si un bâtiment peut récolter cet hex
-      for (const buildingType of cityBuildings) {
-        if (!resourceBuildings.includes(buildingType)) {
-          continue;
-        }
-        
+      for (const building of productionBuildings) {
         // Vérifier si ce bâtiment récolte ce type d'hex
-        const requiredHexType = getRequiredHexType(buildingType);
+        const requiredHexType = getRequiredHexType(building.type);
         if (requiredHexType === hexType) {
           // Vérifier que l'hex est bien adjacent au vertex de la ville
           const vertexHexes = vertex.getHexes();

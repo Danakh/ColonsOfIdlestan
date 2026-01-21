@@ -1,13 +1,5 @@
-import { BuildingType, getBuildingUpgradeCost } from './BuildingType';
+import { BuildingType, getBuildingUpgradeCost, getResourceProductionBuildings } from './BuildingType';
 import { ResourceType } from '../map/ResourceType';
-
-/**
- * Format sérialisé d'un bâtiment.
- */
-export interface BuildingSerialized {
-  type: string;
-  level: number;
-}
 
 /**
  * Représente un bâtiment construit dans une ville.
@@ -17,6 +9,9 @@ export interface BuildingSerialized {
  */
 export class Building {
   private _level: number;
+  private _productionTimeSeconds: number | undefined;
+  private static readonly DEFAULT_MAX_LEVEL = 1;
+  private static readonly PRODUCTION_MAX_LEVEL = 5;
 
   /**
    * Crée un nouveau bâtiment.
@@ -30,6 +25,10 @@ export class Building {
     if (level < 1) {
       throw new Error(`Le niveau doit être au moins 1.`);
     }
+    const maxLevel = Building.getMaxLevel(type);
+    if (level > maxLevel) {
+      throw new Error(`Le niveau ne peut pas dépasser ${maxLevel}.`);
+    }
     this._level = level;
   }
 
@@ -41,12 +40,47 @@ export class Building {
   }
 
   /**
+   * Niveau maximum autorisé pour ce bâtiment.
+   * Par défaut: 1. Bâtiments de production: 5.
+   */
+  getMaxLevel(): number {
+    return Building.getMaxLevel(this.type);
+  }
+
+  private static getMaxLevel(type: BuildingType): number {
+    return getResourceProductionBuildings().includes(type)
+      ? Building.PRODUCTION_MAX_LEVEL
+      : Building.DEFAULT_MAX_LEVEL;
+  }
+
+  /**
+   * Retourne le temps de dernière production (en secondes depuis le début), ou undefined si jamais produit.
+   */
+  getProductionTimeSeconds(): number | undefined {
+    return this._productionTimeSeconds;
+  }
+
+  /**
+   * Définit le temps de dernière production (en secondes depuis le début).
+   */
+  setProductionTimeSeconds(timeSeconds: number): void {
+    this._productionTimeSeconds = timeSeconds;
+  }
+
+  /**
+   * Met à jour le temps de dernière production.
+   * Alias de setProductionTimeSeconds pour garder un nom explicite.
+   */
+  updateProductionTimeSeconds(newTimeSeconds: number): void {
+    this._productionTimeSeconds = newTimeSeconds;
+  }
+
+  /**
    * Vérifie si le bâtiment peut être amélioré.
    * @returns true si le bâtiment peut être amélioré
    */
   canUpgrade(): boolean {
-    // Pas de limite de niveau pour l'instant
-    return true;
+    return this._level < this.getMaxLevel();
   }
 
   /**
@@ -54,6 +88,9 @@ export class Building {
    * @returns Le coût sous forme de Map<ResourceType, number>
    */
   getUpgradeCost(): Map<ResourceType, number> {
+    if (!this.canUpgrade()) {
+      throw new Error(`Le bâtiment ${this.type} est déjà au niveau maximum (${this.getMaxLevel()}).`);
+    }
     return getBuildingUpgradeCost(this.type, this._level);
   }
 
@@ -63,7 +100,7 @@ export class Building {
    */
   upgrade(): void {
     if (!this.canUpgrade()) {
-      throw new Error(`Le bâtiment ${this.type} ne peut pas être amélioré.`);
+      throw new Error(`Le bâtiment ${this.type} est déjà au niveau maximum (${this.getMaxLevel()}).`);
     }
     this._level += 1;
   }
@@ -75,6 +112,10 @@ export class Building {
   setLevel(level: number): void {
     if (level < 1) {
       throw new Error(`Le niveau doit être au moins 1.`);
+    }
+    const maxLevel = this.getMaxLevel();
+    if (level > maxLevel) {
+      throw new Error(`Le niveau ne peut pas dépasser ${maxLevel}.`);
     }
     this._level = level;
   }
@@ -91,24 +132,5 @@ export class Building {
    */
   toString(): string {
     return `Building(type=${this.type}, level=${this._level})`;
-  }
-
-  /**
-   * Sérialise le bâtiment.
-   */
-  serialize(): BuildingSerialized {
-    return {
-      type: this.type,
-      level: this._level,
-    };
-  }
-
-  /**
-   * Désérialise un bâtiment.
-   * @param data - Les données sérialisées
-   * @returns Un nouveau bâtiment
-   */
-  static deserialize(data: BuildingSerialized): Building {
-    return new Building(data.type as BuildingType, data.level);
   }
 }

@@ -21,17 +21,30 @@ describe('Building', () => {
       expect(() => new Building(BuildingType.Sawmill, 0)).toThrow('Le niveau doit être au moins 1.');
       expect(() => new Building(BuildingType.Sawmill, -1)).toThrow('Le niveau doit être au moins 1.');
     });
+
+    it('devrait lever une erreur si le niveau dépasse la limite (production max=5)', () => {
+      expect(() => new Building(BuildingType.Sawmill, 6)).toThrow('Le niveau ne peut pas dépasser 5.');
+    });
+
+    it('devrait lever une erreur si le niveau dépasse la limite (non-production max=1)', () => {
+      expect(() => new Building(BuildingType.Market, 2)).toThrow('Le niveau ne peut pas dépasser 1.');
+    });
   });
 
   describe('canUpgrade', () => {
-    it('devrait retourner true pour un bâtiment niveau 1', () => {
+    it('devrait retourner true pour un bâtiment de production niveau 1', () => {
       const building = new Building(BuildingType.Sawmill);
       expect(building.canUpgrade()).toBe(true);
     });
 
-    it('devrait retourner true pour un bâtiment de haut niveau', () => {
-      const building = new Building(BuildingType.Sawmill, 10);
-      expect(building.canUpgrade()).toBe(true);
+    it('devrait retourner false pour un bâtiment de production au niveau max (5)', () => {
+      const building = new Building(BuildingType.Sawmill, 5);
+      expect(building.canUpgrade()).toBe(false);
+    });
+
+    it('devrait retourner false pour un bâtiment non-producteur (max=1)', () => {
+      const building = new Building(BuildingType.Market, 1);
+      expect(building.canUpgrade()).toBe(false);
     });
   });
 
@@ -42,12 +55,24 @@ describe('Building', () => {
       expect(building.level).toBe(2);
     });
 
-    it('devrait permettre plusieurs améliorations successives', () => {
+    it('devrait permettre plusieurs améliorations successives jusqu’au niveau 5', () => {
       const building = new Building(BuildingType.Sawmill);
-      building.upgrade();
-      building.upgrade();
-      building.upgrade();
-      expect(building.level).toBe(4);
+      building.upgrade(); // 2
+      building.upgrade(); // 3
+      building.upgrade(); // 4
+      building.upgrade(); // 5
+      expect(building.level).toBe(5);
+      expect(building.canUpgrade()).toBe(false);
+    });
+
+    it('devrait lever une erreur si on essaie de dépasser le niveau max', () => {
+      const building = new Building(BuildingType.Sawmill, 5);
+      expect(() => building.upgrade()).toThrow('Le bâtiment Sawmill est déjà au niveau maximum (5).');
+    });
+
+    it('devrait lever une erreur pour un bâtiment non-producteur (max=1)', () => {
+      const building = new Building(BuildingType.Market, 1);
+      expect(() => building.upgrade()).toThrow('Le bâtiment Market est déjà au niveau maximum (1).');
     });
   });
 
@@ -70,13 +95,23 @@ describe('Building', () => {
       expect(cost.get(ResourceType.Brick)).toBe(6);
     });
 
-    it('devrait retourner le coût multiplié par le niveau pour un bâtiment niveau 5', () => {
-      const building = new Building(BuildingType.Sawmill, 5);
+    it('devrait retourner le coût multiplié par le niveau pour un bâtiment niveau 4 (upgrade 4 -> 5)', () => {
+      const building = new Building(BuildingType.Sawmill, 4);
       const cost = building.getUpgradeCost();
       
-      // Coût de base * 5 pour Sawmill: Wood: 10, Brick: 15
-      expect(cost.get(ResourceType.Wood)).toBe(10);
-      expect(cost.get(ResourceType.Brick)).toBe(15);
+      // Coût de base * 4 pour Sawmill: Wood: 8, Brick: 12
+      expect(cost.get(ResourceType.Wood)).toBe(8);
+      expect(cost.get(ResourceType.Brick)).toBe(12);
+    });
+
+    it('devrait lever une erreur si le bâtiment est au niveau max', () => {
+      const building = new Building(BuildingType.Sawmill, 5);
+      expect(() => building.getUpgradeCost()).toThrow('Le bâtiment Sawmill est déjà au niveau maximum (5).');
+    });
+
+    it('devrait lever une erreur pour un bâtiment non-producteur (max=1)', () => {
+      const building = new Building(BuildingType.Market, 1);
+      expect(() => building.getUpgradeCost()).toThrow('Le bâtiment Market est déjà au niveau maximum (1).');
     });
   });
 
@@ -90,6 +125,11 @@ describe('Building', () => {
     it('devrait lever une erreur si le niveau est inférieur à 1', () => {
       const building = new Building(BuildingType.Sawmill);
       expect(() => building.setLevel(0)).toThrow('Le niveau doit être au moins 1.');
+    });
+
+    it('devrait lever une erreur si le niveau dépasse le max', () => {
+      const building = new Building(BuildingType.Sawmill);
+      expect(() => building.setLevel(6)).toThrow('Le niveau ne peut pas dépasser 5.');
     });
   });
 
@@ -107,30 +147,23 @@ describe('Building', () => {
     });
   });
 
-  describe('serialize / deserialize', () => {
-    it('devrait sérialiser correctement un bâtiment', () => {
-      const building = new Building(BuildingType.Sawmill, 3);
-      const serialized = building.serialize();
-      
-      expect(serialized.type).toBe(BuildingType.Sawmill);
-      expect(serialized.level).toBe(3);
+  describe('productionTimeSeconds', () => {
+    it('devrait retourner undefined par défaut', () => {
+      const building = new Building(BuildingType.Sawmill);
+      expect(building.getProductionTimeSeconds()).toBeUndefined();
     });
 
-    it('devrait désérialiser correctement un bâtiment', () => {
-      const data = { type: BuildingType.Mine, level: 7 };
-      const building = Building.deserialize(data);
-      
-      expect(building.type).toBe(BuildingType.Mine);
-      expect(building.level).toBe(7);
+    it('devrait permettre de définir et lire le temps de production', () => {
+      const building = new Building(BuildingType.Sawmill);
+      building.setProductionTimeSeconds(12.34);
+      expect(building.getProductionTimeSeconds()).toBe(12.34);
     });
 
-    it('devrait préserver les données après sérialisation/désérialisation', () => {
-      const original = new Building(BuildingType.Mill, 4);
-      const serialized = original.serialize();
-      const restored = Building.deserialize(serialized);
-      
-      expect(restored.type).toBe(original.type);
-      expect(restored.level).toBe(original.level);
+    it('devrait permettre de mettre à jour le temps de production', () => {
+      const building = new Building(BuildingType.Sawmill);
+      building.setProductionTimeSeconds(1.0);
+      building.updateProductionTimeSeconds(2.5);
+      expect(building.getProductionTimeSeconds()).toBe(2.5);
     });
   });
 

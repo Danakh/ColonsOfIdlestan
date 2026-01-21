@@ -2,15 +2,19 @@ import { Vertex } from '../hex/Vertex';
 import { CivilizationId } from '../map/CivilizationId';
 import { CityLevel, isValidCityLevel } from './CityLevel';
 import { BuildingType, getAllBuildingTypes, getResourceProductionBuildings } from './BuildingType';
-import { Building, BuildingSerialized } from './Building';
+import { Building } from './Building';
 
 /** Format sérialisé d'une ville. */
 export interface CitySerialized {
   vertex: [number, number][];
   owner: string;
   level: number;
-  buildings: BuildingSerialized[];
-  buildingProductionTimes: Record<string, number>;
+  buildings: Array<{
+    type: string;
+    level: number;
+    /** Temps de dernière production (en secondes depuis le début), si applicable */
+    productionTimeSeconds?: number;
+  }>;
 }
 
 /**
@@ -21,8 +25,6 @@ export interface CitySerialized {
  */
 export class City {
   private readonly buildings: Map<BuildingType, Building> = new Map();
-  /** Temps de dernière production pour chaque bâtiment de ressource (en secondes depuis le début) */
-  private readonly buildingProductionTimes: Map<BuildingType, number> = new Map();
 
   /**
    * Crée une nouvelle ville.
@@ -130,6 +132,21 @@ export class City {
   }
 
   /**
+   * Retourne la liste des bâtiments de production de ressources construits dans cette ville.
+   * @returns Un tableau des bâtiments de production
+   */
+  getProductionBuildings(): Building[] {
+    const productionTypes = getResourceProductionBuildings();
+    const result: Building[] = [];
+    for (const [type, building] of this.buildings) {
+      if (productionTypes.includes(type)) {
+        result.push(building);
+      }
+    }
+    return result;
+  }
+
+  /**
    * Vérifie si un type de bâtiment est construit dans la ville.
    * @param buildingType - Le type de bâtiment à vérifier
    * @returns true si le bâtiment est construit
@@ -224,45 +241,6 @@ export class City {
   }
 
   /**
-   * Enregistre le temps de dernière production pour un bâtiment de ressource.
-   * @param buildingType - Le type de bâtiment
-   * @param timeSeconds - Le temps en secondes
-   */
-  setBuildingProductionTime(buildingType: BuildingType, timeSeconds: number): void {
-    // Vérifier que c'est un bâtiment de ressource
-    const resourceBuildings = getResourceProductionBuildings();
-    if (!resourceBuildings.includes(buildingType)) {
-      throw new Error(`Le bâtiment ${buildingType} n'est pas un bâtiment de production de ressources.`);
-    }
-    
-    // Vérifier que le bâtiment est construit
-    if (!this.hasBuilding(buildingType)) {
-      throw new Error(`Le bâtiment ${buildingType} n'est pas construit dans cette ville.`);
-    }
-    
-    this.buildingProductionTimes.set(buildingType, timeSeconds);
-  }
-
-  /**
-   * Retourne le temps de dernière production d'un bâtiment de ressource.
-   * @param buildingType - Le type de bâtiment
-   * @returns Le temps de dernière production en secondes, ou undefined si jamais produit
-   */
-  getBuildingProductionTime(buildingType: BuildingType): number | undefined {
-    return this.buildingProductionTimes.get(buildingType);
-  }
-
-  /**
-   * Met à jour le temps de dernière production après une production réussie.
-   * Le nouveau temps est calculé comme : ancien temps + intervalle de production.
-   * @param buildingType - Le type de bâtiment
-   * @param newTimeSeconds - Le nouveau temps (ancien temps + intervalle)
-   */
-  updateBuildingProductionTime(buildingType: BuildingType, newTimeSeconds: number): void {
-    this.setBuildingProductionTime(buildingType, newTimeSeconds);
-  }
-
-  /**
    * Retourne le niveau d'un bâtiment.
    * @param buildingType - Le type de bâtiment
    * @returns Le niveau du bâtiment (1 = niveau de base), ou undefined si non construit
@@ -325,21 +303,17 @@ export class City {
     return `City(vertex=${this.vertex.toString()}, level=${this.level}, owner=${this.owner.toString()})`;
   }
 
-  /** Sérialise la ville (vertex, owner, level, buildings, buildingProductionTimes). */
+  /** Sérialise la ville (vertex, owner, level, buildings). */
   serialize(): CitySerialized {
-    const bpt: Record<string, number> = {};
-    for (const bt of getResourceProductionBuildings()) {
-      if (this.hasBuilding(bt)) {
-        const t = this.getBuildingProductionTime(bt);
-        if (t !== undefined) bpt[bt] = t;
-      }
-    }
     return {
       vertex: this.vertex.serialize(),
       owner: this.owner.serialize(),
       level: this.level,
-      buildings: [...this.buildings.values()].map(b => b.serialize()),
-      buildingProductionTimes: bpt,
+      buildings: [...this.buildings.values()].map(b => ({
+        type: b.type,
+        level: b.level,
+        productionTimeSeconds: b.getProductionTimeSeconds(),
+      })),
     };
   }
 }
