@@ -341,9 +341,14 @@ export class CityPanelView {
     const currentResourcesHash = this.getResourcesHash(playerResources);
     // Structure: uniquement les types de bâtiments construits
     const currentBuiltBuildingTypes = [...city.getBuildings()].sort();
-    // Dynamique: niveaux des bâtiments construits (upgrade)
+    // Dynamique: niveaux des bâtiments construits (upgrade) et spécialisations
     const currentCityBuildingLevelsKey = currentBuiltBuildingTypes
-      .map((bt) => `${bt}:${city.getBuildingLevel(bt) ?? city.getBuilding(bt)?.level ?? 0}`)
+      .map((bt) => {
+        const building = city.getBuilding(bt);
+        const level = building?.level ?? 0;
+        const specialization = building?.getSpecialization();
+        return `${bt}:${level}${specialization ? `:${specialization}` : ''}`;
+      })
       .join(',');
     const currentCityLevel = city.level;
 
@@ -641,12 +646,38 @@ export class CityPanelView {
         }
       }
 
-      // Bouton Spécialisation: masquer si déjà spécialisé, afficher si Seaport niveau 2 sans spécialisation
-      const specializationBtn = li.querySelector('button.building-action-btn[data-building-action="Specialization"]') as HTMLButtonElement | null;
-      if (specializationBtn) {
-        if (buildingType === BuildingType.Seaport && building) {
-          const specialization = building.getSpecialization();
-          specializationBtn.hidden = specialization !== undefined;
+      // Bouton Spécialisation: créer s'il n'existe pas, masquer si déjà spécialisé, afficher si Seaport niveau 2 sans spécialisation
+      let specializationBtn = li.querySelector('button.building-action-btn[data-building-action="Specialization"]') as HTMLButtonElement | null;
+      if (buildingType === BuildingType.Seaport && building && building.level === 2) {
+        const specialization = building.getSpecialization();
+        if (specialization === undefined) {
+          // Le bouton doit être visible, créer s'il n'existe pas
+          if (!specializationBtn) {
+            specializationBtn = document.createElement('button');
+            specializationBtn.className = 'building-action-btn';
+            specializationBtn.textContent = BUILDING_ACTION_NAMES[BuildingAction.Specialization];
+            specializationBtn.disabled = false;
+            specializationBtn.dataset.buildingAction = BuildingAction.Specialization;
+            specializationBtn.dataset.buildingType = buildingType;
+            // Insérer après le bouton Upgrade s'il existe, sinon à la fin
+            const upgradeBtn = li.querySelector('button.building-action-btn[data-building-action="Upgrade"]') as HTMLButtonElement | null;
+            if (upgradeBtn && upgradeBtn.parentNode) {
+              upgradeBtn.parentNode.insertBefore(specializationBtn, upgradeBtn.nextSibling);
+            } else {
+              li.appendChild(specializationBtn);
+            }
+          }
+          specializationBtn.hidden = false;
+        } else {
+          // Le port est spécialisé, masquer le bouton s'il existe
+          if (specializationBtn) {
+            specializationBtn.hidden = true;
+          }
+        }
+      } else {
+        // Le port n'est pas niveau 2, masquer le bouton s'il existe
+        if (specializationBtn) {
+          specializationBtn.hidden = true;
         }
       }
     }
