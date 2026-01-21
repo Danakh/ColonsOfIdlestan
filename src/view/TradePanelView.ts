@@ -210,10 +210,6 @@ export class TradePanelView {
   ): void {
     listElement.innerHTML = '';
 
-    const rate = (this.civId && this.gameMap)
-      ? TradeController.getTradeRateForCivilization(this.civId, this.gameMap)
-      : 4;
-
     for (const resourceType of this.resourceOrder) {
       const quantity = resourceMap.get(resourceType) || 0;
       const available = this.playerResources?.getResource(resourceType) || 0;
@@ -222,8 +218,13 @@ export class TradePanelView {
       item.className = 'trade-resource-item';
       
       // Pour la liste offerte, désactiver visuellement si on n'a pas assez pour un échange minimum
-      if (isOffered && available < rate) {
-        item.classList.add('disabled');
+      if (isOffered) {
+        const rate = (this.civId && this.gameMap)
+          ? TradeController.getTradeRateForResource(this.civId, this.gameMap, resourceType)
+          : 4;
+        if (available < rate) {
+          item.classList.add('disabled');
+        }
       }
 
       // Conteneur pour le sprite et le nom
@@ -312,7 +313,7 @@ export class TradePanelView {
     }
 
     const rate = (this.civId && this.gameMap)
-      ? TradeController.getTradeRateForCivilization(this.civId, this.gameMap)
+      ? TradeController.getTradeRateForResource(this.civId, this.gameMap, resourceType)
       : 4;
     
     // Déterminer le nombre de batches à ajouter selon les modificateurs
@@ -366,7 +367,7 @@ export class TradePanelView {
     const current = this.offeredResources.get(resourceType) || 0;
     if (current > 0) {
       const rate = (this.civId && this.gameMap)
-        ? TradeController.getTradeRateForCivilization(this.civId, this.gameMap)
+        ? TradeController.getTradeRateForResource(this.civId, this.gameMap, resourceType)
         : 4;
       
       // Déterminer le nombre de batches à retirer selon les modificateurs
@@ -408,12 +409,13 @@ export class TradePanelView {
    * Calcule le nombre total de batches offerts.
    */
   private getOfferedBatches(): number {
-    const rate = (this.civId && this.gameMap)
-      ? TradeController.getTradeRateForCivilization(this.civId, this.gameMap)
-      : 4;
+    if (!this.civId || !this.gameMap) {
+      return 0;
+    }
     let totalBatches = 0;
-    for (const [, quantity] of this.offeredResources.entries()) {
+    for (const [resourceType, quantity] of this.offeredResources.entries()) {
       if (quantity > 0) {
+        const rate = TradeController.getTradeRateForResource(this.civId, this.gameMap, resourceType);
         totalBatches += quantity / rate;
       }
     }

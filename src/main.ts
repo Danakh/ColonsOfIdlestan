@@ -2,6 +2,7 @@ import { MainGame } from './application/MainGame';
 import { HexMapRenderer } from './view/HexMapRenderer';
 import { CityPanelView } from './view/CityPanelView';
 import { TradePanelView } from './view/TradePanelView';
+import { PortSpecializationPanelView } from './view/PortSpecializationPanelView';
 import { ResourceSprites } from './view/ResourceSprites';
 import { InventoryView } from './view/InventoryView';
 import { ResourceHarvest } from './model/game/ResourceHarvest';
@@ -48,6 +49,9 @@ function main(): void {
 
   // Créer la vue du panneau de commerce
   const tradePanelView = new TradePanelView('trade-panel');
+
+  // Créer la vue du panneau de spécialisation du port
+  const portSpecializationPanelView = new PortSpecializationPanelView('port-specialization-panel');
 
   if (!canvas) {
     throw new Error('Canvas introuvable');
@@ -110,6 +114,9 @@ function main(): void {
 
   // Configurer les sprites de ressources pour le panneau de commerce
   tradePanelView.setResourceSprites(resourceSprites);
+
+  // Configurer les sprites de ressources pour le panneau de spécialisation
+  portSpecializationPanelView.setResourceSprites(resourceSprites);
   
   // Redimensionner le canvas au chargement et au redimensionnement
   renderer.resize();
@@ -224,7 +231,12 @@ function main(): void {
           const playerResources = game.getPlayerResources();
           BuildingController.upgradeBuilding(buildingType, city, playerResources);
           updateResourcesDisplay();
-          cityPanelView.scheduleRefresh();
+          cityPanelView.refreshNow();
+          const currentGameMap = game.getGameMap();
+          if (currentGameMap) {
+            const civId = game.getPlayerCivilizationId();
+            renderer.render(currentGameMap, civId);
+          }
         } else if (action === BuildingAction.Trade) {
           // Mettre à jour le contexte de jeu pour le panneau de commerce
           const currentGameMap = game.getGameMap();
@@ -236,6 +248,10 @@ function main(): void {
           // Ouvrir le panneau de commerce
           const playerResources = game.getPlayerResources();
           tradePanelView.show(playerResources);
+          return; // Ne pas mettre à jour le panneau de ville ni re-rendre
+        } else if (action === BuildingAction.Specialization) {
+          // Ouvrir le panneau de spécialisation
+          portSpecializationPanelView.show();
           return; // Ne pas mettre à jour le panneau de ville ni re-rendre
         }
         cityPanelView.refreshNow();
@@ -279,6 +295,47 @@ function main(): void {
     },
     onCancel: () => {
       tradePanelView.hide();
+    },
+  });
+
+  // Configurer les callbacks du panneau de spécialisation
+  portSpecializationPanelView.setCallbacks({
+    onSelectResource: (resource: ResourceType) => {
+      const selectedVertex = renderer.getSelectedVertex();
+      const currentGameMap = game.getGameMap();
+      if (!selectedVertex || !currentGameMap || !currentGameMap.hasCity(selectedVertex)) {
+        return;
+      }
+      const city = currentGameMap.getCity(selectedVertex);
+      if (!city) {
+        return;
+      }
+
+      try {
+        const seaport = city.getBuilding(BuildingType.Seaport);
+        if (seaport) {
+          seaport.setSpecialization(resource);
+          
+          // Mettre à jour l'affichage
+          updateResourcesDisplay();
+          cityPanelView.refreshNow();
+          
+          // Re-rendre la carte
+          const civId = game.getPlayerCivilizationId();
+          renderer.render(currentGameMap, civId);
+          
+          // Sauvegarder le jeu
+          autoSave();
+          
+          // Fermer le panneau de spécialisation
+          portSpecializationPanelView.hide();
+        }
+      } catch (error) {
+        console.error('Erreur lors de la spécialisation:', error);
+      }
+    },
+    onCancel: () => {
+      portSpecializationPanelView.hide();
     },
   });
 

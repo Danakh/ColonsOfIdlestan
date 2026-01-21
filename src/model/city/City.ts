@@ -120,12 +120,17 @@ export class City {
    * Ajoute un bâtiment à la ville avec un niveau spécifique (utilisé pour la désérialisation).
    * @param buildingType - Le type de bâtiment à ajouter
    * @param level - Le niveau du bâtiment
+   * @param specialization - La spécialisation optionnelle (pour les ports niveau 2)
    */
-  addBuildingWithLevel(buildingType: BuildingType, level: number): void {
+  addBuildingWithLevel(buildingType: BuildingType, level: number, specialization?: ResourceType): void {
     if (this.hasBuilding(buildingType)) {
       throw new Error(`Le bâtiment ${buildingType} est déjà construit dans cette ville.`);
     }
-    this.buildings.set(buildingType, new Building(buildingType, level));
+    const building = new Building(buildingType, level);
+    if (specialization !== undefined) {
+      building.setSpecialization(specialization);
+    }
+    this.buildings.set(buildingType, building);
   }
 
   /**

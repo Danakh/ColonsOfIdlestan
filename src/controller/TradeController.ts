@@ -13,6 +13,7 @@ import { calculateInventoryCapacity } from '../model/game/InventoryCapacity';
  */
 export class TradeController {
   private static readonly TRADE_RATE_SEAPORT = 3;
+  private static readonly TRADE_RATE_SEAPORT_SPECIALIZED = 2;
   private static readonly TRADE_RATE_MARKET = 4;
 
   /**
@@ -66,7 +67,7 @@ export class TradeController {
     }
 
     // Vérifier que le joueur a assez de ressources à échanger
-    const tradeRate = this.getTradeRateForCivilization(civId, map);
+    const tradeRate = this.getTradeRateForResource(civId, map, fromResource);
     if (!resources.hasEnough(fromResource, tradeRate)) {
       return false;
     }
@@ -104,7 +105,7 @@ export class TradeController {
         throw new Error('Vous ne pouvez pas échanger une ressource contre elle-même.');
       }
 
-      const tradeRate = this.getTradeRateForCivilization(civId, map);
+      const tradeRate = this.getTradeRateForResource(civId, map, fromResource);
       if (!resources.hasEnough(fromResource, tradeRate)) {
         throw new Error(
           `Pas assez de ${fromResource} pour effectuer l'échange. ` +
@@ -114,7 +115,7 @@ export class TradeController {
     }
 
     // Retirer les ressources échangées
-    const tradeRate = this.getTradeRateForCivilization(civId, map);
+    const tradeRate = this.getTradeRateForResource(civId, map, fromResource);
     resources.removeResource(fromResource, tradeRate);
 
     // Calculer la capacité d'inventaire maximale
@@ -139,6 +140,26 @@ export class TradeController {
   }
 
   /**
+   * Retourne la ressource spécialisée d'une civilisation (si un port niveau 2 est spécialisé).
+   * @param civId - L'identifiant de la civilisation
+   * @param map - La carte de jeu
+   * @returns La ressource spécialisée, ou null si aucune spécialisation
+   */
+  static getSpecializedResource(civId: CivilizationId, map: GameMap): ResourceType | null {
+    const cities = map.getCitiesByCivilization(civId);
+    for (const city of cities) {
+      const seaport = city.getBuilding(BuildingType.Seaport);
+      if (seaport && seaport.level === 2) {
+        const specialization = seaport.getSpecialization();
+        if (specialization !== undefined) {
+          return specialization;
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
    * Retourne le taux d'échange pour une civilisation : 3 si elle a un port (Seaport), 4 si marché (Market) uniquement.
    * @param civId - L'identifiant de la civilisation
    * @param map - La carte de jeu
@@ -156,11 +177,26 @@ export class TradeController {
   }
 
   /**
+   * Retourne le taux d'échange pour une ressource spécifique : 2 si spécialisée, sinon le taux standard.
+   * @param civId - L'identifiant de la civilisation
+   * @param map - La carte de jeu
+   * @param resource - La ressource à échanger
+   * @returns Le nombre de ressources à donner pour recevoir 1 (2, 3 ou 4)
+   */
+  static getTradeRateForResource(civId: CivilizationId, map: GameMap, resource: ResourceType): number {
+    const specializedResource = this.getSpecializedResource(civId, map);
+    if (specializedResource === resource) {
+      return this.TRADE_RATE_SEAPORT_SPECIALIZED;
+    }
+    return this.getTradeRateForCivilization(civId, map);
+  }
+
+  /**
    * Effectue plusieurs échanges en une seule transaction.
-   * Valide que les quantités offertes sont des multiples du taux (3 ou 4 selon port/marché)
+   * Valide que les quantités offertes sont des multiples du taux (2, 3 ou 4 selon spécialisation/port/marché)
    * et que les quantités demandées sont des multiples de 1.
    * 
-   * @param offeredResources - Map des ressources offertes (quantités multiples de 4)
+   * @param offeredResources - Map des ressources offertes (quantités multiples du taux approprié)
    * @param requestedResources - Map des ressources demandées (quantités multiples de 1)
    * @param civId - L'identifiant de la civilisation
    * @param map - La carte de jeu
@@ -182,15 +218,16 @@ export class TradeController {
       );
     }
 
-    const tradeRate = this.getTradeRateForCivilization(civId, map);
-
-    // Valider que toutes les quantités offertes sont des multiples du taux d'échange
+    // Valider que toutes les quantités offertes sont des multiples du taux d'échange approprié
     for (const [resourceType, quantity] of offeredResources.entries()) {
-      if (quantity > 0 && quantity % tradeRate !== 0) {
-        throw new Error(
-          `La quantité offerte de ${resourceType} doit être un multiple de ${tradeRate}. ` +
-          `Quantité actuelle: ${quantity}`
-        );
+      if (quantity > 0) {
+        const tradeRate = this.getTradeRateForResource(civId, map, resourceType);
+        if (quantity % tradeRate !== 0) {
+          throw new Error(
+            `La quantité offerte de ${resourceType} doit être un multiple de ${tradeRate}. ` +
+            `Quantité actuelle: ${quantity}`
+          );
+        }
       }
     }
 
@@ -245,7 +282,8 @@ export class TradeController {
         if (fromResource === toResource) continue; // Ne pas échanger contre la même ressource
 
         // Calculer combien d'échanges on peut faire avec cette ressource offerte
-        const availableOffers = offeredQty / tradeRate;
+        const resourceTradeRate = this.getTradeRateForResource(civId, map, fromResource);
+        const availableOffers = offeredQty / resourceTradeRate;
         const neededExchanges = remainingToReceive / this.TRADE_RECEIVED;
         const exchangesToDo = Math.min(availableOffers, neededExchanges);
 
@@ -258,7 +296,7 @@ export class TradeController {
 
           // Mettre à jour les quantités restantes
           remainingToReceive -= exchangesToDo * this.TRADE_RECEIVED;
-          const remainingOfferedQty = offeredQty - (exchangesToDo * tradeRate);
+          const remainingOfferedQty = offeredQty - (exchangesToDo * resourceTradeRate);
           remainingOffered.set(fromResource, remainingOfferedQty);
         }
       }

@@ -259,6 +259,8 @@ export enum BuildingAction {
   Trade = 'Trade',
   /** Améliorer - Débloqué par l'hôtel de ville */
   Upgrade = 'Upgrade',
+  /** Spécialisation - Débloqué par le port maritime niveau 2 */
+  Specialization = 'Specialization',
 }
 
 /**
@@ -281,4 +283,5 @@ export function getBuildingAction(buildingType: BuildingType): BuildingAction | 
 export const BUILDING_ACTION_NAMES: Record<BuildingAction, string> = {
   [BuildingAction.Trade]: 'Commerce',
   [BuildingAction.Upgrade]: 'Améliorer',
+  [BuildingAction.Specialization]: 'Spécialisation',
 };

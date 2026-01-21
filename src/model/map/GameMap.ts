@@ -8,6 +8,7 @@ import { CivilizationId } from './CivilizationId';
 import { City, CitySerialized } from '../city/City';
 import { CityLevel } from '../city/CityLevel';
 import { BuildingType } from '../city/BuildingType';
+import { ResourceType } from './ResourceType';
 
 /**
  * Carte de jeu construite sur une grille hexagonale.
@@ -956,7 +957,8 @@ export class GameMap {
       const city = map.getCity(v)!;
       for (const b of c.buildings) {
         // Nouveau format uniquement: BuildingSerialized
-        city.addBuildingWithLevel(b.type as BuildingType, b.level);
+        const specialization = b.specialization ? (b.specialization as ResourceType) : undefined;
+        city.addBuildingWithLevel(b.type as BuildingType, b.level, specialization);
         if (b.productionTimeSeconds !== undefined) {
           city.getBuilding(b.type as BuildingType)?.setProductionTimeSeconds(b.productionTimeSeconds);
         }

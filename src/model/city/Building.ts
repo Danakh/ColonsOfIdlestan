@@ -6,6 +6,7 @@ export interface BuildingSerialized {
   type: string;
   level: number;
   productionTimeSeconds?: number;
+  specialization?: string;
 }
 
 /**
@@ -17,10 +18,12 @@ export interface BuildingSerialized {
 export class Building {
   private _level: number;
   private _productionTimeSeconds: number | undefined;
+  private _specialization: ResourceType | undefined;
   private static readonly DEFAULT_MAX_LEVEL = 1;
   private static readonly PRODUCTION_MAX_LEVEL = 5;
   private static readonly TOWN_HALL_MAX_LEVEL = 4;
   private static readonly MARKET_MAX_LEVEL = 2;
+  private static readonly SEAPORT_MAX_LEVEL = 2;
 
   /**
    * Crée un nouveau bâtiment.
@@ -62,6 +65,9 @@ export class Building {
     }
     if (type === BuildingType.Market) {
       return Building.MARKET_MAX_LEVEL;
+    }
+    if (type === BuildingType.Seaport) {
+      return Building.SEAPORT_MAX_LEVEL;
     }
     return getResourceProductionBuildings().includes(type)
       ? Building.PRODUCTION_MAX_LEVEL
@@ -136,6 +142,29 @@ export class Building {
   }
 
   /**
+   * Retourne la spécialisation du bâtiment (pour les ports niveau 2).
+   * @returns La ressource spécialisée, ou undefined si aucune spécialisation
+   */
+  getSpecialization(): ResourceType | undefined {
+    return this._specialization;
+  }
+
+  /**
+   * Définit la spécialisation du bâtiment (pour les ports niveau 2).
+   * @param resource - La ressource à spécialiser
+   * @throws Error si le bâtiment n'est pas un port niveau 2
+   */
+  setSpecialization(resource: ResourceType): void {
+    if (this.type !== BuildingType.Seaport) {
+      throw new Error(`Seul le port maritime peut être spécialisé.`);
+    }
+    if (this._level < 2) {
+      throw new Error(`Le port doit être au niveau 2 pour être spécialisé.`);
+    }
+    this._specialization = resource;
+  }
+
+  /**
    * Vérifie l'égalité avec un autre bâtiment (basé sur le type).
    */
   equals(other: Building): boolean {
@@ -158,6 +187,7 @@ export class Building {
       type: this.type,
       level: this._level,
       productionTimeSeconds: this._productionTimeSeconds,
+      specialization: this._specialization,
     };
   }
 }

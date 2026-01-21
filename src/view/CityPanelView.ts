@@ -502,6 +502,21 @@ export class CityPanelView {
           item.appendChild(actionBtn);
         }
 
+        // Bouton Spécialisation si Seaport niveau 2 sans spécialisation
+        const building = city.getBuilding(buildingType);
+        if (buildingType === BuildingType.Seaport && building && building.level === 2) {
+          const specialization = building.getSpecialization();
+          if (specialization === undefined) {
+            const specializationBtn = document.createElement('button');
+            specializationBtn.className = 'building-action-btn';
+            specializationBtn.textContent = BUILDING_ACTION_NAMES[BuildingAction.Specialization];
+            specializationBtn.disabled = false;
+            specializationBtn.dataset.buildingAction = BuildingAction.Specialization;
+            specializationBtn.dataset.buildingType = buildingType;
+            item.appendChild(specializationBtn);
+          }
+        }
+
         // Bouton Améliorer (placeholder stable pour ne pas casser les hovers)
         const upgradeBtn = document.createElement('button');
         upgradeBtn.className = 'building-action-btn';
@@ -555,7 +570,24 @@ export class CityPanelView {
         if (state === 'built') {
           const building = city.getBuilding(buildingType);
           const lvl = building?.level ?? 1;
-          nameEl.textContent = `${getBuildingTypeName(buildingType)} (Niv. ${lvl})`;
+          let name = `${getBuildingTypeName(buildingType)} (Niv. ${lvl})`;
+          
+          // Ajouter la spécialisation dans le nom si applicable
+          if (buildingType === BuildingType.Seaport && building) {
+            const specialization = building.getSpecialization();
+            if (specialization !== undefined) {
+              const resourceNames: Record<ResourceType, string> = {
+                [ResourceType.Wood]: 'Bois',
+                [ResourceType.Brick]: 'Brique',
+                [ResourceType.Wheat]: 'Blé',
+                [ResourceType.Sheep]: 'Mouton',
+                [ResourceType.Ore]: 'Minerai',
+              };
+              name = `${getBuildingTypeName(buildingType)} (${resourceNames[specialization]})`;
+            }
+          }
+          
+          nameEl.textContent = name;
         } else {
           nameEl.textContent = getBuildingTypeName(buildingType);
         }
@@ -606,6 +638,15 @@ export class CityPanelView {
           upgradeBtn.disabled = true;
         } else {
           upgradeBtn.disabled = !BuildingController.canUpgrade(buildingType, city, playerResources);
+        }
+      }
+
+      // Bouton Spécialisation: masquer si déjà spécialisé, afficher si Seaport niveau 2 sans spécialisation
+      const specializationBtn = li.querySelector('button.building-action-btn[data-building-action="Specialization"]') as HTMLButtonElement | null;
+      if (specializationBtn) {
+        if (buildingType === BuildingType.Seaport && building) {
+          const specialization = building.getSpecialization();
+          specializationBtn.hidden = specialization !== undefined;
         }
       }
     }
