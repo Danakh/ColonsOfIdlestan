@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TradeController } from '../../src/controller/TradeController';
 import { BuildingController } from '../../src/controller/BuildingController';
-import { Make7HexesMap, Make7HexesMapWithPortCity } from '../utils/GameStateGenerator';
+import { Make7HexesMap } from '../utils/GameStateGenerator';
+import { Make7HexesMapWithPortCity } from '../utils/GameProgressionTest';
 import { HexCoord } from '../../src/model/hex/HexCoord';
 import { HexDirection } from '../../src/model/hex/HexDirection';
 import { Vertex } from '../../src/model/hex/Vertex';

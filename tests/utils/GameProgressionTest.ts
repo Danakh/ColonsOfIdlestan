@@ -1,0 +1,274 @@
+import { HexCoord } from '../../src/model/hex/HexCoord';
+import { HexDirection } from '../../src/model/hex/HexDirection';
+import { Vertex } from '../../src/model/hex/Vertex';
+import { Edge } from '../../src/model/hex/Edge';
+import { GameMap } from '../../src/model/map/GameMap';
+import { HexType } from '../../src/model/map/HexType';
+import { CivilizationId } from '../../src/model/map/CivilizationId';
+import { CityLevel } from '../../src/model/city/CityLevel';
+import { BuildingType } from '../../src/model/city/BuildingType';
+import { ResourceType } from '../../src/model/map/ResourceType';
+import { GameState } from '../../src/model/game/GameState';
+import { ResourceHarvestController } from '../../src/controller/ResourceHarvestController';
+import { OutpostController } from '../../src/controller/OutpostController';
+import { RoadConstruction } from '../../src/model/game/RoadConstruction';
+import { GameAutoPlayer } from './GameAutoPlayer';
+import { Make7HexesMap, saveGameState } from './GameStateGenerator';
+
+/**
+ * Crée une carte 7Hexes avec des routes et une ville niveau 3 au bord de l'eau avec un port spécialisé en argile.
+ * Simule une partie complète en utilisant les nouvelles méthodes utilitaires de GameAutoPlayer.
+ * Part d'un outpost, construit des bâtiments de production et progresse jusqu'au port niveau 3.
+ * 
+ * @returns Un GameState avec une carte 7Hexes, des routes, et une ville Metropolis (niveau 3) avec un port niveau 3 spécialisé en Brick
+ */
+export function Make7HexesMapWithPortCity(): GameState {
+  // Partir de la carte de base
+  const gs = Make7HexesMap();
+  const gameMap = gs.getGameMap();
+  if (!gameMap) throw new Error('Carte non trouvée');
+  
+  const civId = gs.getPlayerCivilizationId();
+  const resources = gs.getPlayerResources();
+  const gameClock = gs.getGameClock();
+  const center = new HexCoord(0, 0);
+  
+  // Réinitialiser les cooldowns de récolte pour la simulation
+  ResourceHarvestController.resetCooldowns();
+  
+  // Ville initiale créée par Make7HexesMap (niveau Colony avec TownHall niveau 1)
+  const initialCityVertex = Vertex.create(
+    center,
+    center.neighbor(HexDirection.N),
+    center.neighbor(HexDirection.NW)
+  );
+  const initialCity = gameMap.getCity(initialCityVertex);
+  if (!initialCity) throw new Error('Ville initiale non trouvée');
+  
+  // Étape 1: Construire un marché pour permettre le commerce
+  GameAutoPlayer.playUntilBuilding(
+    BuildingType.Market,
+    initialCityVertex,
+    civId,
+    gameMap,
+    resources,
+    gameClock
+  );
+  
+  // Étape 2: Construire des bâtiments de production pour accélérer la récolte
+  // Construire une briqueterie (Brickworks) pour produire automatiquement de la brique
+  GameAutoPlayer.playUntilBuilding(
+    BuildingType.Brickworks,
+    initialCityVertex,
+    civId,
+    gameMap,
+    resources,
+    gameClock
+  );
+  
+  // Étape 3: Améliorer le TownHall pour passer la ville au niveau 2 (Town)
+  GameAutoPlayer.playUntilImproveBuilding(
+    BuildingType.TownHall,
+    initialCityVertex,
+    civId,
+    gameMap,
+    resources,
+    gameClock
+  );
+  
+  // Étape 4: Construire des routes pour étendre le territoire
+  const seHex = center.neighbor(HexDirection.SE);
+  const sHex = center.neighbor(HexDirection.S);
+  
+  // Route 1: centre -> SE
+  const road1 = Edge.create(center, seHex);
+  if (RoadConstruction.canBuildRoad(road1, civId, gameMap)) {
+    GameAutoPlayer.playUntilBuildingRoad(road1, civId, gameMap, resources, gameClock);
+  }
+  
+  // Route 2: SE -> S
+  const road2 = Edge.create(seHex, sHex);
+  if (RoadConstruction.canBuildRoad(road2, civId, gameMap)) {
+    GameAutoPlayer.playUntilBuildingRoad(road2, civId, gameMap, resources, gameClock);
+  }
+  
+  // Route 3: centre -> S
+  const road3 = Edge.create(center, sHex);
+  if (RoadConstruction.canBuildRoad(road3, civId, gameMap)) {
+    GameAutoPlayer.playUntilBuildingRoad(road3, civId, gameMap, resources, gameClock);
+  }
+  
+  // Étape 5: Trouver un vertex au bord de l'eau pour créer la ville portuaire
+  let portCityVertex: Vertex | undefined;
+  const grid = gameMap.getGrid();
+  
+  // Chercher parmi les vertices du centre qui touchent l'eau
+  const centerVertices = grid.getVerticesForHex(center);
+  
+  for (const vertex of centerVertices) {
+    const hexes = vertex.getHexes();
+    let hasWater = false;
+    let hasLand = false;
+    
+    for (const hexCoord of hexes) {
+      const hexType = gameMap.getHexType(hexCoord);
+      if (hexType === HexType.Water) {
+        hasWater = true;
+      } else if (hexType !== undefined) {
+        hasLand = true;
+      }
+    }
+    
+    if (hasWater && hasLand && !gameMap.hasCity(vertex)) {
+      portCityVertex = vertex;
+      break;
+    }
+  }
+  
+  // Si pas trouvé, chercher parmi les vertices du hex SE
+  if (!portCityVertex) {
+    const seVertices = grid.getVerticesForHex(seHex);
+    for (const vertex of seVertices) {
+      const hexes = vertex.getHexes();
+      let hasWater = false;
+      let hasLand = false;
+      
+      for (const hexCoord of hexes) {
+        const hexType = gameMap.getHexType(hexCoord);
+        if (hexType === HexType.Water) {
+          hasWater = true;
+        } else if (hexType !== undefined) {
+          hasLand = true;
+        }
+      }
+      
+      if (hasWater && hasLand && !gameMap.hasCity(vertex)) {
+        portCityVertex = vertex;
+        break;
+      }
+    }
+  }
+  
+  // Si toujours pas trouvé, utiliser le premier vertex valide du centre qui n'a pas de ville
+  if (!portCityVertex) {
+    for (const vertex of centerVertices) {
+      if (!gameMap.hasCity(vertex)) {
+        portCityVertex = vertex;
+        break;
+      }
+    }
+  }
+  
+  if (!portCityVertex) {
+    throw new Error('Impossible de trouver un vertex valide pour la ville portuaire');
+  }
+  
+  // Étape 6: Créer un outpost au bord de l'eau (niveau 0)
+  // Pour créer un outpost, il faut qu'il touche une route et soit à 2+ routes d'une ville
+  if (OutpostController.canBuildOutpost(portCityVertex, civId, gameMap)) {
+    GameAutoPlayer.playUntilOutpost(portCityVertex, civId, gameMap, resources, gameClock);
+  } else {
+    // Si on ne peut pas créer d'outpost (pas assez de routes), créer directement un outpost
+    // (on peut créer un outpost directement avec addCity et CityLevel.Outpost)
+    gameMap.addCity(portCityVertex, civId, CityLevel.Outpost);
+  }
+  
+  const portCity = gameMap.getCity(portCityVertex);
+  if (!portCity) throw new Error('Ville portuaire non trouvée après addCity');
+  
+  // Vérifier qu'on part bien d'un outpost (niveau 0, pas de TownHall)
+  if (portCity.level !== CityLevel.Outpost) {
+    throw new Error(`La ville portuaire devrait être un outpost (niveau 0), mais elle est au niveau ${portCity.level}`);
+  }
+  
+  // Étape 7: Construire un TownHall pour passer de Outpost à Colony (niveau 1)
+  // Un outpost peut construire un TownHall niveau 1
+  GameAutoPlayer.playUntilBuilding(
+    BuildingType.TownHall,
+    portCityVertex,
+    civId,
+    gameMap,
+    resources,
+    gameClock
+  );
+  
+  // Étape 8: Améliorer le TownHall au niveau 2 pour passer la ville au niveau 2 (Town)
+  GameAutoPlayer.playUntilImproveBuilding(
+    BuildingType.TownHall,
+    portCityVertex,
+    civId,
+    gameMap,
+    resources,
+    gameClock
+  );
+  
+  // Étape 9: Améliorer le TownHall au niveau 3 pour passer la ville au niveau 3 (Metropolis)
+  GameAutoPlayer.playUntilImproveBuilding(
+    BuildingType.TownHall,
+    portCityVertex,
+    civId,
+    gameMap,
+    resources,
+    gameClock
+  );
+  
+  // Vérifier que la ville est bien au niveau 3
+  if (portCity.level !== CityLevel.Metropolis) {
+    throw new Error(`La ville portuaire devrait être au niveau Metropolis (3), mais elle est au niveau ${portCity.level}`);
+  }
+  
+  // Étape 10: Construire le port niveau 1
+  GameAutoPlayer.playUntilBuilding(
+    BuildingType.Seaport,
+    portCityVertex,
+    civId,
+    gameMap,
+    resources,
+    gameClock
+  );
+  
+  // Étape 11: Améliorer le port au niveau 2
+  const seaport = portCity.getBuilding(BuildingType.Seaport);
+  if (!seaport) throw new Error('Le port n\'a pas été construit');
+  
+  if (seaport.level < 2) {
+    GameAutoPlayer.playUntilImproveBuilding(
+      BuildingType.Seaport,
+      portCityVertex,
+      civId,
+      gameMap,
+      resources,
+      gameClock
+    );
+  }
+  
+  // Étape 12: Spécialiser le port niveau 2 en Brick
+  if (seaport.level === 2) {
+    seaport.setSpecialization(ResourceType.Brick);
+  }
+  
+  // Étape 13: Améliorer le port au niveau 3
+  if (seaport.level < 3) {
+    GameAutoPlayer.playUntilImproveBuilding(
+      BuildingType.Seaport,
+      portCityVertex,
+      civId,
+      gameMap,
+      resources,
+      gameClock
+    );
+  }
+  
+  // Vérifications finales
+  if (seaport.level !== 3) {
+    throw new Error(`Le port devrait être au niveau 3, mais il est au niveau ${seaport.level}`);
+  }
+  if (seaport.getSpecialization() !== ResourceType.Brick) {
+    throw new Error(`Le port devrait être spécialisé en Brick, mais il est spécialisé en ${seaport.getSpecialization()}`);
+  }
+  
+  // Sauvegarder le scénario
+  saveGameState(gs, '7HexesMapWithPortCity');
+  
+  return gs;
+}
