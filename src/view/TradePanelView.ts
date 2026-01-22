@@ -503,11 +503,6 @@ export class TradePanelView {
   private updatePortsList(): void {
     this.portsList.innerHTML = '';
 
-    // Ajouter un espaceur pour compenser le titre "Vous donnez" dans la colonne de ressources
-    const spacer = document.createElement('li');
-    spacer.className = 'trade-port-spacer';
-    this.portsList.appendChild(spacer);
-
     if (!this.gameMap || !this.civId) {
       // Créer des items vides pour chaque ressource pour maintenir l'alignement
       for (const resourceType of this.resourceOrder) {

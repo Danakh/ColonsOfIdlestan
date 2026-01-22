@@ -307,6 +307,17 @@ main {
     flex-direction: column;
     width: 30px;
     flex-shrink: 0;
+    gap: 0.75rem; /* Même gap que .trade-column */
+}
+
+.trade-ports-column .trade-auto-label {
+    font-size: 1.1rem; /* Même taille que le h3 */
+    color: #555; /* Même couleur que le h3 */
+    font-weight: 500;
+    margin-bottom: 0.5rem; /* Même margin-bottom que le h3 */
+    height: calc(1.1rem * 1.4); /* Même hauteur que le h3 */
+    box-sizing: border-box;
+    padding: 0;
 }
 
 #trade-ports-list {
@@ -316,18 +327,6 @@ main {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-}
-
-#trade-ports-list > .trade-port-spacer {
-    margin-bottom: 0; /* Le gap gère l'espacement */
-}
-
-.trade-port-spacer {
-    height: calc(1.1rem * 1.4 + 0.5rem); /* Hauteur du h3 (line-height par défaut ~1.4 * font-size) + margin-bottom */
-    box-sizing: border-box;
-    flex-shrink: 0;
-    margin: 0;
-    padding: 0;
 }
 
 .trade-port-item {
@@ -433,16 +432,16 @@ main {
 .trade-actions {
     display: flex;
     gap: 1rem;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
     margin-top: 0.5rem;
     padding-top: 0.5rem;
 }
 
-.trade-auto-label {
-    font-size: 0.9rem;
-    color: #666;
-    font-weight: 500;
+.trade-buttons-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
 }
 
 .trade-btn {
