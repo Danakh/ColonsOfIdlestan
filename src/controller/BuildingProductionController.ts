@@ -10,6 +10,7 @@ import { Vertex } from '../model/hex/Vertex';
 import { ResourceHarvest } from '../model/game/ResourceHarvest';
 import { ResourceType } from '../model/map/ResourceType';
 import { calculateInventoryCapacity } from '../model/game/InventoryCapacity';
+import { TradeController } from './TradeController';
 
 /**
  * Résultat d'une production automatique d'un bâtiment.
@@ -153,6 +154,11 @@ export class BuildingProductionController {
               hexCoord,
               resourceType: randomResource,
             });
+            
+            // Si la capacité maximale a été atteinte, notifier TradeController pour l'auto-trade
+            if (resources.getResource(randomResource) >= maxCapacity) {
+              TradeController.handleAutoTrade(randomResource, civId, map, resources);
+            }
           }
           
           // Mettre à jour le timer de production
@@ -208,6 +214,11 @@ export class BuildingProductionController {
               hexCoord,
               resourceType,
             });
+            
+            // Si la capacité maximale a été atteinte et qu'une ressource a été récoltée, notifier TradeController
+            if (harvestResult.capacityReached && harvestResult.resourceType !== null) {
+              TradeController.handleAutoTrade(harvestResult.resourceType, civId, map, resources);
+            }
           }
         } catch (error) {
           // Si la récolte échoue (par exemple hex non visible), continuer avec le suivant
