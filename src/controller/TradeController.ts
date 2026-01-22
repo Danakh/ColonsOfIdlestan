@@ -73,6 +73,13 @@ export class TradeController {
       return false;
     }
 
+    // Vérifier que la ressource cible n'est pas déjà à capacité maximale
+    const maxCapacity = calculateInventoryCapacity(map, civId);
+    const currentToResource = resources.getResource(toResource);
+    if (currentToResource >= maxCapacity) {
+      return false;
+    }
+
     return true;
   }
 
@@ -111,6 +118,16 @@ export class TradeController {
         throw new Error(
           `Pas assez de ${fromResource} pour effectuer l'échange. ` +
           `Requis: ${tradeRate}, disponible: ${resources.getResource(fromResource)}.`
+        );
+      }
+
+      // Vérifier que la ressource cible n'est pas déjà à capacité maximale
+      const maxCapacity = calculateInventoryCapacity(map, civId);
+      const currentToResource = resources.getResource(toResource);
+      if (currentToResource >= maxCapacity) {
+        throw new Error(
+          `Impossible d'échanger vers ${toResource} : la capacité maximale est atteinte. ` +
+          `Capacité: ${maxCapacity}, actuel: ${currentToResource}.`
         );
       }
     }
