@@ -24,6 +24,7 @@ export class PortSpecializationPanelView {
   private selectedResource: ResourceType | null = null;
   private resourceSprites: ResourceSprites | null = null;
   private callbacks: PortSpecializationPanelCallbacks = {};
+  private blockedResources: Set<ResourceType> = new Set();
 
   // Noms des ressources en français
   private readonly resourceNames: Record<ResourceType, string> = {
@@ -117,9 +118,11 @@ export class PortSpecializationPanelView {
 
   /**
    * Affiche le panneau de spécialisation et initialise la liste.
+   * @param blockedResources - Ressources déjà utilisées par d'autres ports de la même civilisation
    */
-  show(): void {
+  show(blockedResources: Set<ResourceType> = new Set()): void {
     this.selectedResource = null;
+    this.blockedResources = blockedResources;
     this.update();
     this.panel.classList.remove('hidden');
   }
@@ -151,7 +154,13 @@ export class PortSpecializationPanelView {
 
     for (const resourceType of this.resourceOrder) {
       const item = document.createElement('li');
+      const isBlocked = this.blockedResources.has(resourceType);
+      
       item.className = 'port-specialization-resource-item';
+      if (isBlocked) {
+        item.classList.add('blocked');
+        item.title = 'Cette ressource est déjà spécialisée par un autre port de votre civilisation';
+      }
       
       if (this.selectedResource === resourceType) {
         item.classList.add('selected');
@@ -201,8 +210,11 @@ export class PortSpecializationPanelView {
 
       // Gestionnaire de clic pour sélectionner la ressource
       item.addEventListener('click', () => {
-        this.selectedResource = resourceType;
-        this.update();
+        // Ne pas permettre la sélection si la ressource est bloquée
+        if (!isBlocked) {
+          this.selectedResource = resourceType;
+          this.update();
+        }
       });
 
       this.resourceList.appendChild(item);

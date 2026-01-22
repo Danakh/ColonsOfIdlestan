@@ -465,6 +465,17 @@ main {
     transform: scale(1.05) translateY(-2px);
 }
 
+.port-specialization-resource-item.blocked {
+    opacity: 0.5;
+    cursor: not-allowed !important;
+    background-color: #cccccc;
+}
+
+.port-specialization-resource-item.blocked:hover {
+    background-color: #cccccc;
+    transform: none;
+}
+
 .city-panel h2 {
     color: #333;
     font-size: 1.5rem;

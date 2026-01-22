@@ -588,7 +588,12 @@ export class CityPanelView {
                 [ResourceType.Sheep]: 'Mouton',
                 [ResourceType.Ore]: 'Minerai',
               };
-              name = `${getBuildingTypeName(buildingType)} (${resourceNames[specialization]})`;
+              // Afficher le niveau si le port est niveau 3, sinon seulement la spécialisation
+              if (lvl === 3) {
+                name = `${getBuildingTypeName(buildingType)} (${resourceNames[specialization]}) Niv. ${lvl}`;
+              } else {
+                name = `${getBuildingTypeName(buildingType)} (${resourceNames[specialization]})`;
+              }
             }
           }
           

@@ -250,8 +250,21 @@ function main(): void {
           tradePanelView.show(playerResources);
           return; // Ne pas mettre à jour le panneau de ville ni re-rendre
         } else if (action === BuildingAction.Specialization) {
-          // Ouvrir le panneau de spécialisation
-          portSpecializationPanelView.show();
+          // Ouvrir le panneau de spécialisation avec les ressources déjà utilisées
+          const selectedVertex = renderer.getSelectedVertex();
+          const currentGameMap = game.getGameMap();
+          if (selectedVertex && currentGameMap && currentGameMap.hasCity(selectedVertex)) {
+            const city = currentGameMap.getCity(selectedVertex);
+            const civId = game.getPlayerCivilizationId();
+            if (city && civId) {
+              const blockedResources = TradeController.getUsedSpecializations(civId, currentGameMap, city);
+              portSpecializationPanelView.show(blockedResources);
+            } else {
+              portSpecializationPanelView.show();
+            }
+          } else {
+            portSpecializationPanelView.show();
+          }
           return; // Ne pas mettre à jour le panneau de ville ni re-rendre
         }
         cityPanelView.refreshNow();
@@ -311,6 +324,16 @@ function main(): void {
         return;
       }
 
+      // Vérifier que la ressource n'est pas déjà utilisée par un autre port
+      const civId = game.getPlayerCivilizationId();
+      if (civId) {
+        const blockedResources = TradeController.getUsedSpecializations(civId, currentGameMap, city);
+        if (blockedResources.has(resource)) {
+          alert(`Cette ressource est déjà spécialisée par un autre port de votre civilisation.`);
+          return;
+        }
+      }
+
       try {
         const seaport = city.getBuilding(BuildingType.Seaport);
         if (seaport) {
@@ -332,6 +355,7 @@ function main(): void {
         }
       } catch (error) {
         console.error('Erreur lors de la spécialisation:', error);
+        alert(`Erreur lors de la spécialisation: ${error instanceof Error ? error.message : String(error)}`);
       }
     },
     onCancel: () => {

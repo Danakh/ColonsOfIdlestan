@@ -23,7 +23,7 @@ export class Building {
   private static readonly PRODUCTION_MAX_LEVEL = 5;
   private static readonly TOWN_HALL_MAX_LEVEL = 4;
   private static readonly MARKET_MAX_LEVEL = 2;
-  private static readonly SEAPORT_MAX_LEVEL = 2;
+  private static readonly SEAPORT_MAX_LEVEL = 3;
 
   /**
    * Crée un nouveau bâtiment.
@@ -101,6 +101,10 @@ export class Building {
    * @returns true si le bâtiment peut être amélioré
    */
   canUpgrade(): boolean {
+    // Pour le port niveau 2, nécessite une spécialisation pour passer au niveau 3
+    if (this.type === BuildingType.Seaport && this._level === 2) {
+      return this._specialization !== undefined && this._level < this.getMaxLevel();
+    }
     return this._level < this.getMaxLevel();
   }
 
@@ -158,8 +162,8 @@ export class Building {
     if (this.type !== BuildingType.Seaport) {
       throw new Error(`Seul le port maritime peut être spécialisé.`);
     }
-    if (this._level < 2) {
-      throw new Error(`Le port doit être au niveau 2 pour être spécialisé.`);
+    if (this._level !== 2) {
+      throw new Error(`Le port doit être exactement au niveau 2 pour être spécialisé.`);
     }
     this._specialization = resource;
   }

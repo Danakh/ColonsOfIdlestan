@@ -149,7 +149,8 @@ export class TradeController {
     const cities = map.getCitiesByCivilization(civId);
     for (const city of cities) {
       const seaport = city.getBuilding(BuildingType.Seaport);
-      if (seaport && seaport.level === 2) {
+      // Le port peut être niveau 2 ou 3 avec spécialisation
+      if (seaport && (seaport.level === 2 || seaport.level === 3)) {
         const specialization = seaport.getSpecialization();
         if (specialization !== undefined) {
           return specialization;
@@ -157,6 +158,40 @@ export class TradeController {
       }
     }
     return null;
+  }
+
+  /**
+   * Retourne toutes les ressources déjà spécialisées par les ports de la civilisation.
+   * @param civId - L'identifiant de la civilisation
+   * @param map - La carte de jeu
+   * @param excludeCity - Ville à exclure de la recherche (le port en cours de spécialisation)
+   * @returns Un Set des ressources déjà spécialisées
+   */
+  static getUsedSpecializations(
+    civId: CivilizationId,
+    map: GameMap,
+    excludeCity: City | null = null
+  ): Set<ResourceType> {
+    const usedSpecializations = new Set<ResourceType>();
+    const cities = map.getCitiesByCivilization(civId);
+    
+    for (const city of cities) {
+      // Exclure la ville en cours de spécialisation
+      if (excludeCity && city === excludeCity) {
+        continue;
+      }
+      
+      const seaport = city.getBuilding(BuildingType.Seaport);
+      // Le port peut être niveau 2 ou 3 avec spécialisation
+      if (seaport && (seaport.level === 2 || seaport.level === 3)) {
+        const specialization = seaport.getSpecialization();
+        if (specialization !== undefined) {
+          usedSpecializations.add(specialization);
+        }
+      }
+    }
+    
+    return usedSpecializations;
   }
 
   /**
