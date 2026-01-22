@@ -5,6 +5,8 @@ import { CivilizationId } from '../model/map/CivilizationId';
 import { PlayerResources } from '../model/game/PlayerResources';
 import { ResourceHarvest } from '../model/game/ResourceHarvest';
 import { GameClock } from '../model/game/GameClock';
+import { TradeController } from './TradeController';
+import { ResourceType } from '../model/map/ResourceType';
 
 /**
  * Résultat d'une tentative de récolte.
@@ -92,6 +94,11 @@ export class ResourceHarvestController {
 
     // Effectuer la récolte et obtenir la ville
     const harvestResult = ResourceHarvest.harvest(hexCoord, map, civId, resources);
+
+    // Si la capacité maximale a été atteinte et qu'une ressource a été récoltée, notifier TradeController
+    if (harvestResult.capacityReached && harvestResult.resourceType !== null) {
+      TradeController.handleAutoTrade(harvestResult.resourceType, civId, map, resources);
+    }
 
     // Mettre à jour le timestamp de la dernière récolte pour cet hex (en secondes)
     ResourceHarvestController.hexCooldowns.set(hexKey, now);

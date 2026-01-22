@@ -3,6 +3,7 @@ import { CivilizationId } from '../map/CivilizationId';
 import { CityLevel, isValidCityLevel } from './CityLevel';
 import { BuildingType, getAllBuildingTypes, getResourceProductionBuildings } from './BuildingType';
 import { Building, type BuildingSerialized } from './Building';
+import { ResourceType } from '../map/ResourceType';
 
 /** Format sérialisé d'une ville. */
 export interface CitySerialized {
@@ -121,14 +122,23 @@ export class City {
    * @param buildingType - Le type de bâtiment à ajouter
    * @param level - Le niveau du bâtiment
    * @param specialization - La spécialisation optionnelle (pour les ports niveau 2)
+   * @param autoTradeEnabled - Le commerce automatique activé optionnel (pour les ports niveau 3)
    */
-  addBuildingWithLevel(buildingType: BuildingType, level: number, specialization?: ResourceType): void {
+  addBuildingWithLevel(
+    buildingType: BuildingType,
+    level: number,
+    specialization?: ResourceType,
+    autoTradeEnabled?: boolean
+  ): void {
     if (this.hasBuilding(buildingType)) {
       throw new Error(`Le bâtiment ${buildingType} est déjà construit dans cette ville.`);
     }
     const building = new Building(buildingType, level);
     if (specialization !== undefined) {
       building.setSpecialization(specialization);
+    }
+    if (autoTradeEnabled !== undefined && autoTradeEnabled) {
+      building.setAutoTradeEnabled(true);
     }
     this.buildings.set(buildingType, building);
   }

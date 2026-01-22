@@ -958,7 +958,8 @@ export class GameMap {
       for (const b of c.buildings) {
         // Nouveau format uniquement: BuildingSerialized
         const specialization = b.specialization ? (b.specialization as ResourceType) : undefined;
-        city.addBuildingWithLevel(b.type as BuildingType, b.level, specialization);
+        const autoTradeEnabled = b.autoTradeEnabled !== undefined ? b.autoTradeEnabled : undefined;
+        city.addBuildingWithLevel(b.type as BuildingType, b.level, specialization, autoTradeEnabled);
         if (b.productionTimeSeconds !== undefined) {
           city.getBuilding(b.type as BuildingType)?.setProductionTimeSeconds(b.productionTimeSeconds);
         }

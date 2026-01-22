@@ -247,6 +247,27 @@ export class CityPanelView {
       }
     });
 
+    // Gérer les changements de checkbox pour l'auto-trade
+    this.cityBuildingsList.addEventListener('change', (e) => {
+      const target = e.target as HTMLElement;
+      
+      if (target.classList.contains('building-auto-trade-checkbox')) {
+        const checkbox = target as HTMLInputElement;
+        const buildingAction = checkbox.dataset.buildingAction as BuildingAction;
+        const buildingType = checkbox.dataset.buildingType as BuildingType;
+        if (!buildingAction || !buildingType) {
+          return;
+        }
+
+        // Émettre un événement personnalisé avec l'état de la checkbox
+        const event = new CustomEvent('buildingAction', {
+          detail: { buildingAction, buildingType, checked: checkbox.checked },
+          bubbles: true,
+        });
+        this.cityPanel.dispatchEvent(event);
+      }
+    });
+
     // Bouton Commerce global (footer du panneau)
     if (this.tradeBtn) {
       this.tradeBtn.addEventListener('click', () => {
@@ -522,6 +543,29 @@ export class CityPanelView {
           }
         }
 
+        // Case à cocher Auto si Seaport niveau 3
+        if (buildingType === BuildingType.Seaport && building && building.level === 3) {
+          const autoContainer = document.createElement('div');
+          autoContainer.className = 'building-auto-trade-container';
+          
+          const autoCheckbox = document.createElement('input');
+          autoCheckbox.type = 'checkbox';
+          autoCheckbox.id = `auto-trade-${buildingType}`;
+          autoCheckbox.className = 'building-auto-trade-checkbox';
+          autoCheckbox.checked = building.isAutoTradeEnabled();
+          autoCheckbox.dataset.buildingAction = BuildingAction.Auto;
+          autoCheckbox.dataset.buildingType = buildingType;
+          
+          const autoLabel = document.createElement('label');
+          autoLabel.htmlFor = autoCheckbox.id;
+          autoLabel.className = 'building-auto-trade-label';
+          autoLabel.textContent = BUILDING_ACTION_NAMES[BuildingAction.Auto];
+          
+          autoContainer.appendChild(autoCheckbox);
+          autoContainer.appendChild(autoLabel);
+          item.appendChild(autoContainer);
+        }
+
         // Bouton Améliorer (placeholder stable pour ne pas casser les hovers)
         const upgradeBtn = document.createElement('button');
         upgradeBtn.className = 'building-action-btn';
@@ -683,6 +727,58 @@ export class CityPanelView {
         // Le port n'est pas niveau 2, masquer le bouton s'il existe
         if (specializationBtn) {
           specializationBtn.hidden = true;
+        }
+      }
+
+      // Case à cocher Auto: mettre à jour si Seaport niveau 3
+      const autoContainer = li.querySelector('.building-auto-trade-container') as HTMLElement | null;
+      const autoCheckbox = li.querySelector('input.building-auto-trade-checkbox[data-building-action="Auto"]') as HTMLInputElement | null;
+      if (buildingType === BuildingType.Seaport && building && building.level === 3) {
+        // La case à cocher doit être visible, créer le conteneur s'il n'existe pas
+        if (!autoContainer || !autoCheckbox) {
+          // Le conteneur devrait déjà exister depuis la création initiale, mais on le recrée si nécessaire
+          if (autoContainer) {
+            autoContainer.remove();
+          }
+          const newContainer = document.createElement('div');
+          newContainer.className = 'building-auto-trade-container';
+          
+          const newCheckbox = document.createElement('input');
+          newCheckbox.type = 'checkbox';
+          newCheckbox.id = `auto-trade-${buildingType}-${Date.now()}`;
+          newCheckbox.className = 'building-auto-trade-checkbox';
+          newCheckbox.checked = building.isAutoTradeEnabled();
+          newCheckbox.dataset.buildingAction = BuildingAction.Auto;
+          newCheckbox.dataset.buildingType = buildingType;
+          
+          const newLabel = document.createElement('label');
+          newLabel.htmlFor = newCheckbox.id;
+          newLabel.className = 'building-auto-trade-label';
+          newLabel.textContent = BUILDING_ACTION_NAMES[BuildingAction.Auto];
+          
+          newContainer.appendChild(newCheckbox);
+          newContainer.appendChild(newLabel);
+          
+          // Insérer après le bouton Upgrade ou Spécialisation s'il existe, sinon à la fin
+          const upgradeBtn = li.querySelector('button.building-action-btn[data-building-action="Upgrade"]') as HTMLButtonElement | null;
+          const specializationBtn = li.querySelector('button.building-action-btn[data-building-action="Specialization"]') as HTMLButtonElement | null;
+          const insertAfter = specializationBtn || upgradeBtn;
+          if (insertAfter && insertAfter.parentNode) {
+            insertAfter.parentNode.insertBefore(newContainer, insertAfter.nextSibling);
+          } else {
+            li.appendChild(newContainer);
+          }
+        } else {
+          // Mettre à jour l'état de la case à cocher
+          autoCheckbox.checked = building.isAutoTradeEnabled();
+        }
+        if (autoContainer) {
+          autoContainer.hidden = false;
+        }
+      } else {
+        // Le port n'est pas niveau 3, masquer le conteneur s'il existe
+        if (autoContainer) {
+          autoContainer.hidden = true;
         }
       }
     }

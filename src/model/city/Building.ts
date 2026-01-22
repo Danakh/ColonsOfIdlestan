@@ -7,6 +7,7 @@ export interface BuildingSerialized {
   level: number;
   productionTimeSeconds?: number;
   specialization?: string;
+  autoTradeEnabled?: boolean;
 }
 
 /**
@@ -19,6 +20,7 @@ export class Building {
   private _level: number;
   private _productionTimeSeconds: number | undefined;
   private _specialization: ResourceType | undefined;
+  private _autoTradeEnabled: boolean;
   private static readonly DEFAULT_MAX_LEVEL = 1;
   private static readonly PRODUCTION_MAX_LEVEL = 5;
   private static readonly TOWN_HALL_MAX_LEVEL = 4;
@@ -42,6 +44,7 @@ export class Building {
       throw new Error(`Le niveau ne peut pas dépasser ${maxLevel}.`);
     }
     this._level = level;
+    this._autoTradeEnabled = false;
   }
 
   /**
@@ -155,17 +158,52 @@ export class Building {
 
   /**
    * Définit la spécialisation du bâtiment (pour les ports niveau 2).
+   * Permet aussi de définir la spécialisation au niveau 3 lors de la désérialisation
+   * si elle n'est pas déjà définie.
    * @param resource - La ressource à spécialiser
-   * @throws Error si le bâtiment n'est pas un port niveau 2
+   * @throws Error si le bâtiment n'est pas un port niveau 2 ou 3
    */
   setSpecialization(resource: ResourceType): void {
     if (this.type !== BuildingType.Seaport) {
       throw new Error(`Seul le port maritime peut être spécialisé.`);
     }
-    if (this._level !== 2) {
-      throw new Error(`Le port doit être exactement au niveau 2 pour être spécialisé.`);
+    // Permettre la spécialisation au niveau 2 (normal) ou au niveau 3 (pour désérialisation)
+    if (this._level !== 2 && this._level !== 3) {
+      throw new Error(`Le port doit être au niveau 2 ou 3 pour être spécialisé.`);
+    }
+    // Au niveau 3, permettre seulement si la spécialisation n'est pas déjà définie (désérialisation)
+    if (this._level === 3 && this._specialization !== undefined) {
+      // Si la spécialisation est déjà définie et différente, c'est une erreur
+      if (this._specialization !== resource) {
+        throw new Error(`Le port niveau 3 a déjà une spécialisation (${this._specialization}).`);
+      }
+      // Si c'est la même, on peut ignorer silencieusement
+      return;
     }
     this._specialization = resource;
+  }
+
+  /**
+   * Active ou désactive le commerce automatique (pour les ports niveau 3).
+   * @param enabled - true pour activer, false pour désactiver
+   * @throws Error si le bâtiment n'est pas un port niveau 3
+   */
+  setAutoTradeEnabled(enabled: boolean): void {
+    if (this.type !== BuildingType.Seaport) {
+      throw new Error(`Seul le port maritime peut avoir le commerce automatique.`);
+    }
+    if (this._level !== 3) {
+      throw new Error(`Le port doit être au niveau 3 pour activer le commerce automatique.`);
+    }
+    this._autoTradeEnabled = enabled;
+  }
+
+  /**
+   * Vérifie si le commerce automatique est activé (pour les ports niveau 3).
+   * @returns true si le commerce automatique est activé
+   */
+  isAutoTradeEnabled(): boolean {
+    return this._autoTradeEnabled;
   }
 
   /**
@@ -187,11 +225,15 @@ export class Building {
    * mais le format de chaque bâtiment est défini ici.
    */
   serialize(): BuildingSerialized {
-    return {
+    const result: BuildingSerialized = {
       type: this.type,
       level: this._level,
       productionTimeSeconds: this._productionTimeSeconds,
       specialization: this._specialization,
     };
+    if (this._autoTradeEnabled) {
+      result.autoTradeEnabled = this._autoTradeEnabled;
+    }
+    return result;
   }
 }

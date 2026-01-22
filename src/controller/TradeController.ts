@@ -4,6 +4,7 @@ import { PlayerResources } from '../model/game/PlayerResources';
 import { ResourceType } from '../model/map/ResourceType';
 import { BuildingType } from '../model/city/BuildingType';
 import { calculateInventoryCapacity } from '../model/game/InventoryCapacity';
+import { City } from '../model/city/City';
 
 /**
  * Contrôleur pour gérer le commerce.
@@ -355,6 +356,62 @@ export class TradeController {
       for (let i = 0; i < trade.count; i++) {
         this.performTrade(trade.from, trade.to, civId, map, playerResources);
       }
+    }
+  }
+
+  /**
+   * Gère le commerce automatique lorsqu'une récolte atteint la capacité maximale.
+   * Si un port niveau 3 a l'auto-trade activé, effectue automatiquement un commerce
+   * de la ressource récoltée vers la ressource de spécialisation du port.
+   * 
+   * @param harvestedResource - La ressource qui a été récoltée et qui a atteint la capacité max
+   * @param civId - L'identifiant de la civilisation
+   * @param map - La carte de jeu
+   * @param resources - Les ressources du joueur
+   */
+  static handleAutoTrade(
+    harvestedResource: ResourceType,
+    civId: CivilizationId,
+    map: GameMap,
+    resources: PlayerResources
+  ): void {
+    // Vérifier que le commerce est possible
+    if (!this.canTrade(civId, map)) {
+      return;
+    }
+
+    // Trouver un port niveau 3 avec auto-trade activé
+    const cities = map.getCitiesByCivilization(civId);
+    let targetResource: ResourceType | null = null;
+    
+    for (const city of cities) {
+      const seaport = city.getBuilding(BuildingType.Seaport);
+      if (seaport && seaport.level === 3 && seaport.isAutoTradeEnabled()) {
+        const specialization = seaport.getSpecialization();
+        // Si le port a une spécialisation et que ce n'est pas la ressource récoltée, échanger vers la spécialisation
+        if (specialization && specialization !== harvestedResource) {
+          targetResource = specialization;
+          break;
+        }
+      }
+    }
+
+    if (targetResource === null) {
+      return; // Aucun port avec auto-trade activé et spécialisation valide
+    }
+
+    // Vérifier qu'on peut effectuer le commerce
+    if (!this.canPerformTrade(harvestedResource, targetResource, civId, map, resources)) {
+      return;
+    }
+
+    // Effectuer le commerce automatique
+    try {
+      this.performTrade(harvestedResource, targetResource, civId, map, resources);
+    } catch (error) {
+      // Ignorer les erreurs silencieusement pour le commerce automatique
+      // (pour éviter de perturber le gameplay)
+      console.debug('Commerce automatique échoué:', error);
     }
   }
 }

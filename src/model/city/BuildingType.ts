@@ -261,6 +261,8 @@ export enum BuildingAction {
   Upgrade = 'Upgrade',
   /** Spécialisation - Débloqué par le port maritime niveau 2 */
   Specialization = 'Specialization',
+  /** Auto - Commerce automatique - Débloqué par le port maritime niveau 3 */
+  Auto = 'Auto',
 }
 
 /**
@@ -284,4 +286,5 @@ export const BUILDING_ACTION_NAMES: Record<BuildingAction, string> = {
   [BuildingAction.Trade]: 'Commerce',
   [BuildingAction.Upgrade]: 'Améliorer',
   [BuildingAction.Specialization]: 'Spécialisation',
+  [BuildingAction.Auto]: 'Auto',
 };

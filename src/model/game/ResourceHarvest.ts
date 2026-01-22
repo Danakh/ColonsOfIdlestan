@@ -142,7 +142,7 @@ export class ResourceHarvest {
    * @param civId - L'identifiant de la civilisation du joueur
    * @param playerResources - L'inventaire du joueur
    * @param cityVertex - Optionnel: le vertex de la ville qui récolte. Si fourni, cette ville sera utilisée au lieu de chercher automatiquement.
-   * @returns Un objet contenant la quantité récoltée et la ville qui a permis la récolte
+   * @returns Un objet contenant la quantité récoltée, la ville qui a permis la récolte, la ressource récoltée et si la capacité max a été atteinte
    * @throws Error si l'hexagone ne peut pas être récolté
    */
   static harvest(
@@ -151,7 +151,7 @@ export class ResourceHarvest {
     civId: CivilizationId,
     playerResources: PlayerResources,
     cityVertex?: Vertex
-  ): { gain: number; cityVertex: Vertex } {
+  ): { gain: number; cityVertex: Vertex; resourceType: ResourceType | null; capacityReached: boolean } {
     // Si un vertex est fourni, vérifier qu'il est valide et adjacent à l'hex
     let actualCityVertex: Vertex | null = null;
     
@@ -238,10 +238,21 @@ export class ResourceHarvest {
       
       // Ajouter la ressource à l'inventaire avec limitation de capacité
       const actualGain = playerResources.addResourceCapped(resourceType, gain, maxCapacity);
+      const capacityReached = actualGain < gain;
       
-      return { gain: actualGain, cityVertex: actualCityVertex };
+      return {
+        gain: actualGain,
+        cityVertex: actualCityVertex,
+        resourceType,
+        capacityReached,
+      };
     }
 
-    return { gain: 0, cityVertex: actualCityVertex };
+    return {
+      gain: 0,
+      cityVertex: actualCityVertex,
+      resourceType: null,
+      capacityReached: false,
+    };
   }
 }
