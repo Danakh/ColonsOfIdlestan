@@ -8,7 +8,7 @@ import { CityLevel } from '../../../src/model/city/CityLevel';
 import { BuildingType } from '../../../src/model/city/BuildingType';
 import { GameState } from '../../../src/model/game/GameState';
 
-/** Vérifie qu'un GameState correspond à la structure Map7Hexes (7 hex, centre Brick, 6 voisins, 1 ville Colony + TownHall, GameClock à 123s). */
+/** Vérifie qu'un GameState correspond à la structure Map7Hexes (7 hex principaux + hexagones d'eau tout autour, centre Brick, 6 voisins, 1 ville Colony + TownHall, GameClock à 123s). */
 function assertMap7Hexes(gs: GameState): void {
   const map = gs.getGameMap();
   expect(map).not.toBeNull();
@@ -17,7 +17,8 @@ function assertMap7Hexes(gs: GameState): void {
   const center = new HexCoord(0, 0);
   const civilizationId = gs.getPlayerCivilizationId();
 
-  expect(map.getGrid().size()).toBe(7);
+  // Il devrait y avoir 19 hexagones au total : 7 principaux + 12 d'eau autour
+  expect(map.getGrid().size()).toBe(19);
   expect(map.getHexType(center)).toBe(HexType.Brick);
 
   const neighborCoords = [
@@ -33,6 +34,32 @@ function assertMap7Hexes(gs: GameState): void {
   expect(types).toContain(HexType.Wheat);
   expect(types).toContain(HexType.Sheep);
   expect(types).toContain(HexType.Ore);
+
+  // Vérifier que les hexagones d'eau sont présents autour des hexagones principaux
+  // Les hexagones d'eau sont les voisins externes des 7 hexagones principaux
+  const allMainHexes = [center, ...neighborCoords];
+  const waterHexes: HexCoord[] = [];
+  for (const hexCoord of allMainHexes) {
+    for (const direction of [
+      HexDirection.N,
+      HexDirection.NE,
+      HexDirection.SE,
+      HexDirection.S,
+      HexDirection.SW,
+      HexDirection.NW,
+    ]) {
+      const neighborCoord = hexCoord.neighbor(direction);
+      const isMainHex = allMainHexes.some((h) => h.equals(neighborCoord));
+      if (!isMainHex && map.getGrid().hasHex(neighborCoord)) {
+        waterHexes.push(neighborCoord);
+      }
+    }
+  }
+  // Vérifier qu'il y a des hexagones d'eau et qu'ils sont bien de type Water
+  expect(waterHexes.length).toBeGreaterThan(0);
+  for (const waterHex of waterHexes) {
+    expect(map.getHexType(waterHex)).toBe(HexType.Water);
+  }
 
   expect(map.isCivilizationRegistered(civilizationId)).toBe(true);
 
@@ -53,7 +80,7 @@ function assertMap7Hexes(gs: GameState): void {
 
 describe('GameStateGenerator', () => {
   describe('Make7HexesMap', () => {
-    it('crée une carte de 7 hexagones avec (0,0) central en Brick, 6 voisins (5 ressources, bois en double), une civ, ville niveau 1 avec hôtel de ville, GameClock à 123s', () => {
+    it('crée une carte de 7 hexagones principaux avec hexagones d\'eau tout autour, (0,0) central en Brick, 6 voisins (5 ressources, bois en double), une civ, ville niveau 1 avec hôtel de ville, GameClock à 123s', () => {
       const gs = Make7HexesMap();
       assertMap7Hexes(gs);
     });

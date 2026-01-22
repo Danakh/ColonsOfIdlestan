@@ -1,6 +1,6 @@
 import { Hex } from '../../src/model/hex/Hex';
 import { HexCoord } from '../../src/model/hex/HexCoord';
-import { HexDirection } from '../../src/model/hex/HexDirection';
+import { HexDirection, ALL_DIRECTIONS } from '../../src/model/hex/HexDirection';
 import { HexGrid } from '../../src/model/hex/HexGrid';
 import { Vertex } from '../../src/model/hex/Vertex';
 import { GameMap } from '../../src/model/map/GameMap';
@@ -23,18 +23,45 @@ import { dirname } from 'path';
  * - 6 voisins : 5 types de ressources avec Wood en double (Wood, Wood, Wheat, Sheep, Ore)
  * - Une civilisation avec une ville au nord de (0,0), niveau Colony (1), avec un hôtel de ville
  * - GameClock initialisé à 123 s
+ * - Hexagones d'eau tout autour des 7 hexagones principaux
  */
 export function Make7HexesMap(): GameState {
   const center = new HexCoord(0, 0);
-  const hexes = [
-    new Hex(center),
-    new Hex(center.neighbor(HexDirection.N)),
-    new Hex(center.neighbor(HexDirection.NE)),
-    new Hex(center.neighbor(HexDirection.SE)),
-    new Hex(center.neighbor(HexDirection.S)),
-    new Hex(center.neighbor(HexDirection.SW)),
-    new Hex(center.neighbor(HexDirection.NW)),
+  const mainHexes = [
+    center,
+    center.neighbor(HexDirection.N),
+    center.neighbor(HexDirection.NE),
+    center.neighbor(HexDirection.SE),
+    center.neighbor(HexDirection.S),
+    center.neighbor(HexDirection.SW),
+    center.neighbor(HexDirection.NW),
   ];
+  
+  // Créer un Set pour stocker les coordonnées des hexagones principaux (pour vérification rapide)
+  const mainHexCoords = new Set(mainHexes.map(h => h.hashCode()));
+  
+  // Trouver tous les voisins externes (hexagones d'eau)
+  const waterHexCoords = new Set<string>();
+  for (const hexCoord of mainHexes) {
+    for (const direction of ALL_DIRECTIONS) {
+      const neighborCoord = hexCoord.neighbor(direction);
+      const neighborKey = neighborCoord.hashCode();
+      // Ajouter seulement si ce n'est pas un hexagone principal
+      if (!mainHexCoords.has(neighborKey)) {
+        waterHexCoords.add(neighborKey);
+      }
+    }
+  }
+  
+  // Créer tous les hexagones (principaux + eau)
+  const hexes = [
+    ...mainHexes.map(coord => new Hex(coord)),
+    ...Array.from(waterHexCoords).map(key => {
+      const [q, r] = key.split(',').map(Number);
+      return new Hex(new HexCoord(q, r));
+    }),
+  ];
+  
   const grid = new HexGrid(hexes);
   const gameMap = new GameMap(grid);
 
@@ -47,6 +74,12 @@ export function Make7HexesMap(): GameState {
   gameMap.setHexType(center.neighbor(HexDirection.S), HexType.Sheep);
   gameMap.setHexType(center.neighbor(HexDirection.SW), HexType.Ore);
   gameMap.setHexType(center.neighbor(HexDirection.NW), HexType.Ore);
+  
+  // Définir tous les hexagones d'eau comme Water
+  for (const waterKey of waterHexCoords) {
+    const [q, r] = waterKey.split(',').map(Number);
+    gameMap.setHexType(new HexCoord(q, r), HexType.Water);
+  }
 
   const civId = CivilizationId.create('test-civ');
   gameMap.registerCivilization(civId);
