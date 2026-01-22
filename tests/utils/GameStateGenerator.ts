@@ -3,11 +3,13 @@ import { HexCoord } from '../../src/model/hex/HexCoord';
 import { HexDirection, ALL_DIRECTIONS } from '../../src/model/hex/HexDirection';
 import { HexGrid } from '../../src/model/hex/HexGrid';
 import { Vertex } from '../../src/model/hex/Vertex';
+import { Edge } from '../../src/model/hex/Edge';
 import { GameMap } from '../../src/model/map/GameMap';
 import { HexType } from '../../src/model/map/HexType';
 import { CivilizationId } from '../../src/model/map/CivilizationId';
 import { CityLevel } from '../../src/model/city/CityLevel';
 import { BuildingType } from '../../src/model/city/BuildingType';
+import { ResourceType } from '../../src/model/map/ResourceType';
 import { GameClock } from '../../src/model/game/GameClock';
 import { GameState } from '../../src/model/game/GameState';
 import { PlayerResources } from '../../src/model/game/PlayerResources';
@@ -103,6 +105,131 @@ export function Make7HexesMap(): GameState {
   gs.setGameMap(gameMap);
   gs.setCivilizations([civId]);
   gs.setSeed(null);
+  return gs;
+}
+
+/**
+ * Crée une carte 7Hexes avec des routes et une ville niveau 3 au bord de l'eau avec un port spécialisé en argile.
+ * @returns Un GameState avec une carte 7Hexes, des routes, et une ville Metropolis (niveau 3) avec un port niveau 3 spécialisé en Brick
+ */
+export function Make7HexesMapWithPortCity(): GameState {
+  // Utiliser la fonction existante pour créer la carte de base
+  const gs = Make7HexesMap();
+  const gameMap = gs.getGameMap();
+  if (!gameMap) throw new Error('Carte non trouvée');
+  
+  const civId = gs.getPlayerCivilizationId();
+  const center = new HexCoord(0, 0);
+  
+  // Modifier la ville initiale créée par Make7HexesMap pour qu'elle soit niveau 2 avec un bâtiment producteur de brique
+  const initialCityVertex = Vertex.create(
+    center,
+    center.neighbor(HexDirection.N),
+    center.neighbor(HexDirection.NW)
+  );
+  const initialCity = gameMap.getCity(initialCityVertex);
+  if (initialCity) {
+    // Améliorer le TownHall au niveau 2 pour que la ville soit niveau 2 (Town)
+    const townHall = initialCity.getBuilding(BuildingType.TownHall);
+    if (townHall) {
+      townHall.setLevel(2);
+    }
+    // Ajouter un bâtiment producteur de brique (Brickworks)
+    initialCity.addBuilding(BuildingType.Brickworks);
+  }
+
+  // Trouver un vertex au bord de l'eau (qui touche à la fois un hexagone d'eau et un hexagone terrestre)
+  // Un vertex est formé par trois hexagones adjacents. Pour être au bord de l'eau, 
+  // au moins un des trois hexagones doit être de l'eau.
+  // On va chercher parmi les vertices du centre (Brick) qui touchent un hexagone d'eau
+  let portCityVertex: Vertex | undefined;
+  const grid = gameMap.getGrid();
+  
+  // Obtenir tous les vertices qui touchent le centre
+  const centerVertices = grid.getVerticesForHex(center);
+  
+  // Trouver un vertex qui touche au moins un hexagone d'eau
+  for (const vertex of centerVertices) {
+    const hexes = vertex.getHexes();
+    let hasWater = false;
+    let hasLand = false;
+    
+    for (const hexCoord of hexes) {
+      const hexType = gameMap.getHexType(hexCoord);
+      if (hexType === HexType.Water) {
+        hasWater = true;
+      } else if (hexType !== undefined) {
+        hasLand = true;
+      }
+    }
+    
+    // Si le vertex touche à la fois de l'eau et de la terre, c'est un bon candidat
+    if (hasWater && hasLand) {
+      portCityVertex = vertex;
+      break;
+    }
+  }
+  
+  // Si on n'a pas trouvé, chercher parmi les vertices du hex SE
+  const seHex = center.neighbor(HexDirection.SE);
+  if (!portCityVertex) {
+    const seVertices = grid.getVerticesForHex(seHex);
+    for (const vertex of seVertices) {
+      const hexes = vertex.getHexes();
+      let hasWater = false;
+      let hasLand = false;
+      
+      for (const hexCoord of hexes) {
+        const hexType = gameMap.getHexType(hexCoord);
+        if (hexType === HexType.Water) {
+          hasWater = true;
+        } else if (hexType !== undefined) {
+          hasLand = true;
+        }
+      }
+      
+      if (hasWater && hasLand) {
+        portCityVertex = vertex;
+        break;
+      }
+    }
+  }
+  
+  // Si toujours pas trouvé, utiliser le premier vertex valide du centre qui existe
+  if (!portCityVertex) {
+    const centerVertices = grid.getVerticesForHex(center);
+    if (centerVertices.length > 0) {
+      portCityVertex = centerVertices[0];
+    } else {
+      throw new Error('Impossible de trouver un vertex valide pour la ville portuaire');
+    }
+  }
+  
+  // Créer la ville niveau 3 (Metropolis) au bord de l'eau
+  gameMap.addCity(portCityVertex, civId, CityLevel.Metropolis);
+  
+  const city = gameMap.getCity(portCityVertex);
+  if (!city) throw new Error('Ville non trouvée après addCity');
+  
+  // Ajouter un port niveau 3 spécialisé en Brick (argile)
+  city.addBuildingWithLevel(BuildingType.Seaport, 3, ResourceType.Brick, false);
+  
+  // Ajouter des routes pour connecter la ville
+  // Route 1: centre -> SE
+  const road1 = Edge.create(center, seHex);
+  gameMap.addRoad(road1, civId);
+  
+  // Route 2: SE -> S (pour connecter plus de terrain)
+  const road2 = Edge.create(seHex, center.neighbor(HexDirection.S));
+  gameMap.addRoad(road2, civId);
+  
+  // Route 3: centre -> S
+  const road3 = Edge.create(center, center.neighbor(HexDirection.S));
+  gameMap.addRoad(road3, civId);
+  
+  // Sauvegarder le scénario
+  saveGameState(gs, '7HexesMapWithPortCity');
+  
   return gs;
 }
 

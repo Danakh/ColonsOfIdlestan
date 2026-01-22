@@ -362,7 +362,7 @@ export class TradeController {
   /**
    * Gère le commerce automatique lorsqu'une récolte atteint la capacité maximale.
    * Si un port niveau 3 a l'auto-trade activé, effectue automatiquement un commerce
-   * de la ressource récoltée vers la ressource de spécialisation du port.
+   * de la ressource récoltée vers la ressource avec la quantité la plus faible.
    * 
    * @param harvestedResource - La ressource qui a été récoltée et qui a atteint la capacité max
    * @param civId - L'identifiant de la civilisation
@@ -382,22 +382,44 @@ export class TradeController {
 
     // Trouver un port niveau 3 avec auto-trade activé
     const cities = map.getCitiesByCivilization(civId);
-    let targetResource: ResourceType | null = null;
+    let hasAutoTradePort = false;
     
     for (const city of cities) {
       const seaport = city.getBuilding(BuildingType.Seaport);
       if (seaport && seaport.level === 3 && seaport.isAutoTradeEnabled()) {
         const specialization = seaport.getSpecialization();
-        // Si le port a une spécialisation et que ce n'est pas la ressource récoltée, échanger vers la spécialisation
-        if (specialization && specialization !== harvestedResource) {
-          targetResource = specialization;
+        // Le commerce automatique fonctionne seulement si la ressource récoltée correspond à la spécialisation
+        if (specialization && specialization === harvestedResource) {
+          hasAutoTradePort = true;
           break;
         }
       }
     }
 
+    if (!hasAutoTradePort) {
+      return; // Aucun port avec auto-trade activé pour cette ressource
+    }
+
+    // Trouver la ressource avec la quantité la plus faible (en excluant la ressource récoltée)
+    let targetResource: ResourceType | null = null;
+    let minQuantity = Infinity;
+    
+    const allResources = resources.getAllResources();
+    for (const [resourceType, quantity] of allResources.entries()) {
+      // Exclure la ressource récoltée
+      if (resourceType === harvestedResource) {
+        continue;
+      }
+      // Trouver la ressource avec la quantité la plus faible
+      if (quantity < minQuantity) {
+        minQuantity = quantity;
+        targetResource = resourceType;
+      }
+    }
+
+    // Si aucune ressource cible trouvée, ne pas faire de commerce
     if (targetResource === null) {
-      return; // Aucun port avec auto-trade activé et spécialisation valide
+      return;
     }
 
     // Vérifier qu'on peut effectuer le commerce

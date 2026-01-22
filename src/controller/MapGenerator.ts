@@ -415,8 +415,6 @@ export class MapGenerator {
             // Ajouter la ville sur ce vertex (utiliser le vertex retourné par la grille)
             try {
               gameMap.addCity(vertex, civId);
-              const hexList = hexes.map(h => `(${h.q},${h.r})`).join(', ');
-              console.log(`[MapGenerator] ✓ Ville créée avec succès sur le vertex: [${hexList}]`);
               return;
             } catch (e) {
               // Ignorer les erreurs (ville déjà présente ou civilisation non enregistrée)
@@ -452,8 +450,6 @@ export class MapGenerator {
                   hexes.some(h => h.equals(neighborCoord))) {
                 try {
                   gameMap.addCity(vertex, civId);
-                  const hexList = hexes.map(h => `(${h.q},${h.r})`).join(', ');
-                  console.log(`[MapGenerator] ✓ Ville créée avec succès sur le vertex: [${hexList}]`);
                   return;
                 } catch (e) {
                   console.warn(`[MapGenerator] Échec lors de l'ajout de la ville (méthode 2): ${e}`);
