@@ -231,6 +231,8 @@ export class City {
         return this.level >= CityLevel.Town; // Niveau 2 (Ville)
       case BuildingType.Temple:
         return this.level >= CityLevel.Metropolis; // Niveau 3 (Métropole)
+      case BuildingType.BuildersGuild:
+        return this.level >= CityLevel.Capital; // Niveau 4 (Capitale)
       case BuildingType.Market:
       case BuildingType.TownHall:
         return this.level >= CityLevel.Outpost;

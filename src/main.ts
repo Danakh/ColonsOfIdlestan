@@ -3,6 +3,7 @@ import { HexMapRenderer } from './view/HexMapRenderer';
 import { CityPanelView } from './view/CityPanelView';
 import { TradePanelView } from './view/TradePanelView';
 import { PortSpecializationPanelView } from './view/PortSpecializationPanelView';
+import { AutomationPanelView, AutomationType } from './view/AutomationPanelView';
 import { ResourceSprites } from './view/ResourceSprites';
 import { InventoryView } from './view/InventoryView';
 import { ResourceHarvest } from './model/game/ResourceHarvest';
@@ -13,6 +14,7 @@ import { ResourceHarvestController } from './controller/ResourceHarvestControlle
 import { BuildingController } from './controller/BuildingController';
 import { TradeController } from './controller/TradeController';
 import { BuildingProductionController } from './controller/BuildingProductionController';
+import { AutomationController } from './controller/AutomationController';
 import { ResourceType } from './model/map/ResourceType';
 import { HexCoord } from './model/hex/HexCoord';
 import { Edge } from './model/hex/Edge';
@@ -52,6 +54,9 @@ function main(): void {
 
   // Créer la vue du panneau de spécialisation du port
   const portSpecializationPanelView = new PortSpecializationPanelView('port-specialization-panel');
+
+  // Créer la vue du panneau d'automatisation
+  const automationPanelView = new AutomationPanelView('automation-panel');
 
   if (!canvas) {
     throw new Error('Canvas introuvable');
@@ -204,6 +209,10 @@ function main(): void {
 
   // Configurer les callbacks du panneau de ville
   cityPanelView.setCallbacks({
+    onPanelUpdated: (city: City | null) => {
+      // Mettre à jour le bouton d'automatisation quand le panneau de ville est mis à jour
+      automationPanelView.updateAutomationButton(city);
+    },
     onBuildBuilding: (buildingType: BuildingType, city: City, gameMap: GameMap, vertex: Vertex) => {
       const playerResources = game.getPlayerResources();
       const gameClock = game.getGameClock();
@@ -387,6 +396,19 @@ function main(): void {
     },
   });
 
+  // Configurer les callbacks du panneau d'automatisation
+  automationPanelView.configureCallbacks({
+    getSelectedVertex: () => renderer.getSelectedVertex(),
+    getGameMap: () => game.getGameMap(),
+    getPlayerCivilizationId: () => game.getPlayerCivilizationId(),
+    getCivilization: (civId) => game.getGameState().getCivilization(civId),
+    updateResourcesDisplay: () => updateResourcesDisplay(),
+    refreshCityPanel: () => cityPanelView.refreshNow(),
+    getCurrentCity: () => cityPanelView.getCurrentCity(),
+    renderMap: (gameMap, civId) => renderer.render(gameMap, civId),
+    autoSave: () => autoSave(),
+  });
+
   // Gérer les événements personnalisés du panneau de ville
   const panelElement = cityPanelView.getPanelElement();
   
@@ -413,6 +435,7 @@ function main(): void {
     tradePanelView.setGameContext(currentGameMap, civId);
     tradePanelView.show(game.getPlayerResources());
   }) as EventListener);
+
 
   panelElement.addEventListener('buildingAction', ((e: CustomEvent) => {
     const selectedVertex = renderer.getSelectedVertex();
@@ -774,6 +797,22 @@ function main(): void {
 
     // Traiter la production automatique
     processAutomaticBuildingProduction();
+
+    // Traiter les automatisations
+    const currentGameMap = game.getGameMap();
+    if (currentGameMap) {
+      const civId = game.getPlayerCivilizationId();
+      const playerResources = game.getPlayerResources();
+      const civilization = game.getGameState().getCivilization(civId);
+      AutomationController.processAllAutomations(civId, civilization, currentGameMap, playerResources);
+      
+      // Mettre à jour l'affichage si des automatisations ont été exécutées
+      updateResourcesDisplay();
+      cityPanelView.scheduleRefresh();
+      
+      // Re-rendre la carte si nécessaire
+      renderer.render(currentGameMap, civId);
+    }
 
     // Continuer la boucle
     lastAnimationFrame = requestAnimationFrame(gameLoop);

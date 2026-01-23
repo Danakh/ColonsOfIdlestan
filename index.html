@@ -50,6 +50,15 @@
                     >
                         Commerce (verrouillé)
                     </button>
+                    <button
+                        id="city-automation-btn"
+                        class="city-trade-btn"
+                        hidden
+                        disabled
+                        title="Construisez une Guilde des batisseurs pour débloquer l'automatisation."
+                    >
+                        Automatisation
+                    </button>
                 </div>
             </aside>
             </div>
@@ -85,6 +94,14 @@
                 <div class="trade-actions">
                     <button id="port-specialization-cancel-btn" class="trade-btn cancel-btn">Annuler</button>
                     <button id="port-specialization-confirm-btn" class="trade-btn confirm-btn" disabled>Confirmer</button>
+                </div>
+            </aside>
+            <aside id="automation-panel" class="trade-panel hidden">
+                <h2>Automatisation</h2>
+                <p style="margin: 1em; color: #666;">Activez les automatisations de construction débloquées par la Guilde des batisseurs. Les automatisations disponibles dépendent du niveau de la Guilde.</p>
+                <ul id="automation-list" class="automation-list"></ul>
+                <div class="trade-actions">
+                    <button id="automation-close-btn" class="trade-btn confirm-btn">Fermer</button>
                 </div>
             </aside>
         </main>

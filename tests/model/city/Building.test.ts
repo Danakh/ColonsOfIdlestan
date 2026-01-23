@@ -38,6 +38,10 @@ describe('Building', () => {
       expect(() => new Building(BuildingType.Seaport, 4)).toThrow('Le niveau ne peut pas dépasser 3.');
     });
 
+    it('devrait lever une erreur si le niveau dépasse la limite (BuildersGuild max=3)', () => {
+      expect(() => new Building(BuildingType.BuildersGuild, 4)).toThrow('Le niveau ne peut pas dépasser 3.');
+    });
+
     it('devrait lever une erreur si le niveau dépasse la limite (non-production max=1)', () => {
       expect(() => new Building(BuildingType.Warehouse, 2)).toThrow('Le niveau ne peut pas dépasser 1.');
     });
@@ -81,6 +85,16 @@ describe('Building', () => {
 
     it('devrait retourner false pour un bâtiment Seaport niveau 3 (max=3)', () => {
       const building = new Building(BuildingType.Seaport, 3);
+      expect(building.canUpgrade()).toBe(false);
+    });
+
+    it('devrait retourner true pour un bâtiment BuildersGuild niveau 1 (max=3)', () => {
+      const building = new Building(BuildingType.BuildersGuild, 1);
+      expect(building.canUpgrade()).toBe(true);
+    });
+
+    it('devrait retourner false pour un bâtiment BuildersGuild niveau 3 (max=3)', () => {
+      const building = new Building(BuildingType.BuildersGuild, 3);
       expect(building.canUpgrade()).toBe(false);
     });
 
@@ -156,6 +170,19 @@ describe('Building', () => {
     it('devrait lever une erreur pour un bâtiment Seaport niveau 3 (max=3)', () => {
       const building = new Building(BuildingType.Seaport, 3);
       expect(() => building.upgrade()).toThrow('Le bâtiment Seaport est déjà au niveau maximum (3).');
+    });
+
+    it('devrait permettre d\'améliorer BuildersGuild jusqu\'au niveau 3', () => {
+      const building = new Building(BuildingType.BuildersGuild, 1);
+      building.upgrade(); // 2
+      building.upgrade(); // 3
+      expect(building.level).toBe(3);
+      expect(building.canUpgrade()).toBe(false);
+    });
+
+    it('devrait lever une erreur pour un bâtiment BuildersGuild niveau 3 (max=3)', () => {
+      const building = new Building(BuildingType.BuildersGuild, 3);
+      expect(() => building.upgrade()).toThrow('Le bâtiment BuildersGuild est déjà au niveau maximum (3).');
     });
 
     it('devrait lever une erreur pour un bâtiment non-producteur (max=1)', () => {
@@ -247,6 +274,20 @@ describe('Building', () => {
       expect(() => building.getUpgradeCost()).toThrow('Le bâtiment Seaport est déjà au niveau maximum (3).');
     });
 
+    it('devrait retourner le coût d\'amélioration pour BuildersGuild niveau 1', () => {
+      const building = new Building(BuildingType.BuildersGuild, 1);
+      const cost = building.getUpgradeCost();
+      // Coût de base * 1 pour BuildersGuild: Wood: 12, Brick: 12, Ore: 8
+      expect(cost.get(ResourceType.Wood)).toBe(12);
+      expect(cost.get(ResourceType.Brick)).toBe(12);
+      expect(cost.get(ResourceType.Ore)).toBe(8);
+    });
+
+    it('devrait lever une erreur pour un bâtiment BuildersGuild niveau 3 (max=3)', () => {
+      const building = new Building(BuildingType.BuildersGuild, 3);
+      expect(() => building.getUpgradeCost()).toThrow('Le bâtiment BuildersGuild est déjà au niveau maximum (3).');
+    });
+
     it('devrait lever une erreur pour un bâtiment non-producteur (max=1)', () => {
       const building = new Building(BuildingType.Warehouse, 1);
       expect(() => building.getUpgradeCost()).toThrow('Le bâtiment Warehouse est déjà au niveau maximum (1).');
@@ -282,6 +323,11 @@ describe('Building', () => {
 
     it('devrait lever une erreur si le niveau dépasse le max (Seaport)', () => {
       const building = new Building(BuildingType.Seaport);
+      expect(() => building.setLevel(4)).toThrow('Le niveau ne peut pas dépasser 3.');
+    });
+
+    it('devrait lever une erreur si le niveau dépasse le max (BuildersGuild)', () => {
+      const building = new Building(BuildingType.BuildersGuild);
       expect(() => building.setLevel(4)).toThrow('Le niveau ne peut pas dépasser 3.');
     });
   });

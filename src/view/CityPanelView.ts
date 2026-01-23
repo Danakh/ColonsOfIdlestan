@@ -18,6 +18,8 @@ export interface CityPanelCallbacks {
   onBuildBuilding?: (buildingType: BuildingType, city: City, gameMap: GameMap, vertex: Vertex) => void;
   /** Callback appelé lors d'une action sur un bâtiment construit */
   onBuildingAction?: (action: BuildingAction, buildingType: BuildingType, city: City) => void;
+  /** Callback appelé après chaque mise à jour du panneau (pour mettre à jour d'autres panneaux dépendants) */
+  onPanelUpdated?: (city: City | null) => void;
 }
 
 /**
@@ -157,6 +159,11 @@ export class CityPanelView {
     const playerResources = this.stateProvider.getPlayerResources();
 
     this.update(selectedVertex, gameMap, city, playerResources);
+    
+    // Notifier les callbacks après la mise à jour
+    if (this.callbacks.onPanelUpdated) {
+      this.callbacks.onPanelUpdated(city);
+    }
   }
 
   /**
@@ -280,6 +287,7 @@ export class CityPanelView {
         this.cityPanel.dispatchEvent(event);
       });
     }
+
   }
 
   /**
@@ -312,11 +320,28 @@ export class CityPanelView {
     return true;
   }
 
+
   /**
    * Retourne l'élément DOM du panneau pour permettre l'écoute d'événements personnalisés.
    */
   getPanelElement(): HTMLElement {
     return this.cityPanel;
+  }
+
+  /**
+   * Retourne la ville actuellement sélectionnée, ou null si aucune.
+   * Utile pour mettre à jour d'autres panneaux dépendants.
+   */
+  getCurrentCity(): City | null {
+    if (!this.renderer || !this.stateProvider) {
+      return null;
+    }
+    const selectedVertex = this.renderer.getSelectedVertex();
+    const gameMap = this.stateProvider.getGameMap();
+    if (!selectedVertex || !gameMap || !gameMap.hasCity(selectedVertex)) {
+      return null;
+    }
+    return gameMap.getCity(selectedVertex) || null;
   }
 
   /**
@@ -354,6 +379,11 @@ export class CityPanelView {
       this.lastCityLevel = null;
       this.lastCityBuildingLevelsKey = null;
       this.lastNoSelectionRendered = true;
+      
+      // Notifier les callbacks après la mise à jour (city = null)
+      if (this.callbacks.onPanelUpdated) {
+        this.callbacks.onPanelUpdated(null);
+      }
       return;
     }
 
@@ -444,6 +474,11 @@ export class CityPanelView {
 
     // Mise à jour incrémentale (ne remplace pas les boutons existants)
     this.updateBuildingsListDynamic(city, gameMap, selectedVertex, playerResources);
+    
+    // Notifier les callbacks après la mise à jour
+    if (this.callbacks.onPanelUpdated) {
+      this.callbacks.onPanelUpdated(city);
+    }
   }
 
   /**

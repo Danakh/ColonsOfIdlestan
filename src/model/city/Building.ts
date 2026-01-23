@@ -26,6 +26,7 @@ export class Building {
   private static readonly TOWN_HALL_MAX_LEVEL = 4;
   private static readonly MARKET_MAX_LEVEL = 2;
   private static readonly SEAPORT_MAX_LEVEL = 3;
+  private static readonly BUILDERS_GUILD_MAX_LEVEL = 3;
 
   /**
    * Crée un nouveau bâtiment.
@@ -71,6 +72,9 @@ export class Building {
     }
     if (type === BuildingType.Seaport) {
       return Building.SEAPORT_MAX_LEVEL;
+    }
+    if (type === BuildingType.BuildersGuild) {
+      return Building.BUILDERS_GUILD_MAX_LEVEL;
     }
     return getResourceProductionBuildings().includes(type)
       ? Building.PRODUCTION_MAX_LEVEL
@@ -204,6 +208,38 @@ export class Building {
    */
   isAutoTradeEnabled(): boolean {
     return this._autoTradeEnabled;
+  }
+
+  /**
+   * Vérifie si la construction automatique de routes peut être activée (Guilde des batisseurs niveau 1+).
+   * @returns true si l'automatisation peut être activée
+   */
+  canEnableAutoRoadConstruction(): boolean {
+    return this.type === BuildingType.BuildersGuild && this._level >= 1;
+  }
+
+  /**
+   * Vérifie si la construction automatique d'outposts peut être activée (Guilde des batisseurs niveau 2+).
+   * @returns true si l'automatisation peut être activée
+   */
+  canEnableAutoOutpostConstruction(): boolean {
+    return this.type === BuildingType.BuildersGuild && this._level >= 2;
+  }
+
+  /**
+   * Vérifie si l'amélioration automatique de villes peut être activée (Guilde des batisseurs niveau 2+).
+   * @returns true si l'automatisation peut être activée
+   */
+  canEnableAutoCityUpgrade(): boolean {
+    return this.type === BuildingType.BuildersGuild && this._level >= 2;
+  }
+
+  /**
+   * Vérifie si la construction automatique de bâtiments de production peut être activée (Guilde des batisseurs niveau 3).
+   * @returns true si l'automatisation peut être activée
+   */
+  canEnableAutoProductionBuildingConstruction(): boolean {
+    return this.type === BuildingType.BuildersGuild && this._level >= 3;
   }
 
   /**

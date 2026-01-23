@@ -212,9 +212,13 @@ export function Make7HexesMapWithPortCity(): GameState {
     gameClock
   );
   
+  // Récupérer la ville mise à jour pour vérifier le niveau
+  const portCityAfterUpgrade = gameMap.getCity(portCityVertex);
+  if (!portCityAfterUpgrade) throw new Error('Ville portuaire non trouvée après amélioration');
+  
   // Vérifier que la ville est bien au niveau 3
-  if (portCity.level !== CityLevel.Metropolis) {
-    throw new Error(`La ville portuaire devrait être au niveau Metropolis (3), mais elle est au niveau ${portCity.level}`);
+  if (portCityAfterUpgrade.level !== CityLevel.Metropolis) {
+    throw new Error(`La ville portuaire devrait être au niveau Metropolis (3), mais elle est au niveau ${portCityAfterUpgrade.level}`);
   }
   
   // Étape 10: Construire le port niveau 1
@@ -228,7 +232,9 @@ export function Make7HexesMapWithPortCity(): GameState {
   );
   
   // Étape 11: Améliorer le port au niveau 2
-  const seaport = portCity.getBuilding(BuildingType.Seaport);
+  let currentPortCity = gameMap.getCity(portCityVertex);
+  if (!currentPortCity) throw new Error('Ville portuaire non trouvée');
+  let seaport = currentPortCity.getBuilding(BuildingType.Seaport);
   if (!seaport) throw new Error('Le port n\'a pas été construit');
   
   if (seaport.level < 2) {
@@ -240,6 +246,11 @@ export function Make7HexesMapWithPortCity(): GameState {
       resources,
       gameClock
     );
+    // Récupérer la ville mise à jour
+    currentPortCity = gameMap.getCity(portCityVertex);
+    if (!currentPortCity) throw new Error('Ville portuaire non trouvée après amélioration du port');
+    seaport = currentPortCity.getBuilding(BuildingType.Seaport);
+    if (!seaport) throw new Error('Le port n\'existe pas après amélioration');
   }
   
   // Étape 12: Spécialiser le port niveau 2 en Brick
@@ -257,6 +268,11 @@ export function Make7HexesMapWithPortCity(): GameState {
       resources,
       gameClock
     );
+    // Récupérer la ville mise à jour
+    currentPortCity = gameMap.getCity(portCityVertex);
+    if (!currentPortCity) throw new Error('Ville portuaire non trouvée après amélioration finale du port');
+    seaport = currentPortCity.getBuilding(BuildingType.Seaport);
+    if (!seaport) throw new Error('Le port n\'existe pas après amélioration finale');
   }
   
   // Vérifications finales
@@ -269,6 +285,102 @@ export function Make7HexesMapWithPortCity(): GameState {
   
   // Sauvegarder le scénario
   saveGameState(gs, '7HexesMapWithPortCity');
+  
+  return gs;
+}
+
+/**
+ * Crée une carte 7Hexes avec une ville portuaire niveau 3 et une capitale (niveau 4) sur la ville initiale.
+ * Part de Make7HexesMapWithPortCity() et améliore la ville initiale jusqu'au niveau Capital.
+ * 
+ * @returns Un GameState avec une carte 7Hexes, une ville portuaire Metropolis (niveau 3) avec un port niveau 3,
+ *          et la ville initiale au niveau Capital (niveau 4)
+ */
+export function Make7HexesMapWithPortAndCapital(): GameState {
+  // Partir de la carte avec port
+  const gs = Make7HexesMapWithPortCity();
+  const gameMap = gs.getGameMap();
+  if (!gameMap) throw new Error('Carte non trouvée');
+  
+  const civId = gs.getPlayerCivilizationId();
+  const resources = gs.getPlayerResources();
+  const gameClock = gs.getGameClock();
+  const center = new HexCoord(0, 0);
+  
+  // Réinitialiser les cooldowns de récolte pour la simulation
+  ResourceHarvestController.resetCooldowns();
+  
+  // Ville initiale créée par Make7HexesMap (niveau Colony avec TownHall niveau 1)
+  // Après Make7HexesMapWithPortCity(), elle devrait être au niveau Town (2) avec TownHall niveau 2
+  const initialCityVertex = Vertex.create(
+    center,
+    center.neighbor(HexDirection.N),
+    center.neighbor(HexDirection.NW)
+  );
+  const initialCity = gameMap.getCity(initialCityVertex);
+  if (!initialCity) throw new Error('Ville initiale non trouvée');
+  
+  // Vérifier le niveau actuel de la ville initiale
+  let currentCity = gameMap.getCity(initialCityVertex);
+  if (!currentCity) throw new Error('Ville initiale non trouvée');
+  const townHall = currentCity.getBuilding(BuildingType.TownHall);
+  if (!townHall) throw new Error('Le TownHall de la ville initiale n\'existe pas');
+  
+  // Améliorer le TownHall jusqu'au niveau 4 pour passer la ville au niveau Capital
+  // La ville initiale devrait être au niveau Town (2) après Make7HexesMapWithPortCity()
+  // Il faut donc améliorer de niveau 2 à 3, puis de niveau 3 à 4
+  
+  // Améliorer le TownHall au niveau 3 pour passer la ville au niveau 3 (Metropolis)
+  if (townHall.level < 3) {
+    GameAutoPlayer.playUntilImproveBuilding(
+      BuildingType.TownHall,
+      initialCityVertex,
+      civId,
+      gameMap,
+      resources,
+      gameClock
+    );
+    // Récupérer la ville mise à jour
+    currentCity = gameMap.getCity(initialCityVertex);
+    if (!currentCity) throw new Error('Ville initiale non trouvée après amélioration');
+  }
+  
+  // Vérifier que la ville est maintenant au niveau 3
+  if (currentCity.level !== CityLevel.Metropolis) {
+    throw new Error(`La ville initiale devrait être au niveau Metropolis (3), mais elle est au niveau ${currentCity.level}`);
+  }
+  
+  // Améliorer le TownHall au niveau 4 pour passer la ville au niveau 4 (Capital)
+  const townHallLevel3 = currentCity.getBuilding(BuildingType.TownHall);
+  if (!townHallLevel3) throw new Error('Le TownHall de la ville initiale n\'existe pas');
+  if (townHallLevel3.level < 4) {
+    GameAutoPlayer.playUntilImproveBuilding(
+      BuildingType.TownHall,
+      initialCityVertex,
+      civId,
+      gameMap,
+      resources,
+      gameClock
+    );
+    // Récupérer la ville mise à jour
+    currentCity = gameMap.getCity(initialCityVertex);
+    if (!currentCity) throw new Error('Ville initiale non trouvée après amélioration finale');
+  }
+  
+  // Vérifier que la ville est maintenant au niveau Capital
+  if (currentCity.level !== CityLevel.Capital) {
+    throw new Error(`La ville initiale devrait être au niveau Capital (4), mais elle est au niveau ${currentCity.level}`);
+  }
+  
+  // Vérifier que le TownHall est au niveau 4
+  const finalTownHall = currentCity.getBuilding(BuildingType.TownHall);
+  if (!finalTownHall) throw new Error('Le TownHall de la ville initiale n\'existe pas après amélioration');
+  if (finalTownHall.level !== 4) {
+    throw new Error(`Le TownHall devrait être au niveau 4, mais il est au niveau ${finalTownHall.level}`);
+  }
+  
+  // Sauvegarder le scénario
+  saveGameState(gs, '7HexesMapWithPortAndCapital');
   
   return gs;
 }

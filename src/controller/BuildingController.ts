@@ -287,6 +287,8 @@ export class BuildingController {
         return city.level >= CityLevel.Town;
       case BuildingType.Temple:
         return city.level >= CityLevel.Metropolis;
+      case BuildingType.BuildersGuild:
+        return city.level >= CityLevel.Capital;
       case BuildingType.Market:
       case BuildingType.TownHall:
         return city.level >= CityLevel.Outpost;

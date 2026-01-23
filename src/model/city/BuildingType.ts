@@ -29,6 +29,8 @@ export enum BuildingType {
   Library = 'Library',
   /** Temple - Ajoute des points de civilisation */
   Temple = 'Temple',
+  /** Guilde des batisseurs - Permet l'automatisation de constructions. Disponible au niveau Capitale (4). */
+  BuildersGuild = 'BuildersGuild',
 }
 
 /**
@@ -47,6 +49,7 @@ export const BUILDING_TYPE_NAMES: Record<BuildingType, string> = {
   [BuildingType.Forge]: 'Forge',
   [BuildingType.Library]: 'Bibliothèque',
   [BuildingType.Temple]: 'Temple',
+  [BuildingType.BuildersGuild]: 'Guilde des batisseurs',
 };
 
 /**
@@ -104,6 +107,11 @@ export const BUILDING_COSTS: Record<BuildingType, Map<ResourceType, number>> = {
     [ResourceType.Wood, 8],
     [ResourceType.Brick, 10],
     [ResourceType.Ore, 3],
+  ]),
+  [BuildingType.BuildersGuild]: new Map([
+    [ResourceType.Wood, 15],
+    [ResourceType.Brick, 15],
+    [ResourceType.Ore, 10],
   ]),
 };
 
@@ -174,6 +182,11 @@ export const BUILDING_UPGRADE_COSTS: Record<BuildingType, Map<ResourceType, numb
     [ResourceType.Brick, 8],
     [ResourceType.Ore, 2],
   ]),
+  [BuildingType.BuildersGuild]: new Map([
+    [ResourceType.Wood, 12],
+    [ResourceType.Brick, 12],
+    [ResourceType.Ore, 8],
+  ]),
 };
 
 /**
@@ -240,6 +253,7 @@ export const BUILDING_REQUIRED_HEX_TYPE: Record<BuildingType, HexType | null> = 
   [BuildingType.Forge]: null, // Pas de contrainte d'hex (mais nécessite une Mine pour être utile)
   [BuildingType.Library]: null, // Pas de contrainte d'hex
   [BuildingType.Temple]: null, // Pas de contrainte d'hex
+  [BuildingType.BuildersGuild]: null, // Pas de contrainte d'hex
 };
 
 /**
@@ -263,6 +277,8 @@ export enum BuildingAction {
   Specialization = 'Specialization',
   /** Auto - Commerce automatique - Débloqué par le port maritime niveau 3 */
   Auto = 'Auto',
+  /** Automatisation - Débloqué par la Guilde des batisseurs */
+  Automation = 'Automation',
 }
 
 /**
@@ -274,6 +290,8 @@ export function getBuildingAction(buildingType: BuildingType): BuildingAction | 
   switch (buildingType) {
     case BuildingType.TownHall:
       return BuildingAction.Upgrade;
+    case BuildingType.BuildersGuild:
+      return BuildingAction.Automation;
     default:
       return null;
   }
@@ -287,4 +305,5 @@ export const BUILDING_ACTION_NAMES: Record<BuildingAction, string> = {
   [BuildingAction.Upgrade]: 'Améliorer',
   [BuildingAction.Specialization]: 'Spécialisation',
   [BuildingAction.Auto]: 'Auto',
+  [BuildingAction.Automation]: 'Automatisation',
 };

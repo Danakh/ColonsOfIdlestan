@@ -1,5 +1,6 @@
 import { GameMap } from '../map/GameMap';
 import { CivilizationId } from '../map/CivilizationId';
+import { Civilization, CivilizationSerialized } from '../map/Civilization';
 import { PlayerResources } from './PlayerResources';
 import { GameClock } from './GameClock';
 
@@ -11,6 +12,7 @@ import { GameClock } from './GameClock';
 export class GameState {
   private gameMap: GameMap | null = null;
   private civilizations: CivilizationId[] = [];
+  private civilizationData: Map<string, Civilization> = new Map();
   /** Seed utilisé pour la génération de la carte (null si non initialisée). */
   private seed: number | null = null;
 
@@ -58,6 +60,25 @@ export class GameState {
   /** Définit la liste des civilisations de la partie. */
   setCivilizations(civs: CivilizationId[]): void {
     this.civilizations = [...civs];
+    // Initialiser les données de civilisation si elles n'existent pas
+    for (const civId of civs) {
+      const key = civId.hashCode();
+      if (!this.civilizationData.has(key)) {
+        this.civilizationData.set(key, new Civilization(civId));
+      }
+    }
+  }
+
+  /**
+   * Retourne l'objet Civilization pour un CivilizationId donné.
+   * Crée une nouvelle civilisation si elle n'existe pas encore.
+   */
+  getCivilization(civId: CivilizationId): Civilization {
+    const key = civId.hashCode();
+    if (!this.civilizationData.has(key)) {
+      this.civilizationData.set(key, new Civilization(civId));
+    }
+    return this.civilizationData.get(key)!;
   }
 
   /** Définit le seed de génération (lors d'une nouvelle partie ou régénération). */
@@ -70,12 +91,23 @@ export class GameState {
    * Chaque sous-objet (PlayerResources, GameClock, GameMap) se sérialise lui-même.
    */
   serialize(): string {
+    const civilizationsData: CivilizationSerialized[] = [];
+    for (const civId of this.civilizations) {
+      const civ = this.civilizationData.get(civId.hashCode());
+      if (civ) {
+        civilizationsData.push(civ.serialize());
+      } else {
+        // Créer une civilisation par défaut si elle n'existe pas
+        civilizationsData.push(new Civilization(civId).serialize());
+      }
+    }
     const obj = {
       playerResources: this.playerResources.serialize(),
       playerCivilizationId: this.playerCivilizationId.serialize(),
       gameClock: this.gameClock.serialize(),
       gameMap: this.gameMap?.serialize() ?? null,
       civilizations: this.civilizations.map((c) => c.serialize()),
+      civilizationsData: civilizationsData,
       seed: this.seed,
     };
     return JSON.stringify(obj);
@@ -92,6 +124,16 @@ export class GameState {
     const gc = GameClock.deserialize(obj.gameClock);
     const gs = new GameState(pr, civId, gc);
     gs.setCivilizations((obj.civilizations as string[]).map((s: string) => CivilizationId.deserialize(s)));
+    
+    // Désérialiser les données de civilisation si disponibles
+    if (obj.civilizationsData) {
+      for (const civData of obj.civilizationsData as CivilizationSerialized[]) {
+        const civ = Civilization.deserialize(civData);
+        const key = civ.id.hashCode();
+        gs.civilizationData.set(key, civ);
+      }
+    }
+    
     gs.setSeed(obj.seed);
     if (obj.gameMap != null) {
       gs.setGameMap(GameMap.deserialize(obj.gameMap));
