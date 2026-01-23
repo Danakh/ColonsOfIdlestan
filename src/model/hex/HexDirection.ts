@@ -2,6 +2,7 @@
  * Représente les six directions possibles dans une grille hexagonale.
  * Utilise le système de coordonnées axiales où chaque direction
  * correspond à un déplacement dans le plan hexagonal.
+ * @deprecated Utiliser MainHexDirection et SecondaryHexDirection à la place.
  */
 export enum HexDirection {
   /** Nord */
