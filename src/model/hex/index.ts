@@ -5,6 +5,8 @@
  */
 
 export { HexDirection, ALL_DIRECTIONS } from './HexDirection';
+export { MainHexDirection, ALL_MAIN_DIRECTIONS } from './MainHexDirection';
+export { SecondaryHexDirection, ALL_SECONDARY_DIRECTIONS } from './SecondaryHexDirection';
 export { HexCoord } from './HexCoord';
 export { Hex } from './Hex';
 export { Edge } from './Edge';

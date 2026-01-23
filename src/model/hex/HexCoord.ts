@@ -1,4 +1,5 @@
 import { HexDirection, ALL_DIRECTIONS } from './HexDirection';
+import { MainHexDirection, ALL_MAIN_DIRECTIONS } from './MainHexDirection';
 
 /**
  * Système de coordonnées axiales pour les grilles hexagonales.
@@ -49,6 +50,31 @@ export class HexCoord {
    */
   neighbors(): HexCoord[] {
     return ALL_DIRECTIONS.map((dir) => this.neighbor(dir));
+  }
+
+  /**
+   * Retourne les coordonnées du voisin dans la direction principale spécifiée.
+   * Les déplacements sont définis pour le système de coordonnées axiales.
+   */
+  neighborMain(direction: MainHexDirection): HexCoord {
+    const deltas: Record<MainHexDirection, [number, number]> = {
+      [MainHexDirection.W]: [-1, 0],
+      [MainHexDirection.E]: [1, 0],
+      [MainHexDirection.NE]: [0, 1],
+      [MainHexDirection.SE]: [1, -1],
+      [MainHexDirection.NW]: [-1, 1],
+      [MainHexDirection.SW]: [0, -1],
+    };
+
+    const [dq, dr] = deltas[direction];
+    return new HexCoord(this.q + dq, this.r + dr);
+  }
+
+  /**
+   * Retourne tous les voisins de cet hexagone en utilisant les directions principales.
+   */
+  neighborsMain(): HexCoord[] {
+    return ALL_MAIN_DIRECTIONS.map((dir) => this.neighborMain(dir));
   }
 
   /**
