@@ -1,4 +1,5 @@
 import { CivilizationId } from './CivilizationId';
+import { GameMap } from './GameMap';
 
 /**
  * Format sérialisé d'une civilisation.
@@ -148,5 +149,43 @@ export class Civilization {
       civ.setAutoProductionBuildingConstruction(true);
     }
     return civ;
+  }
+
+  /**
+   * Retourne le nombre de routes appartenant à cette civilisation sur la carte.
+   * @param gameMap - La carte de jeu
+   * @returns Le nombre de routes
+   */
+  getRoadCount(gameMap: GameMap): number {
+    return gameMap.getRoadsForCivilization(this.id).length;
+  }
+
+  /**
+   * Retourne le nombre de villes appartenant à cette civilisation sur la carte.
+   * @param gameMap - La carte de jeu
+   * @returns Le nombre de villes
+   */
+  getCityCount(gameMap: GameMap): number {
+    return gameMap.getCitiesForCivilization(this.id).length;
+  }
+
+  /**
+   * Retourne la somme des niveaux de toutes les villes de cette civilisation.
+   * @param gameMap - La carte de jeu
+   * @returns La somme des niveaux de villes
+   */
+  getTotalCityLevel(gameMap: GameMap): number {
+    const cities = gameMap.getCitiesForCivilization(this.id);
+    return cities.reduce((total, city) => total + city.level, 0);
+  }
+
+  /**
+   * Retourne le nombre total de bâtiments dans toutes les villes de cette civilisation.
+   * @param gameMap - La carte de jeu
+   * @returns Le nombre total de bâtiments
+   */
+  getBuildingCount(gameMap: GameMap): number {
+    const cities = gameMap.getCitiesForCivilization(this.id);
+    return cities.reduce((total, city) => total + city.getBuildingCount(), 0);
   }
 }
