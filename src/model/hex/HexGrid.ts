@@ -4,7 +4,7 @@ import { Edge } from './Edge';
 import { Vertex } from './Vertex';
 import { HexDirection, ALL_DIRECTIONS } from './HexDirection';
 import { MainHexDirection, ALL_MAIN_DIRECTIONS } from './MainHexDirection';
-import { SecondaryHexDirection } from './SecondaryHexDirection';
+import { SecondaryHexDirection, ALL_SECONDARY_DIRECTIONS } from './SecondaryHexDirection';
 
 /**
  * Grille hexagonale générique basée sur des coordonnées axiales.
@@ -113,6 +113,7 @@ export class HexGrid {
   /**
    * Retourne toutes les arêtes adjacentes à un hexagone donné.
    * Une arête est adjacente si elle connecte cet hexagone à un voisin.
+   * Utilise les directions principales (MainHexDirection).
    */
   getEdges(coord: HexCoord): Edge[] {
     const edges: Edge[] = [];
@@ -121,9 +122,9 @@ export class HexGrid {
       return edges;
     }
 
-    // Pour chaque direction, créer une arête avec le voisin (s'il existe)
-    for (const direction of ALL_DIRECTIONS) {
-      const neighborCoord = coord.neighbor(direction);
+    // Pour chaque direction principale, créer une arête avec le voisin (s'il existe)
+    for (const direction of ALL_MAIN_DIRECTIONS) {
+      const neighborCoord = coord.neighborMain(direction);
       const neighbor = this.getHex(neighborCoord);
       if (neighbor) {
         const edge = Edge.create(coord, neighborCoord);
@@ -145,6 +146,7 @@ export class HexGrid {
    * Retourne toutes les arêtes adjacentes à un hexagone donné.
    * Inclut toutes les arêtes qui touchent cet hexagone, même celles
    * qui ne connectent pas à un autre hexagone de la grille.
+   * Utilise les directions principales (MainHexDirection).
    */
   getEdgesForHex(coord: HexCoord): Edge[] {
     const edges: Edge[] = [];
@@ -153,10 +155,10 @@ export class HexGrid {
       return edges;
     }
 
-    // Pour chaque direction, créer une arête avec le voisin
+    // Pour chaque direction principale, créer une arête avec le voisin
     // Même si le voisin n'existe pas dans la grille, l'arête existe
-    for (const direction of ALL_DIRECTIONS) {
-      const neighborCoord = coord.neighbor(direction);
+    for (const direction of ALL_MAIN_DIRECTIONS) {
+      const neighborCoord = coord.neighborMain(direction);
       const edge = Edge.create(coord, neighborCoord);
       const edgeKey = edge.hashCode();
       
@@ -173,6 +175,7 @@ export class HexGrid {
   /**
    * Retourne tous les sommets adjacents à un hexagone donné.
    * Un sommet est adjacent s'il est formé par cet hexagone et deux de ses voisins.
+   * Utilise les directions secondaires (SecondaryHexDirection).
    */
   getVertices(coord: HexCoord): Vertex[] {
     const vertices: Vertex[] = [];
@@ -181,32 +184,20 @@ export class HexGrid {
       return vertices;
     }
 
-    // Pour chaque paire de directions consécutives, créer un sommet
+    // Pour chaque direction secondaire, créer un sommet
     // Un sommet est formé par trois hexagones qui se rencontrent
-    const directions = ALL_DIRECTIONS;
-    for (let i = 0; i < directions.length; i++) {
-      const dir1 = directions[i];
-      const dir2 = directions[(i + 1) % directions.length];
-      
-      const neighbor1 = coord.neighbor(dir1);
-      const neighbor2 = coord.neighbor(dir2);
-      
-      // Vérifier si les deux voisins existent dans la grille
-      const hex1 = this.getHex(neighbor1);
-      const hex2 = this.getHex(neighbor2);
-      
-      if (hex1 && hex2) {
-        // Les trois hexagones forment un sommet
-        try {
-          const vertex = Vertex.create(coord, neighbor1, neighbor2);
-          const vertexKey = vertex.hashCode();
-          
-          if (!this.vertexCache.has(vertexKey)) {
-            this.vertexCache.set(vertexKey, vertex);
-          }
-          vertices.push(this.vertexCache.get(vertexKey)!);
-        } catch (e) {
-          // Ignorer si le sommet n'est pas valide
+    for (const direction of ALL_SECONDARY_DIRECTIONS) {
+      const vertex = this.getVertexBySecondaryDirection(coord, direction);
+      if (vertex) {
+        // Vérifier que les deux voisins existent dans la grille
+        const [hex1, hex2, hex3] = vertex.getHexes();
+        const neighbor1 = this.getHex(hex1);
+        const neighbor2 = this.getHex(hex2);
+        const neighbor3 = this.getHex(hex3);
+        
+        // Les trois hexagones doivent exister dans la grille
+        if (neighbor1 && neighbor2 && neighbor3) {
+          vertices.push(vertex);
         }
       }
     }
@@ -224,6 +215,7 @@ export class HexGrid {
   /**
    * Retourne tous les sommets qui touchent un hexagone donné.
    * Inclut les sommets même si certains voisins n'existent pas dans la grille.
+   * Utilise les directions secondaires (SecondaryHexDirection).
    */
   getVerticesForHex(coord: HexCoord): Vertex[] {
     const vertices: Vertex[] = [];
@@ -232,26 +224,12 @@ export class HexGrid {
       return vertices;
     }
 
-    // Pour chaque paire de directions consécutives, créer un sommet
-    const directions = ALL_DIRECTIONS;
-    for (let i = 0; i < directions.length; i++) {
-      const dir1 = directions[i];
-      const dir2 = directions[(i + 1) % directions.length];
-      
-      const neighbor1 = coord.neighbor(dir1);
-      const neighbor2 = coord.neighbor(dir2);
-      
-      // Créer le sommet même si les voisins n'existent pas dans la grille
-      try {
-        const vertex = Vertex.create(coord, neighbor1, neighbor2);
-        const vertexKey = vertex.hashCode();
-        
-        if (!this.vertexCache.has(vertexKey)) {
-          this.vertexCache.set(vertexKey, vertex);
-        }
-        vertices.push(this.vertexCache.get(vertexKey)!);
-      } catch (e) {
-        // Ignorer si le sommet n'est pas valide
+    // Pour chaque direction secondaire, créer un sommet
+    // Créer le sommet même si les voisins n'existent pas dans la grille
+    for (const direction of ALL_SECONDARY_DIRECTIONS) {
+      const vertex = this.getVertexBySecondaryDirection(coord, direction);
+      if (vertex) {
+        vertices.push(vertex);
       }
     }
 
@@ -301,6 +279,26 @@ export class HexGrid {
     } catch (e) {
       return undefined;
     }
+  }
+
+  /**
+   * Retourne l'edge correspondant à une direction principale pour un hexagone donné.
+   * Un edge est formé par l'hexagone et un de ses voisins selon la direction principale.
+   */
+  getEdgeByMainDirection(coord: HexCoord, direction: MainHexDirection): Edge | undefined {
+    const hex = this.getHex(coord);
+    if (!hex) {
+      return undefined;
+    }
+
+    const neighborCoord = coord.neighborMain(direction);
+    const edge = Edge.create(coord, neighborCoord);
+    const edgeKey = edge.hashCode();
+    
+    if (!this.edgeCache.has(edgeKey)) {
+      this.edgeCache.set(edgeKey, edge);
+    }
+    return this.edgeCache.get(edgeKey)!;
   }
 
   /**
