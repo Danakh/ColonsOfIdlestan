@@ -256,7 +256,7 @@ export class GameAutoPlayer {
    * @param targetResources - Map optionnelle des ressources cibles pour le commerce
    * @returns Le temps actuel après avancement
    */
-  private static advanceTimeAndHarvest(
+  public static advanceTimeAndHarvest(
     civId: CivilizationId,
     map: GameMap,
     resources: PlayerResources,
