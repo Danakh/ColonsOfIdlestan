@@ -334,7 +334,7 @@ describe('MapGenerator', () => {
         let adjacentCount = 0;
 
         // Compter les voisins adjacents (qu'ils soient avant ou après dans l'ordre d'ajout)
-        for (const neighborCoord of currentCoord.neighborsMain()) {
+        for (const neighborCoord of currentCoord.neighbors()) {
           if (grid.hasHex(neighborCoord)) {
             adjacentCount++;
           }
@@ -491,7 +491,7 @@ describe('MapGenerator', () => {
         expect(neighbors.length).toBe(6);
 
         // Vérifier aussi que tous les voisins théoriques existent
-        const theoreticalNeighbors = hex.coord.neighborsMain();
+        const theoreticalNeighbors = hex.coord.neighbors();
         expect(theoreticalNeighbors.length).toBe(6);
 
         for (const theoreticalNeighbor of theoreticalNeighbors) {
@@ -530,7 +530,7 @@ describe('MapGenerator', () => {
         expect(neighbors.length).toBe(6);
 
         // Vérifier que chaque position voisine théorique a un hexagone
-        const theoreticalNeighbors = hex.coord.neighborsMain();
+        const theoreticalNeighbors = hex.coord.neighbors();
         expect(theoreticalNeighbors.length).toBe(6);
         
         for (const theoreticalNeighbor of theoreticalNeighbors) {
@@ -540,3 +540,4 @@ describe('MapGenerator', () => {
     });
   });
 });
+

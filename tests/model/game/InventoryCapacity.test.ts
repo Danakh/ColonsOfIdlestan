@@ -5,7 +5,7 @@ import { CivilizationId } from '../../../src/model/map/CivilizationId';
 import { HexGrid } from '../../../src/model/hex/HexGrid';
 import { Hex } from '../../../src/model/hex/Hex';
 import { HexCoord } from '../../../src/model/hex/HexCoord';
-import { MainHexDirection } from '../../../src/model/hex/MainHexDirection';
+import { HexDirection } from '../../../src/model/hex/HexDirection';
 import { Vertex } from '../../../src/model/hex/Vertex';
 import { CityLevel } from '../../../src/model/city/CityLevel';
 import { BuildingType } from '../../../src/model/city/BuildingType';
@@ -17,8 +17,8 @@ describe('InventoryCapacity', () => {
   describe('calculateInventoryCapacity', () => {
     it('devrait retourner 10 pour un outpost (niveau 0)', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -38,8 +38,8 @@ describe('InventoryCapacity', () => {
 
     it('devrait retourner 40 pour une colonie (niveau 1)', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -59,8 +59,8 @@ describe('InventoryCapacity', () => {
 
     it('devrait retourner 90 pour une ville (niveau 2)', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -80,8 +80,8 @@ describe('InventoryCapacity', () => {
 
     it('devrait retourner 160 pour une métropole (niveau 3)', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -101,8 +101,8 @@ describe('InventoryCapacity', () => {
 
     it('devrait retourner 250 pour une capitale (niveau 4)', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -122,8 +122,8 @@ describe('InventoryCapacity', () => {
 
     it('devrait ajouter 500 par entrepôt', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -152,9 +152,9 @@ describe('InventoryCapacity', () => {
 
     it('devrait ajouter 500 par entrepôt dans plusieurs villes', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
-      const southeast = center.neighborMain(MainHexDirection.E);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
+      const southeast = center.neighbor(HexDirection.E);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -191,9 +191,9 @@ describe('InventoryCapacity', () => {
 
     it('devrait utiliser le niveau de ville le plus élevé parmi plusieurs villes', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
-      const southeast = center.neighborMain(MainHexDirection.E);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
+      const southeast = center.neighbor(HexDirection.E);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -226,3 +226,4 @@ describe('InventoryCapacity', () => {
     });
   });
 });
+

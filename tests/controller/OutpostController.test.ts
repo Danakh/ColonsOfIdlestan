@@ -3,7 +3,7 @@ import { OutpostController } from '../../src/controller/OutpostController';
 import { RoadController } from '../../src/controller/RoadController';
 import { Make7HexesMap } from '../utils/GameStateGenerator';
 import { HexCoord } from '../../src/model/hex/HexCoord';
-import { MainHexDirection } from '../../src/model/hex/MainHexDirection';
+import { HexDirection } from '../../src/model/hex/HexDirection';
 import { SecondaryHexDirection } from '../../src/model/hex/SecondaryHexDirection';
 import { Vertex } from '../../src/model/hex/Vertex';
 import { Edge } from '../../src/model/hex/Edge';
@@ -37,7 +37,7 @@ describe('OutpostController', () => {
     it('devrait refuser si le vertex a déjà une ville', () => {
       // La ville existe déjà dans Make7HexesMap sur cityVertex
       // Construire une route pour que le vertex touche une route
-      const hexN = center.neighborMain(MainHexDirection.SW);
+      const hexN = center.neighbor(HexDirection.SW);
       const edge = Edge.create(center, hexN); // Route qui touche le vertex de la ville
       
       // Ajouter les ressources pour la route
@@ -56,7 +56,7 @@ describe('OutpostController', () => {
     it('devrait refuser si le vertex ne touche pas de route de la civilisation', () => {
       // Créer un vertex valide qui ne touche pas de route
       // Utiliser un vertex autour de l'hex SE (qui n'a pas de route)
-      const hexSE = center.neighborMain(MainHexDirection.E);
+      const hexSE = center.neighbor(HexDirection.E);
       const vertices = map!.getGrid().getVertices(hexSE);
       
       // Prendre le premier vertex qui n'a pas de ville
@@ -81,7 +81,7 @@ describe('OutpostController', () => {
     it('devrait refuser si le vertex est à distance < 2 d\'une ville', () => {
       // Construire une route depuis la ville (distance 1)
       // La route doit toucher le vertex de la ville
-      const hexN = center.neighborMain(MainHexDirection.SW);
+      const hexN = center.neighbor(HexDirection.SW);
       const road1Edge = Edge.create(center, hexN); // Route qui touche le vertex de la ville
       
       // Ajouter les ressources pour la route
@@ -122,11 +122,11 @@ describe('OutpostController', () => {
       map!.registerCivilization(otherCivId);
       
       // Créer une ville pour l'autre civilisation
-      const hexSE = center.neighborMain(MainHexDirection.E);
+      const hexSE = center.neighbor(HexDirection.E);
       const otherCityVertex = Vertex.create(
         center,
         hexSE,
-        center.neighborMain(MainHexDirection.NE)
+        center.neighbor(HexDirection.NE)
       );
       map!.addCity(otherCityVertex, otherCivId, CityLevel.Colony);
       
@@ -162,8 +162,8 @@ describe('OutpostController', () => {
       GameAutoPlayer.playUntilBuilding(BuildingType.Sawmill, cityVertex, civId, map!, resources, gameState.getGameClock());
       GameAutoPlayer.playUntilBuilding(BuildingType.Brickworks, cityVertex, civId, map!, resources, gameState.getGameClock());
 
-      GameAutoPlayer.playUntilBuildingRoad(center.edge(MainHexDirection.NW), civId, map!, resources, gameState.getGameClock());
-      GameAutoPlayer.playUntilBuildingRoad(center.edge(MainHexDirection.W), civId, map!, resources, gameState.getGameClock());
+      GameAutoPlayer.playUntilBuildingRoad(center.edge(HexDirection.NW), civId, map!, resources, gameState.getGameClock());
+      GameAutoPlayer.playUntilBuildingRoad(center.edge(HexDirection.W), civId, map!, resources, gameState.getGameClock());
 
       const outpostVertex = center.vertex(SecondaryHexDirection.WS); // Vertex à l'ouest-nord-ouest du centre
       
@@ -191,8 +191,8 @@ describe('OutpostController', () => {
       GameAutoPlayer.playUntilBuilding(BuildingType.Sawmill, cityVertex, civId, map!, resources, gameState.getGameClock());
       GameAutoPlayer.playUntilBuilding(BuildingType.Brickworks, cityVertex, civId, map!, resources, gameState.getGameClock());
 
-      GameAutoPlayer.playUntilBuildingRoad(center.edge(MainHexDirection.NW), civId, map!, resources, gameState.getGameClock());
-      GameAutoPlayer.playUntilBuildingRoad(center.edge(MainHexDirection.W), civId, map!, resources, gameState.getGameClock());
+      GameAutoPlayer.playUntilBuildingRoad(center.edge(HexDirection.NW), civId, map!, resources, gameState.getGameClock());
+      GameAutoPlayer.playUntilBuildingRoad(center.edge(HexDirection.W), civId, map!, resources, gameState.getGameClock());
       
       // Obtenir tous les vertices constructibles
       const allBuildableVertices = map!.getBuildableOutpostVertices(civId);
@@ -220,7 +220,7 @@ describe('OutpostController', () => {
     it('devrait refuser la construction si le vertex a déjà une ville', () => {
       // La ville existe déjà sur cityVertex
       // Construire une route
-      const hexN = center.neighborMain(MainHexDirection.SW);
+      const hexN = center.neighbor(HexDirection.SW);
       const edge = Edge.create(center, hexN);
       
       const roadCost = RoadConstruction.getCost(1);
@@ -245,7 +245,7 @@ describe('OutpostController', () => {
 
     it('devrait refuser la construction si la distance est insuffisante', () => {
       // Construire une route à distance 1 seulement
-      const hexN = center.neighborMain(MainHexDirection.SW);
+      const hexN = center.neighbor(HexDirection.SW);
       const road1Edge = Edge.create(center, hexN);
       
       const roadCost = RoadConstruction.getCost(1);
@@ -291,9 +291,9 @@ describe('OutpostController', () => {
   describe('getBuildableOutpostVertices après construction d\'un avant-poste', () => {
     it('devrait exclure les vertices trop proches après la construction d\'un nouvel avant-poste', () => {
       // Construire des routes comme dans Map7HexesScenario
-      const hexNW = center.neighborMain(MainHexDirection.NW);
-      const hexNE = center.neighborMain(MainHexDirection.NE);
-      const hexE = center.neighborMain(MainHexDirection.E);
+      const hexNW = center.neighbor(HexDirection.NW);
+      const hexNE = center.neighbor(HexDirection.NE);
+      const hexE = center.neighbor(HexDirection.E);
       
       // Route 1: center-NW (touche le vertex de la ville)
       const road1Edge = Edge.create(center, hexNW);
@@ -410,3 +410,4 @@ describe('OutpostController', () => {
     });
   });
 });
+

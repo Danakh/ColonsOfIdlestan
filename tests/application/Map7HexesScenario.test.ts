@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Make7HexesMap, saveGameState } from '../utils/GameStateGenerator';
 import { HexCoord } from '../../src/model/hex/HexCoord';
-import { MainHexDirection } from '../../src/model/hex/MainHexDirection';
+import { HexDirection } from '../../src/model/hex/HexDirection';
 import { Vertex } from '../../src/model/hex/Vertex';
 import { Edge } from '../../src/model/hex/Edge';
 import { BuildingType } from '../../src/model/city/BuildingType';
@@ -41,8 +41,8 @@ describe('Map7HexesScenario', () => {
     GameAutoPlayer.playUntilBuilding(BuildingType.Brickworks, cityVertex, civId, map, resources, gs.getGameClock());
 
     // 4. Construire 2 routes : center–N, center–NE (SE devient visible, S non)
-    GameAutoPlayer.playUntilBuildingRoad(center.edge(MainHexDirection.NW), civId, map, resources, gs.getGameClock());
-    GameAutoPlayer.playUntilBuildingRoad(center.edge(MainHexDirection.W), civId, map, resources, gs.getGameClock());
+    GameAutoPlayer.playUntilBuildingRoad(center.edge(HexDirection.NW), civId, map, resources, gs.getGameClock());
+    GameAutoPlayer.playUntilBuildingRoad(center.edge(HexDirection.W), civId, map, resources, gs.getGameClock());
 
     // 5. Construire avant-poste
     GameAutoPlayer.playUntilOutpost(outpostVertex, civId, map, resources, gs.getGameClock());

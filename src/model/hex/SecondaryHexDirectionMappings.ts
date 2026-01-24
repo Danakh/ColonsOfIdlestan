@@ -1,4 +1,4 @@
-import { MainHexDirection } from './MainHexDirection';
+import { HexDirection } from './HexDirection';
 import { SecondaryHexDirection } from './SecondaryHexDirection';
 
 /**
@@ -11,12 +11,12 @@ import { SecondaryHexDirection } from './SecondaryHexDirection';
  */
 export const SECONDARY_TO_MAIN_DIRECTION_PAIRS: Record<
   SecondaryHexDirection,
-  [MainHexDirection, MainHexDirection]
+  [HexDirection, HexDirection]
 > = {
-  [SecondaryHexDirection.N]: [MainHexDirection.NW, MainHexDirection.NE],
-  [SecondaryHexDirection.EN]: [MainHexDirection.NE, MainHexDirection.E],
-  [SecondaryHexDirection.ES]: [MainHexDirection.E, MainHexDirection.SE],
-  [SecondaryHexDirection.S]: [MainHexDirection.SE, MainHexDirection.SW],
-  [SecondaryHexDirection.WS]: [MainHexDirection.SW, MainHexDirection.W],
-  [SecondaryHexDirection.WN]: [MainHexDirection.W, MainHexDirection.NW],
+  [SecondaryHexDirection.N]: [HexDirection.NW, HexDirection.NE],
+  [SecondaryHexDirection.EN]: [HexDirection.NE, HexDirection.E],
+  [SecondaryHexDirection.ES]: [HexDirection.E, HexDirection.SE],
+  [SecondaryHexDirection.S]: [HexDirection.SE, HexDirection.SW],
+  [SecondaryHexDirection.WS]: [HexDirection.SW, HexDirection.W],
+  [SecondaryHexDirection.WN]: [HexDirection.W, HexDirection.NW],
 };

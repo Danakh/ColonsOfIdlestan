@@ -1,15 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { Vertex } from '../../../src/model/hex/Vertex';
 import { HexCoord } from '../../../src/model/hex/HexCoord';
-import { MainHexDirection } from '../../../src/model/hex/MainHexDirection';
+import { HexDirection } from '../../../src/model/hex/HexDirection';
 import { SecondaryHexDirection } from '../../../src/model/hex/SecondaryHexDirection';
 
 describe('Vertex', () => {
   describe('création et validation', () => {
     it('devrait créer un sommet avec trois hexagones mutuellement adjacents', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
       
       // Vérifier que les trois sont mutuellement adjacents
       expect(center.distanceTo(north)).toBe(1);
@@ -34,8 +34,8 @@ describe('Vertex', () => {
 
     it('devrait normaliser l\'ordre des hexagones pour garantir l\'unicité', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
       
       const vertex1 = Vertex.create(center, north, northeast);
       const vertex2 = Vertex.create(northeast, center, north);
@@ -50,8 +50,8 @@ describe('Vertex', () => {
   describe('égalité et hashage', () => {
     it('devrait considérer deux sommets égaux s\'ils contiennent les mêmes hexagones', () => {
       const center = new HexCoord(2, 3);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
       
       const vertex1 = Vertex.create(center, north, northeast);
       const vertex2 = Vertex.create(northeast, north, center);
@@ -61,8 +61,8 @@ describe('Vertex', () => {
 
     it('devrait générer le même hash code pour des sommets égaux', () => {
       const center = new HexCoord(1, 1);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
       
       const vertex1 = Vertex.create(center, north, northeast);
       const vertex2 = Vertex.create(northeast, center, north);
@@ -74,13 +74,13 @@ describe('Vertex', () => {
       const center = new HexCoord(0, 0);
       const vertex1 = Vertex.create(
         center,
-        center.neighborMain(MainHexDirection.SW),
-        center.neighborMain(MainHexDirection.SE)
+        center.neighbor(HexDirection.SW),
+        center.neighbor(HexDirection.SE)
       );
       const vertex2 = Vertex.create(
         center,
-        center.neighborMain(MainHexDirection.SE),
-        center.neighborMain(MainHexDirection.E)
+        center.neighbor(HexDirection.SE),
+        center.neighbor(HexDirection.E)
       );
       
       expect(vertex1.hashCode()).not.toBe(vertex2.hashCode());
@@ -90,8 +90,8 @@ describe('Vertex', () => {
   describe('méthodes utilitaires', () => {
     it('devrait retourner les trois hexagones du sommet', () => {
       const center = new HexCoord(3, 4);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
       
       const vertex = Vertex.create(center, north, northeast);
       const hexes = vertex.getHexes();
@@ -106,9 +106,9 @@ describe('Vertex', () => {
 
     it('devrait vérifier correctement l\'adjacence à un hexagone', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
-      const south = center.neighborMain(MainHexDirection.NE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
+      const south = center.neighbor(HexDirection.NE);
       
       const vertex = Vertex.create(center, north, northeast);
       
@@ -120,8 +120,8 @@ describe('Vertex', () => {
 
     it('devrait retourner l\'hexagone qui a ce vertex dans sa direction opposée', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
       
       const vertex = Vertex.create(center, north, northeast);
       
@@ -134,8 +134,8 @@ describe('Vertex', () => {
 
     it('devrait retourner l\'hexagone qui a ce vertex dans la direction spécifiée', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
       
       const vertex = Vertex.create(center, north, northeast);
       

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Make7HexesMapWithPortAndCapital } from '../utils/GameProgressionTest';
 import { HexCoord } from '../../src/model/hex/HexCoord';
-import { MainHexDirection } from '../../src/model/hex/MainHexDirection';
+import { HexDirection } from '../../src/model/hex/HexDirection';
 import { SecondaryHexDirection } from '../../src/model/hex/SecondaryHexDirection';
 import { Vertex } from '../../src/model/hex/Vertex';
 import { BuildingType } from '../../src/model/city/BuildingType';
@@ -145,8 +145,8 @@ describe('GameAutomation', () => {
       );
 
       // Construire quelques routes pour permettre la construction d'outposts
-      const seHex = center.neighborMain(MainHexDirection.E);
-      const sHex = center.neighborMain(MainHexDirection.NE);
+      const seHex = center.neighbor(HexDirection.E);
+      const sHex = center.neighbor(HexDirection.NE);
       
       // Construire des routes si possible
       const road1 = Edge.create(center, seHex);
@@ -252,7 +252,7 @@ describe('GameAutomation', () => {
       // Si on n'a pas trouvé de ville testable, créer un outpost et le transformer en ville
       if (!testCity || !testCityVertex) {
         // Chercher un vertex valide pour créer un outpost
-        const seHex = center.neighborMain(MainHexDirection.E);
+        const seHex = center.neighbor(HexDirection.E);
         const road1 = Edge.create(center, seHex);
         
         // Construire une route si nécessaire

@@ -1,6 +1,6 @@
 import { Hex } from '../../src/model/hex/Hex';
 import { HexCoord } from '../../src/model/hex/HexCoord';
-import { MainHexDirection, ALL_MAIN_DIRECTIONS } from '../../src/model/hex/MainHexDirection';
+import { HexDirection, ALL_HEX_DIRECTIONS } from '../../src/model/hex/HexDirection';
 import { HexGrid } from '../../src/model/hex/HexGrid';
 import { Vertex } from '../../src/model/hex/Vertex';
 import { Edge } from '../../src/model/hex/Edge';
@@ -32,12 +32,12 @@ export function Make7HexesMap(): GameState {
   const center = new HexCoord(0, 0);
   const mainHexes = [
     center,
-    center.neighborMain(MainHexDirection.SW),
-    center.neighborMain(MainHexDirection.SE),
-    center.neighborMain(MainHexDirection.E),
-    center.neighborMain(MainHexDirection.NE),
-    center.neighborMain(MainHexDirection.NW),
-    center.neighborMain(MainHexDirection.W),
+    center.neighbor(HexDirection.SW),
+    center.neighbor(HexDirection.SE),
+    center.neighbor(HexDirection.E),
+    center.neighbor(HexDirection.NE),
+    center.neighbor(HexDirection.NW),
+    center.neighbor(HexDirection.W),
   ];
   
   // Créer un Set pour stocker les coordonnées des hexagones principaux (pour vérification rapide)
@@ -46,8 +46,8 @@ export function Make7HexesMap(): GameState {
   // Trouver tous les voisins externes (hexagones d'eau)
   const waterHexCoords = new Set<string>();
   for (const hexCoord of mainHexes) {
-    for (const direction of ALL_MAIN_DIRECTIONS) {
-      const neighborCoord = hexCoord.neighborMain(direction);
+    for (const direction of ALL_HEX_DIRECTIONS) {
+      const neighborCoord = hexCoord.neighbor(direction);
       const neighborKey = neighborCoord.hashCode();
       // Ajouter seulement si ce n'est pas un hexagone principal
       if (!mainHexCoords.has(neighborKey)) {
@@ -71,12 +71,12 @@ export function Make7HexesMap(): GameState {
   // Centre : Brick (argile)
   gameMap.setHexType(center, HexType.Brick);
   // 6 voisins : 5 types avec bois en double → Wood, Wood, Wheat, Sheep, Ore (Ore en double pour 6 hexes)
-  gameMap.setHexType(center.neighborMain(MainHexDirection.SW), HexType.Wood);
-  gameMap.setHexType(center.neighborMain(MainHexDirection.NE), HexType.Wood);
-  gameMap.setHexType(center.neighborMain(MainHexDirection.E), HexType.Wheat);
-  gameMap.setHexType(center.neighborMain(MainHexDirection.SE), HexType.Sheep);
-  gameMap.setHexType(center.neighborMain(MainHexDirection.NW), HexType.Ore);
-  gameMap.setHexType(center.neighborMain(MainHexDirection.W), HexType.Ore);
+  gameMap.setHexType(center.neighbor(HexDirection.SW), HexType.Wood);
+  gameMap.setHexType(center.neighbor(HexDirection.NE), HexType.Wood);
+  gameMap.setHexType(center.neighbor(HexDirection.E), HexType.Wheat);
+  gameMap.setHexType(center.neighbor(HexDirection.SE), HexType.Sheep);
+  gameMap.setHexType(center.neighbor(HexDirection.NW), HexType.Ore);
+  gameMap.setHexType(center.neighbor(HexDirection.W), HexType.Ore);
   
   // Définir tous les hexagones d'eau comme Water
   for (const waterKey of waterHexCoords) {

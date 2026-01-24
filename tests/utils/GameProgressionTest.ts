@@ -1,5 +1,5 @@
 import { HexCoord } from '../../src/model/hex/HexCoord';
-import { MainHexDirection } from '../../src/model/hex/MainHexDirection';
+import { HexDirection } from '../../src/model/hex/HexDirection';
 import { Vertex } from '../../src/model/hex/Vertex';
 import { Edge } from '../../src/model/hex/Edge';
 import { GameMap } from '../../src/model/map/GameMap';
@@ -82,7 +82,7 @@ export function Make7HexesMapWithPortCity(): GameState {
   
   // Étape 4: Construire des routes pour étendre le territoire
   // Route 1
-  const road1 = center.edge(MainHexDirection.NE);
+  const road1 = center.edge(HexDirection.NE);
   GameAutoPlayer.playUntilBuildingRoad(road1, civId, gameMap, resources, gameClock);
   
   // Route 2

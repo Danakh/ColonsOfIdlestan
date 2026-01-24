@@ -6,7 +6,7 @@ import { CivilizationId } from '../../../src/model/map/CivilizationId';
 import { HexGrid } from '../../../src/model/hex/HexGrid';
 import { Hex } from '../../../src/model/hex/Hex';
 import { HexCoord } from '../../../src/model/hex/HexCoord';
-import { MainHexDirection } from '../../../src/model/hex/MainHexDirection';
+import { HexDirection } from '../../../src/model/hex/HexDirection';
 import { Edge } from '../../../src/model/hex/Edge';
 import { Vertex } from '../../../src/model/hex/Vertex';
 
@@ -95,8 +95,8 @@ describe('GameMap', () => {
   describe('gestion des villes', () => {
     it('devrait ajouter une ville sur un sommet', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -115,8 +115,8 @@ describe('GameMap', () => {
 
     it('devrait retourner false si aucune ville n\'existe sur un sommet', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -153,7 +153,7 @@ describe('GameMap', () => {
   describe('gestion des routes', () => {
     it('devrait ajouter une route sur une arête', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
+      const north = center.neighbor(HexDirection.SW);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -171,7 +171,7 @@ describe('GameMap', () => {
 
     it('devrait retourner false si aucune route n\'existe sur une arête', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
+      const north = center.neighbor(HexDirection.SW);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -185,8 +185,8 @@ describe('GameMap', () => {
 
     it('devrait gérer plusieurs routes', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -219,7 +219,7 @@ describe('GameMap', () => {
 
     it('devrait retourner true pour un hexagone avec une route sur une arête adjacente', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
+      const north = center.neighbor(HexDirection.SW);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -241,8 +241,8 @@ describe('GameMap', () => {
 
     it('devrait retourner true si au moins un vertex a une route connectée', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -266,8 +266,8 @@ describe('GameMap', () => {
 
     it('devrait retourner true pour un hexagone avec une ville sur un vertex', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -291,7 +291,7 @@ describe('GameMap', () => {
     it('devrait retourner false pour un hexagone isolé même avec des routes ailleurs', () => {
       const center = new HexCoord(0, 0);
       const isolated = new HexCoord(10, 10);
-      const north = center.neighborMain(MainHexDirection.SW);
+      const north = center.neighbor(HexDirection.SW);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -322,9 +322,9 @@ describe('GameMap', () => {
 
     it('devrait gérer correctement la visibilité avec plusieurs routes', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
-      const southeast = center.neighborMain(MainHexDirection.E);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
+      const southeast = center.neighbor(HexDirection.E);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -350,9 +350,9 @@ describe('GameMap', () => {
 
     it('devrait rendre un hexagone d\'eau visible s\'il touche un hexagone terrestre visible', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
-      const waterHex = center.neighborMain(MainHexDirection.E);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
+      const waterHex = center.neighbor(HexDirection.E);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -384,7 +384,7 @@ describe('GameMap', () => {
     it('ne devrait pas rendre un hexagone d\'eau visible s\'il ne touche pas d\'hexagone terrestre visible', () => {
       const center = new HexCoord(0, 0);
       const isolated = new HexCoord(10, 10);
-      const waterHex = isolated.neighborMain(MainHexDirection.SW);
+      const waterHex = isolated.neighbor(HexDirection.SW);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -401,8 +401,8 @@ describe('GameMap', () => {
       map.setHexType(waterHex, HexType.Water);
 
       // Ajouter une ville sur center pour le rendre visible
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
       const vertex = Vertex.create(center, north, northeast);
       map.addCity(vertex, civId);
 
@@ -473,8 +473,8 @@ describe('GameMap', () => {
   describe('propriété des villes', () => {
     it('devrait associer une ville à une civilisation', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -493,8 +493,8 @@ describe('GameMap', () => {
 
     it('devrait retourner undefined si aucune ville n\'existe sur un sommet', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -510,8 +510,8 @@ describe('GameMap', () => {
 
     it('devrait lancer une erreur si on ajoute une ville pour une civilisation non enregistrée', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -530,8 +530,8 @@ describe('GameMap', () => {
 
     it('devrait lancer une erreur si on ajoute une ville sur un sommet déjà occupé', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -554,9 +554,9 @@ describe('GameMap', () => {
 
     it('devrait permettre à une civilisation d\'avoir plusieurs villes', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
-      const southeast = center.neighborMain(MainHexDirection.E);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
+      const southeast = center.neighbor(HexDirection.E);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -581,7 +581,7 @@ describe('GameMap', () => {
   describe('propriété des routes', () => {
     it('devrait associer une route à une civilisation', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
+      const north = center.neighbor(HexDirection.SW);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -599,7 +599,7 @@ describe('GameMap', () => {
 
     it('devrait retourner undefined si aucune route n\'existe sur une arête', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
+      const north = center.neighbor(HexDirection.SW);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -614,7 +614,7 @@ describe('GameMap', () => {
 
     it('devrait lancer une erreur si on ajoute une route pour une civilisation non enregistrée', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
+      const north = center.neighbor(HexDirection.SW);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -632,7 +632,7 @@ describe('GameMap', () => {
 
     it('devrait lancer une erreur si on ajoute une route sur une arête déjà occupée', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
+      const north = center.neighbor(HexDirection.SW);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -654,8 +654,8 @@ describe('GameMap', () => {
 
     it('devrait permettre à une civilisation d\'avoir plusieurs routes', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -679,9 +679,9 @@ describe('GameMap', () => {
   describe('requêtes par civilisation', () => {
     it('devrait retourner toutes les villes d\'une civilisation', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
-      const southeast = center.neighborMain(MainHexDirection.E);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
+      const southeast = center.neighbor(HexDirection.E);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -697,7 +697,7 @@ describe('GameMap', () => {
 
       const vertex1 = Vertex.create(center, north, northeast);
       const vertex2 = Vertex.create(center, northeast, southeast);
-      const vertex3 = Vertex.create(north, northeast, north.neighborMain(MainHexDirection.SE));
+      const vertex3 = Vertex.create(north, northeast, north.neighbor(HexDirection.SE));
 
       map.addCity(vertex1, civId1);
       map.addCity(vertex2, civId1);
@@ -722,9 +722,9 @@ describe('GameMap', () => {
 
     it('devrait retourner toutes les routes d\'une civilisation', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
-      const southeast = center.neighborMain(MainHexDirection.E);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
+      const southeast = center.neighbor(HexDirection.E);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -767,8 +767,8 @@ describe('GameMap', () => {
   describe('distance des routes aux villes', () => {
     it('devrait retourner une distance de 1 pour une route touchant directement une ville', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -793,9 +793,9 @@ describe('GameMap', () => {
 
     it('devrait retourner une distance de 2 pour une route adjacente à une route de distance 1', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
-      const west = center.neighborMain(MainHexDirection.W);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
+      const west = center.neighbor(HexDirection.W);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -825,9 +825,9 @@ describe('GameMap', () => {
 
     it('devrait prendre le minimum des distances possibles', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
-      const southeast = center.neighborMain(MainHexDirection.E);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
+      const southeast = center.neighbor(HexDirection.E);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -867,7 +867,7 @@ describe('GameMap', () => {
 
     it('devrait retourner undefined pour une route inexistante', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
+      const north = center.neighbor(HexDirection.SW);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -881,9 +881,9 @@ describe('GameMap', () => {
 
     it('devrait recalculer les distances quand une nouvelle route raccourcit le chemin', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
-      const west = center.neighborMain(MainHexDirection.W);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
+      const west = center.neighbor(HexDirection.W);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -922,10 +922,10 @@ describe('GameMap', () => {
   describe('cohérence vertex-hex', () => {
     it('devrait vérifier que chaque vertex est bien voisin de ses trois hexagones', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
-      const northwest = center.neighborMain(MainHexDirection.NW);
-      const southeast = center.neighborMain(MainHexDirection.E);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
+      const northwest = center.neighbor(HexDirection.NW);
+      const southeast = center.neighbor(HexDirection.E);
 
       const hexes = [
         new Hex(center),
@@ -960,10 +960,10 @@ describe('GameMap', () => {
 
     it('devrait vérifier que chaque hexagone a bien tous ses vertices dans sa liste', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
-      const northwest = center.neighborMain(MainHexDirection.NW);
-      const southeast = center.neighborMain(MainHexDirection.E);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
+      const northwest = center.neighbor(HexDirection.NW);
+      const southeast = center.neighbor(HexDirection.E);
 
       const hexes = [
         new Hex(center),
@@ -997,12 +997,12 @@ describe('GameMap', () => {
       // Créer une grille plus complexe avec plusieurs hexagones connectés
       const center = new HexCoord(0, 0);
       const neighbors = [
-        center.neighborMain(MainHexDirection.SW),
-        center.neighborMain(MainHexDirection.SE),
-        center.neighborMain(MainHexDirection.E),
-        center.neighborMain(MainHexDirection.NE),
-        center.neighborMain(MainHexDirection.NW),
-        center.neighborMain(MainHexDirection.W),
+        center.neighbor(HexDirection.SW),
+        center.neighbor(HexDirection.SE),
+        center.neighbor(HexDirection.E),
+        center.neighbor(HexDirection.NE),
+        center.neighbor(HexDirection.NW),
+        center.neighbor(HexDirection.W),
       ];
 
       const hexes = [new Hex(center), ...neighbors.map(coord => new Hex(coord))];

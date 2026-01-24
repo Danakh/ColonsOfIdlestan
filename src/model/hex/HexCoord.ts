@@ -1,4 +1,4 @@
-import { MainHexDirection, ALL_MAIN_DIRECTIONS } from './MainHexDirection';
+import { HexDirection, ALL_HEX_DIRECTIONS } from './HexDirection';
 import { SecondaryHexDirection } from './SecondaryHexDirection';
 import { SECONDARY_TO_MAIN_DIRECTION_PAIRS } from './SecondaryHexDirectionMappings';
 import { Vertex } from './Vertex';
@@ -34,14 +34,14 @@ export class HexCoord {
    * Retourne les coordonnées du voisin dans la direction principale spécifiée.
    * Les déplacements sont définis pour le système de coordonnées axiales.
    */
-  neighborMain(direction: MainHexDirection): HexCoord {
-    const deltas: Record<MainHexDirection, [number, number]> = {
-      [MainHexDirection.W]: [-1, 0],
-      [MainHexDirection.E]: [1, 0],
-      [MainHexDirection.NE]: [0, 1],
-      [MainHexDirection.SE]: [1, -1],
-      [MainHexDirection.NW]: [-1, 1],
-      [MainHexDirection.SW]: [0, -1],
+  neighbor(direction: HexDirection): HexCoord {
+    const deltas: Record<HexDirection, [number, number]> = {
+      [HexDirection.W]: [-1, 0],
+      [HexDirection.E]: [1, 0],
+      [HexDirection.NE]: [0, 1],
+      [HexDirection.SE]: [1, -1],
+      [HexDirection.NW]: [-1, 1],
+      [HexDirection.SW]: [0, -1],
     };
 
     const [dq, dr] = deltas[direction];
@@ -51,8 +51,8 @@ export class HexCoord {
   /**
    * Retourne tous les voisins de cet hexagone en utilisant les directions principales.
    */
-  neighborsMain(): HexCoord[] {
-    return ALL_MAIN_DIRECTIONS.map((dir) => this.neighborMain(dir));
+  neighbors(): HexCoord[] {
+    return ALL_HEX_DIRECTIONS.map((dir) => this.neighbor(dir));
   }
 
   /**
@@ -64,8 +64,8 @@ export class HexCoord {
    */
   vertex(direction: SecondaryHexDirection): Vertex {
     const [dir1, dir2] = SECONDARY_TO_MAIN_DIRECTION_PAIRS[direction];
-    const neighbor1 = this.neighborMain(dir1);
-    const neighbor2 = this.neighborMain(dir2);
+    const neighbor1 = this.neighbor(dir1);
+    const neighbor2 = this.neighbor(dir2);
     return Vertex.create(this, neighbor1, neighbor2);
   }
 
@@ -76,8 +76,8 @@ export class HexCoord {
    * @param direction - La direction principale de l'edge
    * @returns L'edge correspondant
    */
-  edge(direction: MainHexDirection): Edge {
-    const neighbor = this.neighborMain(direction);
+  edge(direction: HexDirection): Edge {
+    const neighbor = this.neighbor(direction);
     return Edge.create(this, neighbor);
   }
 
@@ -91,8 +91,8 @@ export class HexCoord {
    */
   outgoingEdge(direction: SecondaryHexDirection): Edge {
     const mainDirs = SECONDARY_TO_MAIN_DIRECTION_PAIRS[direction];
-    const neighbor0 = this.neighborMain(mainDirs[0]);
-    const neighbor1 = this.neighborMain(mainDirs[1]);
+    const neighbor0 = this.neighbor(mainDirs[0]);
+    const neighbor1 = this.neighbor(mainDirs[1]);
     return Edge.create(neighbor0, neighbor1);
   }
 
@@ -139,3 +139,4 @@ export class HexCoord {
     return new HexCoord(data[0], data[1]);
   }
 }
+

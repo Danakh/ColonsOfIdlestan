@@ -4,7 +4,7 @@
  * une grille hexagonale inspirée de Catan.
  */
 
-export { MainHexDirection, ALL_MAIN_DIRECTIONS, inverseMainHexDirection } from './MainHexDirection';
+export { HexDirection, ALL_HEX_DIRECTIONS, inverseHexDirection } from './HexDirection';
 export { SecondaryHexDirection, ALL_SECONDARY_DIRECTIONS, inverseSecondaryHexDirection } from './SecondaryHexDirection';
 export { SECONDARY_TO_MAIN_DIRECTION_PAIRS } from './SecondaryHexDirectionMappings';
 export { HexCoord } from './HexCoord';

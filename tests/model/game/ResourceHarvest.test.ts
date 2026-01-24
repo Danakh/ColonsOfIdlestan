@@ -8,7 +8,7 @@ import { CivilizationId } from '../../../src/model/map/CivilizationId';
 import { HexGrid } from '../../../src/model/hex/HexGrid';
 import { Hex } from '../../../src/model/hex/Hex';
 import { HexCoord } from '../../../src/model/hex/HexCoord';
-import { MainHexDirection } from '../../../src/model/hex/MainHexDirection';
+import { HexDirection } from '../../../src/model/hex/HexDirection';
 import { Vertex } from '../../../src/model/hex/Vertex';
 import { Edge } from '../../../src/model/hex/Edge';
 import { BuildingController } from '../../../src/controller/BuildingController';
@@ -34,8 +34,8 @@ describe('ResourceHarvest', () => {
   describe('isAdjacentToPlayerCity', () => {
     it('devrait retourner true si un hexagone est adjacent à une ville du joueur', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -65,8 +65,8 @@ describe('ResourceHarvest', () => {
 
     it('devrait retourner false si un hexagone n\'est pas adjacent à une ville du joueur', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
       const isolated = new HexCoord(10, 10);
 
       const grid = new HexGrid([
@@ -91,8 +91,8 @@ describe('ResourceHarvest', () => {
 
     it('devrait retourner false si la ville appartient à une autre civilisation', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -117,9 +117,9 @@ describe('ResourceHarvest', () => {
 
     it('devrait retourner true si l\'hexagone est adjacent à plusieurs villes du joueur', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
-      const southeast = center.neighborMain(MainHexDirection.E);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
+      const southeast = center.neighbor(HexDirection.E);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -147,8 +147,8 @@ describe('ResourceHarvest', () => {
   describe('canHarvest', () => {
     it('devrait retourner true si toutes les conditions sont remplies', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -194,8 +194,8 @@ describe('ResourceHarvest', () => {
 
     it('devrait retourner false si l\'hexagone n\'est pas adjacent à une ville du joueur', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
       const isolated = new HexCoord(10, 10);
 
       const grid = new HexGrid([
@@ -213,7 +213,7 @@ describe('ResourceHarvest', () => {
       map.addCity(vertex, civId);
 
       // Rendre isolated visible avec une route
-      const isolatedNorth = isolated.neighborMain(MainHexDirection.SW);
+      const isolatedNorth = isolated.neighbor(HexDirection.SW);
       const grid2 = new HexGrid([
         new Hex(center),
         new Hex(north),
@@ -234,8 +234,8 @@ describe('ResourceHarvest', () => {
 
     it('devrait retourner false si l\'hexagone contient une ressource non récoltable', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -260,8 +260,8 @@ describe('ResourceHarvest', () => {
 
     it('devrait retourner true pour toutes les ressources récoltables', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -293,8 +293,8 @@ describe('ResourceHarvest', () => {
   describe('harvest', () => {
     it('devrait récolter une ressource et l\'ajouter à l\'inventaire', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -321,8 +321,8 @@ describe('ResourceHarvest', () => {
 
     it('devrait accumuler les ressources lors de plusieurs récoltes', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -349,9 +349,9 @@ describe('ResourceHarvest', () => {
 
     it('devrait récolter différents types de ressources', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
-      const southeast = center.neighborMain(MainHexDirection.E);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
+      const southeast = center.neighbor(HexDirection.E);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -401,7 +401,7 @@ describe('ResourceHarvest', () => {
     it('devrait lancer une erreur si l\'hexagone n\'est pas adjacent à une ville', () => {
       const center = new HexCoord(0, 0);
       const isolated = new HexCoord(10, 10);
-      const isolatedNorth = isolated.neighborMain(MainHexDirection.SW);
+      const isolatedNorth = isolated.neighbor(HexDirection.SW);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -413,8 +413,8 @@ describe('ResourceHarvest', () => {
       map.registerCivilization(civId);
 
       // Ajouter une ville loin de isolated
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
       const grid2 = new HexGrid([
         new Hex(center),
         new Hex(north),
@@ -441,8 +441,8 @@ describe('ResourceHarvest', () => {
 
     it('devrait lancer une erreur si l\'hexagone contient une ressource non récoltable', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -466,8 +466,8 @@ describe('ResourceHarvest', () => {
 
     it('devrait retourner 0 et ne pas ajouter de ressource si le gain est 0', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -492,9 +492,9 @@ describe('ResourceHarvest', () => {
 
     it('devrait permettre à une ville spécifique de récolter un hex même si plusieurs villes sont adjacentes', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
-      const southeast = center.neighborMain(MainHexDirection.E);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
+      const southeast = center.neighbor(HexDirection.E);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -530,13 +530,13 @@ describe('ResourceHarvest', () => {
 
     it('devrait lancer une erreur si le vertex fourni n\'est pas adjacent à l\'hex', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
       
       // Créer un hex loin de center et un vertex valide autour de cet hex
       const distantHex = new HexCoord(3, 0);
-      const distantNorth = distantHex.neighborMain(MainHexDirection.SW);
-      const distantNortheast = distantHex.neighborMain(MainHexDirection.SE);
+      const distantNorth = distantHex.neighbor(HexDirection.SW);
+      const distantNortheast = distantHex.neighbor(HexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -569,8 +569,8 @@ describe('ResourceHarvest', () => {
 
     it('devrait limiter la récolte à la capacité d\'inventaire (outpost = 10)', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -602,8 +602,8 @@ describe('ResourceHarvest', () => {
 
     it('devrait limiter la récolte à la capacité d\'inventaire avec entrepôt', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -645,3 +645,4 @@ describe('ResourceHarvest', () => {
     });
   });
 });
+

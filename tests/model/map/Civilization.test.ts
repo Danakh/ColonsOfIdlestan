@@ -4,7 +4,7 @@ import { CivilizationId } from '../../../src/model/map/CivilizationId';
 import { Make7HexesMap } from '../../utils/GameStateGenerator';
 import { Edge } from '../../../src/model/hex/Edge';
 import { HexCoord } from '../../../src/model/hex/HexCoord';
-import { MainHexDirection } from '../../../src/model/hex/MainHexDirection';
+import { HexDirection } from '../../../src/model/hex/HexDirection';
 import { CityLevel } from '../../../src/model/city/CityLevel';
 import { Vertex } from '../../../src/model/hex/Vertex';
 
@@ -23,8 +23,8 @@ describe('Civilization', () => {
 
       // Ajouter quelques routes
       const center = new HexCoord(0, 0);
-      const seHex = center.neighborMain(MainHexDirection.E);
-      const sHex = center.neighborMain(MainHexDirection.NE);
+      const seHex = center.neighbor(HexDirection.E);
+      const sHex = center.neighbor(HexDirection.NE);
 
       const road1 = Edge.create(center, seHex);
       gameMap.addRoad(road1, civId);
@@ -50,8 +50,8 @@ describe('Civilization', () => {
 
       // Ajouter une deuxième ville
       const center = new HexCoord(0, 0);
-      const seHex = center.neighborMain(MainHexDirection.E);
-      const sHex = center.neighborMain(MainHexDirection.NE);
+      const seHex = center.neighbor(HexDirection.E);
+      const sHex = center.neighbor(HexDirection.NE);
 
       // Construire une route pour permettre la construction d'un outpost
       const road1 = Edge.create(center, seHex);
@@ -89,8 +89,8 @@ describe('Civilization', () => {
 
       // Ajouter une ville Outpost (niveau 0)
       const center = new HexCoord(0, 0);
-      const seHex = center.neighborMain(MainHexDirection.E);
-      const sHex = center.neighborMain(MainHexDirection.NE);
+      const seHex = center.neighbor(HexDirection.E);
+      const sHex = center.neighbor(HexDirection.NE);
 
       // Construire des routes pour permettre la construction d'un outpost
       const road1 = Edge.create(center, seHex);
@@ -130,8 +130,8 @@ describe('Civilization', () => {
 
       // Ajouter une ville Outpost (niveau 0, pas de bâtiment)
       const center = new HexCoord(0, 0);
-      const seHex = center.neighborMain(MainHexDirection.E);
-      const sHex = center.neighborMain(MainHexDirection.NE);
+      const seHex = center.neighbor(HexDirection.E);
+      const sHex = center.neighbor(HexDirection.NE);
 
       // Construire des routes pour permettre la construction d'un outpost
       const road1 = Edge.create(center, seHex);
@@ -183,8 +183,8 @@ describe('Civilization', () => {
       const civilization = new Civilization(civId);
 
       const center = new HexCoord(0, 0);
-      const seHex = center.neighborMain(MainHexDirection.E);
-      const sHex = center.neighborMain(MainHexDirection.NE);
+      const seHex = center.neighbor(HexDirection.E);
+      const sHex = center.neighbor(HexDirection.NE);
 
       // Construire des routes
       const road1 = Edge.create(center, seHex);
@@ -231,3 +231,4 @@ describe('Civilization', () => {
     });
   });
 });
+

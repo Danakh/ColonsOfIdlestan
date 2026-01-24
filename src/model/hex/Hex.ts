@@ -1,5 +1,5 @@
 import { HexCoord } from './HexCoord';
-import { MainHexDirection } from './MainHexDirection';
+import { HexDirection } from './HexDirection';
 import { SecondaryHexDirection } from './SecondaryHexDirection';
 import { SECONDARY_TO_MAIN_DIRECTION_PAIRS } from './SecondaryHexDirectionMappings';
 import { Edge } from './Edge';

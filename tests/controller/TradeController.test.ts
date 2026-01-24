@@ -5,7 +5,7 @@ import { BuildingProductionController } from '../../src/controller/BuildingProdu
 import { Make7HexesMap } from '../utils/GameStateGenerator';
 import { Make7HexesMapWithPortCity } from '../utils/GameProgressionTest';
 import { HexCoord } from '../../src/model/hex/HexCoord';
-import { MainHexDirection } from '../../src/model/hex/MainHexDirection';
+import { HexDirection } from '../../src/model/hex/HexDirection';
 import { SecondaryHexDirection } from '../../src/model/hex/SecondaryHexDirection';
 import { Vertex } from '../../src/model/hex/Vertex';
 import { BuildingType } from '../../src/model/city/BuildingType';

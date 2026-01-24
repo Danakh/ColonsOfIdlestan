@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { HexGrid } from '../../../src/model/hex/HexGrid';
 import { Hex } from '../../../src/model/hex/Hex';
 import { HexCoord } from '../../../src/model/hex/HexCoord';
-import { MainHexDirection } from '../../../src/model/hex/MainHexDirection';
+import { HexDirection } from '../../../src/model/hex/HexDirection';
 
 describe('HexGrid', () => {
   describe('lookup d\'hexagones', () => {
@@ -82,12 +82,12 @@ describe('HexGrid', () => {
       const center = new HexCoord(0, 0);
       const hexes = [
         new Hex(center),
-        new Hex(center.neighborMain(MainHexDirection.SW)),
-        new Hex(center.neighborMain(MainHexDirection.SE)),
-        new Hex(center.neighborMain(MainHexDirection.E)),
-        new Hex(center.neighborMain(MainHexDirection.NE)),
-        new Hex(center.neighborMain(MainHexDirection.NW)),
-        new Hex(center.neighborMain(MainHexDirection.W)),
+        new Hex(center.neighbor(HexDirection.SW)),
+        new Hex(center.neighbor(HexDirection.SE)),
+        new Hex(center.neighbor(HexDirection.E)),
+        new Hex(center.neighbor(HexDirection.NE)),
+        new Hex(center.neighbor(HexDirection.NW)),
+        new Hex(center.neighbor(HexDirection.W)),
       ];
       
       const grid = new HexGrid(hexes);
@@ -108,8 +108,8 @@ describe('HexGrid', () => {
   describe('gestion des arêtes', () => {
     it('devrait retourner les arêtes adjacentes à un hexagone', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
       
       const grid = new HexGrid([
         new Hex(center),
@@ -129,8 +129,8 @@ describe('HexGrid', () => {
 
     it('devrait retourner toutes les arêtes de la grille', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
       
       const grid = new HexGrid([
         new Hex(center),
@@ -144,7 +144,7 @@ describe('HexGrid', () => {
 
     it('devrait partager les arêtes entre hexagones adjacents', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
+      const north = center.neighbor(HexDirection.SW);
       
       const grid = new HexGrid([
         new Hex(center),
@@ -171,8 +171,8 @@ describe('HexGrid', () => {
 
     it('ne devrait pas créer de doublons d\'arêtes', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
       
       const grid = new HexGrid([
         new Hex(center),
@@ -191,8 +191,8 @@ describe('HexGrid', () => {
   describe('gestion des sommets', () => {
     it('devrait retourner les sommets adjacents à un hexagone', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
       
       const grid = new HexGrid([
         new Hex(center),
@@ -211,8 +211,8 @@ describe('HexGrid', () => {
 
     it('devrait retourner tous les sommets de la grille', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
       
       const grid = new HexGrid([
         new Hex(center),
@@ -226,8 +226,8 @@ describe('HexGrid', () => {
 
     it('devrait partager les sommets entre hexagones adjacents', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
       
       const grid = new HexGrid([
         new Hex(center),
@@ -264,9 +264,9 @@ describe('HexGrid', () => {
 
     it('ne devrait pas créer de doublons de sommets', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighborMain(MainHexDirection.SW);
-      const northeast = center.neighborMain(MainHexDirection.SE);
-      const southeast = center.neighborMain(MainHexDirection.E);
+      const north = center.neighbor(HexDirection.SW);
+      const northeast = center.neighbor(HexDirection.SE);
+      const southeast = center.neighbor(HexDirection.E);
       
       const grid = new HexGrid([
         new Hex(center),
@@ -296,12 +296,12 @@ describe('HexGrid', () => {
       const center = new HexCoord(0, 0);
       const hexes = [
         new Hex(center),
-        new Hex(center.neighborMain(MainHexDirection.SW)),
-        new Hex(center.neighborMain(MainHexDirection.SE)),
-        new Hex(center.neighborMain(MainHexDirection.E)),
-        new Hex(center.neighborMain(MainHexDirection.NE)),
-        new Hex(center.neighborMain(MainHexDirection.NW)),
-        new Hex(center.neighborMain(MainHexDirection.W)),
+        new Hex(center.neighbor(HexDirection.SW)),
+        new Hex(center.neighbor(HexDirection.SE)),
+        new Hex(center.neighbor(HexDirection.E)),
+        new Hex(center.neighbor(HexDirection.NE)),
+        new Hex(center.neighbor(HexDirection.NW)),
+        new Hex(center.neighbor(HexDirection.W)),
       ];
       
       const grid = new HexGrid(hexes);
@@ -330,3 +330,4 @@ describe('HexGrid', () => {
     });
   });
 });
+

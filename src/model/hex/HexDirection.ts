@@ -10,7 +10,7 @@
  * - NW (Nord-Ouest) : (-1, +1)
  * - SW (Sud-Ouest) : (0, -1)
  */
-export enum MainHexDirection {
+export enum HexDirection {
   /** Ouest */
   W = 0,
   /** Est */
@@ -28,27 +28,27 @@ export enum MainHexDirection {
 /**
  * Tableau de toutes les directions principales dans l'ordre.
  */
-export const ALL_MAIN_DIRECTIONS: readonly MainHexDirection[] = [
-  MainHexDirection.W,
-  MainHexDirection.E,
-  MainHexDirection.NE,
-  MainHexDirection.SE,
-  MainHexDirection.NW,
-  MainHexDirection.SW,
+export const ALL_HEX_DIRECTIONS: readonly HexDirection[] = [
+  HexDirection.W,
+  HexDirection.E,
+  HexDirection.NE,
+  HexDirection.SE,
+  HexDirection.NW,
+  HexDirection.SW,
 ] as const;
 
 /**
  * Retourne la direction inverse (opposée) d'une direction principale.
  * W ↔ E, NE ↔ SW, NW ↔ SE
  */
-export function inverseMainHexDirection(direction: MainHexDirection): MainHexDirection {
-  const inverseMap: Record<MainHexDirection, MainHexDirection> = {
-    [MainHexDirection.W]: MainHexDirection.E,
-    [MainHexDirection.E]: MainHexDirection.W,
-    [MainHexDirection.NE]: MainHexDirection.SW,
-    [MainHexDirection.SW]: MainHexDirection.NE,
-    [MainHexDirection.NW]: MainHexDirection.SE,
-    [MainHexDirection.SE]: MainHexDirection.NW,
+export function inverseHexDirection(direction: HexDirection): HexDirection {
+  const inverseMap: Record<HexDirection, HexDirection> = {
+    [HexDirection.W]: HexDirection.E,
+    [HexDirection.E]: HexDirection.W,
+    [HexDirection.NE]: HexDirection.SW,
+    [HexDirection.SW]: HexDirection.NE,
+    [HexDirection.NW]: HexDirection.SE,
+    [HexDirection.SE]: HexDirection.NW,
   };
   return inverseMap[direction];
 }
