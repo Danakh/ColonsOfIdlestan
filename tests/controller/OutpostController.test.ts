@@ -112,7 +112,7 @@ describe('OutpostController', () => {
       } else {
         // Si aucun vertex n'est trouvé (tous sont la ville), c'est aussi correct
         // Vérifier qu'aucun vertex constructible n'existe à distance 1
-        const buildableVertices = OutpostController.getBuildableVerticesAroundHex(hexN, civId, map!);
+        const buildableVertices = map!.getBuildableOutpostVertices(civId);
         expect(buildableVertices.length).toBe(0);
       }
     });
@@ -282,7 +282,7 @@ describe('OutpostController', () => {
         }).toThrow(/ne peut pas être construit/);
       } else {
         // Si aucun vertex n'est trouvé, vérifier qu'aucun vertex constructible n'existe
-        const buildableVertices = OutpostController.getBuildableVerticesAroundHex(hexN, civId, map!);
+        const buildableVertices = map!.getBuildableOutpostVertices(civId);
         expect(buildableVertices.length).toBe(0);
       }
     });
@@ -349,6 +349,10 @@ describe('OutpostController', () => {
       }
       
       expect(outpostVertex).toBeDefined();
+      
+      if (!outpostVertex) {
+        return;
+      }
       
       {
         // Vérifier qu'il est constructible avant

@@ -428,12 +428,12 @@ export class MapGenerator {
 
     // Méthode 2: Si la méthode 1 échoue, chercher les voisins communs
     // Trouver tous les voisins communs de woodCoord et brickCoord
-    const woodNeighbors = woodCoord.neighborsMain();
-    const brickNeighbors = brickCoord.neighborsMain();
+    const woodNeighbors = woodCoord.neighbors();
+    const brickNeighbors = brickCoord.neighbors();
     
     for (const neighborCoord of woodNeighbors) {
       // Vérifier si ce voisin est aussi voisin de brickCoord
-      const isNeighborOfBrick = brickNeighbors.some(n => n.equals(neighborCoord));
+      const isNeighborOfBrick = brickNeighbors.some((n: HexCoord) => n.equals(neighborCoord));
       
       if (isNeighborOfBrick) {
         // Vérifier si cet hexagone existe dans la grille et est de l'eau
