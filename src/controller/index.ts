@@ -12,3 +12,4 @@ export { BuildingController, type BuildableBuildingStatus } from './BuildingCont
 export { TradeController } from './TradeController';
 export { BuildingProductionController, type BuildingProductionResult } from './BuildingProductionController';
 export { OutpostController } from './OutpostController';
+export { PrestigeController, type PrestigeActionResult } from './PrestigeController';

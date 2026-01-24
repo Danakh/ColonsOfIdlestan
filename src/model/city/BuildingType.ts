@@ -19,7 +19,7 @@ export enum BuildingType {
   Sheepfold = 'Sheepfold',
   /** Mine - Produit du minerai */
   Mine = 'Mine',
-  /** Port maritime - Permet le commerce maritime (3:1), nécessite de l'eau. Disponible au niveau Ville (2). */
+  /** Port maritime - Permet le commerce maritime (3:1), nécessite de l'eau. Disponible au niveau Ville (2). Niveau 4 débloque l'action Prestige. */
   Seaport = 'Seaport',
   /** Entrepôt - Augmente la capacité de stockage des ressources */
   Warehouse = 'Warehouse',
@@ -130,9 +130,10 @@ export function getBuildingCost(buildingType: BuildingType): Map<ResourceType, n
  */
 export const BUILDING_UPGRADE_COSTS: Record<BuildingType, Map<ResourceType, number>> = {
   [BuildingType.Seaport]: new Map([
-    [ResourceType.Ore, 8],
-    [ResourceType.Wood, 12],
-    [ResourceType.Brick, 8],
+    [ResourceType.Ore, 12],
+    [ResourceType.Wood, 16],
+    [ResourceType.Brick, 12],
+    [ResourceType.Sheep, 4],
   ]),
   [BuildingType.Market]: new Map([
     [ResourceType.Wood, 4],
@@ -277,6 +278,8 @@ export enum BuildingAction {
   Specialization = 'Specialization',
   /** Auto - Commerce automatique - Débloqué par le port maritime niveau 3 */
   Auto = 'Auto',
+  /** Prestige - Action spéciale du port maritime niveau 4 */
+  Prestige = 'Prestige',
   /** Automatisation - Débloqué par la Guilde des batisseurs */
   Automation = 'Automation',
 }
@@ -305,5 +308,6 @@ export const BUILDING_ACTION_NAMES: Record<BuildingAction, string> = {
   [BuildingAction.Upgrade]: 'Améliorer',
   [BuildingAction.Specialization]: 'Spécialisation',
   [BuildingAction.Auto]: 'Auto',
+  [BuildingAction.Prestige]: 'Prestige',
   [BuildingAction.Automation]: 'Automatisation',
 };

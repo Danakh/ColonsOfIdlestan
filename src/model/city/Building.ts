@@ -25,7 +25,7 @@ export class Building {
   private static readonly PRODUCTION_MAX_LEVEL = 5;
   private static readonly TOWN_HALL_MAX_LEVEL = 4;
   private static readonly MARKET_MAX_LEVEL = 2;
-  private static readonly SEAPORT_MAX_LEVEL = 3;
+  private static readonly SEAPORT_MAX_LEVEL = 4;
   private static readonly BUILDERS_GUILD_MAX_LEVEL = 3;
 
   /**

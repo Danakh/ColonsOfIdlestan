@@ -15,6 +15,7 @@ import { BuildingController } from './controller/BuildingController';
 import { TradeController } from './controller/TradeController';
 import { BuildingProductionController } from './controller/BuildingProductionController';
 import { AutomationController } from './controller/AutomationController';
+import { PrestigeController } from './controller/PrestigeController';
 import { ResourceType } from './model/map/ResourceType';
 import { HexCoord } from './model/hex/HexCoord';
 import { Edge } from './model/hex/Edge';
@@ -285,6 +286,48 @@ function main(): void {
             portSpecializationPanelView.show();
           }
           return; // Ne pas mettre à jour le panneau de ville ni re-rendre
+        } else if (action === BuildingAction.Prestige) {
+          // Activer l'action Prestige du port maritime niveau 4
+          const currentGameMap = game.getGameMap();
+          const civId = game.getPlayerCivilizationId();
+          const playerResources = game.getPlayerResources();
+
+          if (!currentGameMap || !civId) {
+            console.error('Carte de jeu ou civilisation non disponible');
+            return;
+          }
+
+          // Vérifier si l'action peut être activée
+          if (!PrestigeController.canActivatePrestige(civId, currentGameMap)) {
+            const reason = PrestigeController.getPrestigeRestrictionReason(civId, currentGameMap);
+            alert(`Prestige non disponible: ${reason}`);
+            return;
+          }
+
+          // Activer l'action Prestige
+          const result = PrestigeController.activatePrestige(civId, currentGameMap, playerResources);
+          
+          if (result.success && result.resourcesGained) {
+            // Ajouter les ressources gagnées
+            for (const [resourceName, amount] of result.resourcesGained) {
+              const resourceType = Object.values(ResourceType).find(
+                rt => rt.toLowerCase() === resourceName.toLowerCase()
+              ) as ResourceType | undefined;
+              
+              if (resourceType) {
+                playerResources.addResource(resourceType, amount);
+              }
+            }
+
+            alert(result.message);
+            updateResourcesDisplay();
+            cityPanelView.refreshNow();
+            renderer.render(currentGameMap, civId);
+            autoSave();
+          } else {
+            alert(result.message);
+          }
+          return;
         }
         cityPanelView.refreshNow();
         const currentGameMap = game.getGameMap();

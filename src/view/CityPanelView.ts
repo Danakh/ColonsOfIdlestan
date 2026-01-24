@@ -667,6 +667,17 @@ export class CityPanelView {
           item.appendChild(autoContainer);
         }
 
+        // Bouton Prestige si Seaport niveau 4
+        if (buildingType === BuildingType.Seaport && building && building.level === 4) {
+          const prestigeBtn = document.createElement('button');
+          prestigeBtn.className = 'building-action-btn';
+          prestigeBtn.textContent = BUILDING_ACTION_NAMES[BuildingAction.Prestige];
+          prestigeBtn.disabled = false;
+          prestigeBtn.dataset.buildingAction = BuildingAction.Prestige;
+          prestigeBtn.dataset.buildingType = buildingType;
+          item.appendChild(prestigeBtn);
+        }
+
         // Bouton Améliorer (placeholder stable pour ne pas casser les hovers)
         const upgradeBtn = document.createElement('button');
         upgradeBtn.className = 'building-action-btn';
@@ -880,6 +891,33 @@ export class CityPanelView {
         // Le port n'est pas niveau 3, masquer le conteneur s'il existe
         if (autoContainer) {
           autoContainer.hidden = true;
+        }
+      }
+
+      // Bouton Prestige: créer s'il n'existe pas, masquer/afficher si Seaport niveau 4
+      let prestigeBtn = li.querySelector('button.building-action-btn[data-building-action="Prestige"]') as HTMLButtonElement | null;
+      if (buildingType === BuildingType.Seaport && building && building.level === 4) {
+        // Le bouton doit être visible, créer s'il n'existe pas
+        if (!prestigeBtn) {
+          prestigeBtn = document.createElement('button');
+          prestigeBtn.className = 'building-action-btn';
+          prestigeBtn.textContent = BUILDING_ACTION_NAMES[BuildingAction.Prestige];
+          prestigeBtn.disabled = false;
+          prestigeBtn.dataset.buildingAction = BuildingAction.Prestige;
+          prestigeBtn.dataset.buildingType = buildingType;
+          // Insérer après le bouton Upgrade s'il existe, sinon à la fin
+          const upgradeBtn = li.querySelector('button.building-action-btn[data-building-action="Upgrade"]') as HTMLButtonElement | null;
+          if (upgradeBtn && upgradeBtn.parentNode) {
+            upgradeBtn.parentNode.insertBefore(prestigeBtn, upgradeBtn.nextSibling);
+          } else {
+            li.appendChild(prestigeBtn);
+          }
+        }
+        prestigeBtn.hidden = false;
+      } else {
+        // Le port n'est pas niveau 4, masquer le bouton s'il existe
+        if (prestigeBtn) {
+          prestigeBtn.hidden = true;
         }
       }
     }

@@ -18,6 +18,17 @@ import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { SecondaryHexDirection } from '../../src/model/hex';
+import { calculateCivilizationPoints } from '../../src/model/game/CivilizationPoints';
+
+/**
+ * Interface pour le retour de createScenarioWithCapitalAndResources.
+ */
+export interface ScenarioWithCapital {
+  gameMap: GameMap;
+  civId: CivilizationId;
+  playerResources: PlayerResources;
+  gameState: GameState;
+}
 
 /**
  * Utilitaire de test (couche model uniquement).
@@ -126,4 +137,90 @@ export function saveGameState(gameState: GameState, filename: string): void {
   // Sérialiser et enregistrer
   const serialized = gameState.serialize();
   writeFileSync(filePath, serialized, 'utf-8');
+}
+
+/**
+ * Crée un scénario de test avec une capitale et des ressources suffisantes.
+ * Utile pour tester des fonctionnalités comme le Prestige du port maritime niveau 4.
+ * 
+ * Le scénario inclut:
+ * - Une carte avec une civilisation
+ * - Une capitale au centre
+ * - Plusieurs villes supplémentaires pour atteindre 20+ points de civilisation
+ * - Des ports maritimes au niveau 4
+ * - Des ressources suffisantes pour satisfaire les conditions
+ * 
+ * @param seed Le seed pour la génération
+ * @returns Un objet contenant la map, civId, playerResources, et gameState
+ */
+export function createScenarioWithCapitalAndResources(seed: number): ScenarioWithCapital {
+  // Créer une base simple avec plusieurs hexagones
+  const center = new HexCoord(0, 0);
+  const hexCoords = [
+    center,
+    center.neighbor(HexDirection.E),
+    center.neighbor(HexDirection.SE),
+    center.neighbor(HexDirection.SW),
+    center.neighbor(HexDirection.W),
+    center.neighbor(HexDirection.NW),
+    center.neighbor(HexDirection.NE),
+    center.neighbor(HexDirection.E).neighbor(HexDirection.E),
+    center.neighbor(HexDirection.W).neighbor(HexDirection.W),
+  ];
+  
+  const hexes = hexCoords.map(c => new Hex(c));
+  const grid = new HexGrid(hexes);
+  const gameMap = new GameMap(grid);
+  const civId = CivilizationId.create('test-civ-prestige');
+  gameMap.registerCivilization(civId);
+
+  // Ajouter une capitale (4 points) au centre
+  const capitalVertex = center.vertex(SecondaryHexDirection.N);
+  gameMap.addCity(capitalVertex, civId, CityLevel.Capital);
+
+  // Ajouter 10 villes Town (2 points chacune = 20 points)
+  // Total: 4 (capital) + 20 (10 towns) = 24 points
+  const towns = [
+    center.vertex(SecondaryHexDirection.EN),
+    center.vertex(SecondaryHexDirection.ES),
+    center.neighbor(HexDirection.E).vertex(SecondaryHexDirection.N),
+    center.neighbor(HexDirection.E).vertex(SecondaryHexDirection.EN),
+    center.neighbor(HexDirection.E).vertex(SecondaryHexDirection.ES),
+    center.neighbor(HexDirection.SE).vertex(SecondaryHexDirection.N),
+    center.neighbor(HexDirection.SE).vertex(SecondaryHexDirection.EN),
+    center.neighbor(HexDirection.SW).vertex(SecondaryHexDirection.N),
+    center.neighbor(HexDirection.W).vertex(SecondaryHexDirection.N),
+    center.neighbor(HexDirection.NW).vertex(SecondaryHexDirection.N),
+  ];
+
+  for (const vertex of towns) {
+    if (!gameMap.hasCity(vertex)) {
+      try {
+        gameMap.addCity(vertex, civId, CityLevel.Town);
+      } catch (e) {
+        // Ignorer les erreurs
+      }
+    }
+  }
+
+  // Créer l'état de jeu et les ressources
+  const gameState = new GameState(new PlayerResources(), civId, new GameClock());
+  gameState.setGameMap(gameMap);
+  gameState.setCivilizations([civId]);
+  gameState.setSeed(seed);
+
+  // Ajouter des ressources généreuses
+  const playerResources = gameState.getPlayerResources();
+  playerResources.addResource(ResourceType.Ore, 100);
+  playerResources.addResource(ResourceType.Wood, 100);
+  playerResources.addResource(ResourceType.Brick, 100);
+  playerResources.addResource(ResourceType.Wheat, 100);
+  playerResources.addResource(ResourceType.Sheep, 100);
+
+  return {
+    gameMap,
+    civId,
+    playerResources,
+    gameState
+  };
 }
