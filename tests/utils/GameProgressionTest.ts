@@ -1,5 +1,5 @@
 import { HexCoord } from '../../src/model/hex/HexCoord';
-import { HexDirection } from '../../src/model/hex/HexDirection';
+import { MainHexDirection } from '../../src/model/hex/MainHexDirection';
 import { Vertex } from '../../src/model/hex/Vertex';
 import { Edge } from '../../src/model/hex/Edge';
 import { GameMap } from '../../src/model/map/GameMap';
@@ -39,8 +39,8 @@ export function Make7HexesMapWithPortCity(): GameState {
   // Ville initiale créée par Make7HexesMap (niveau Colony avec TownHall niveau 1)
   const initialCityVertex = Vertex.create(
     center,
-    center.neighbor(HexDirection.N),
-    center.neighbor(HexDirection.NW)
+    center.neighborMain(MainHexDirection.SW),
+    center.neighborMain(MainHexDirection.W)
   );
   const initialCity = gameMap.getCity(initialCityVertex);
   if (!initialCity) throw new Error('Ville initiale non trouvée');
@@ -77,8 +77,8 @@ export function Make7HexesMapWithPortCity(): GameState {
   );
   
   // Étape 4: Construire des routes pour étendre le territoire
-  const seHex = center.neighbor(HexDirection.SE);
-  const sHex = center.neighbor(HexDirection.S);
+  const seHex = center.neighborMain(MainHexDirection.E);
+  const sHex = center.neighborMain(MainHexDirection.NE);
   
   // Route 1: centre -> SE
   const road1 = Edge.create(center, seHex);
@@ -314,8 +314,8 @@ export function Make7HexesMapWithPortAndCapital(): GameState {
   // Après Make7HexesMapWithPortCity(), elle devrait être au niveau Town (2) avec TownHall niveau 2
   const initialCityVertex = Vertex.create(
     center,
-    center.neighbor(HexDirection.N),
-    center.neighbor(HexDirection.NW)
+    center.neighborMain(MainHexDirection.SW),
+    center.neighborMain(MainHexDirection.W)
   );
   const initialCity = gameMap.getCity(initialCityVertex);
   if (!initialCity) throw new Error('Ville initiale non trouvée');

@@ -10,14 +10,14 @@ import { PlayerResources } from '../../../src/model/game/PlayerResources';
 import { HexGrid } from '../../../src/model/hex/HexGrid';
 import { Hex } from '../../../src/model/hex/Hex';
 import { HexCoord } from '../../../src/model/hex/HexCoord';
-import { HexDirection } from '../../../src/model/hex/HexDirection';
+import { MainHexDirection } from '../../../src/model/hex/MainHexDirection';
 
 describe('RoadConstruction', () => {
   describe('canBuildRoad', () => {
     it('devrait retourner true si l\'edge touche une ville de la même civilisation', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
-      const northeast = center.neighbor(HexDirection.NE);
+      const north = center.neighborMain(MainHexDirection.SW);
+      const northeast = center.neighborMain(MainHexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -40,8 +40,8 @@ describe('RoadConstruction', () => {
 
     it('devrait retourner false si l\'edge touche une ville d\'une autre civilisation', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
-      const northeast = center.neighbor(HexDirection.NE);
+      const north = center.neighborMain(MainHexDirection.SW);
+      const northeast = center.neighborMain(MainHexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -66,8 +66,8 @@ describe('RoadConstruction', () => {
 
     it('devrait retourner true si l\'edge touche une route de la même civilisation', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
-      const northeast = center.neighbor(HexDirection.NE);
+      const north = center.neighborMain(MainHexDirection.SW);
+      const northeast = center.neighborMain(MainHexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -90,8 +90,8 @@ describe('RoadConstruction', () => {
 
     it('devrait retourner false si l\'edge touche une route d\'une autre civilisation', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
-      const northeast = center.neighbor(HexDirection.NE);
+      const north = center.neighborMain(MainHexDirection.SW);
+      const northeast = center.neighborMain(MainHexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -116,9 +116,9 @@ describe('RoadConstruction', () => {
 
     it('devrait retourner false si l\'edge n\'a ni ville ni route adjacente', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
+      const north = center.neighborMain(MainHexDirection.SW);
       const isolated = new HexCoord(10, 10);
-      const isolatedNeighbor = isolated.neighbor(HexDirection.N);
+      const isolatedNeighbor = isolated.neighborMain(MainHexDirection.SW);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -138,7 +138,7 @@ describe('RoadConstruction', () => {
 
     it('devrait retourner false si une route existe déjà sur l\'edge', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
+      const north = center.neighborMain(MainHexDirection.SW);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -156,7 +156,7 @@ describe('RoadConstruction', () => {
 
     it('devrait retourner false si la civilisation n\'est pas enregistrée', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
+      const north = center.neighborMain(MainHexDirection.SW);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -220,8 +220,8 @@ describe('RoadConstruction', () => {
   describe('buildRoad', () => {
     it('devrait construire une route si toutes les conditions sont remplies', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
-      const northeast = center.neighbor(HexDirection.NE);
+      const north = center.neighborMain(MainHexDirection.SW);
+      const northeast = center.neighborMain(MainHexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -253,9 +253,9 @@ describe('RoadConstruction', () => {
 
     it('devrait lancer une erreur si l\'edge ne peut pas être construit', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
+      const north = center.neighborMain(MainHexDirection.SW);
       const isolated = new HexCoord(10, 10);
-      const isolatedNeighbor = isolated.neighbor(HexDirection.N);
+      const isolatedNeighbor = isolated.neighborMain(MainHexDirection.SW);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -280,8 +280,8 @@ describe('RoadConstruction', () => {
 
     it('devrait lancer une erreur si le joueur n\'a pas assez de ressources', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
-      const northeast = center.neighbor(HexDirection.NE);
+      const north = center.neighborMain(MainHexDirection.SW);
+      const northeast = center.neighborMain(MainHexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -308,8 +308,8 @@ describe('RoadConstruction', () => {
 
     it('devrait construire une route connectée à une autre route', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
-      const northeast = center.neighbor(HexDirection.NE);
+      const north = center.neighborMain(MainHexDirection.SW);
+      const northeast = center.neighborMain(MainHexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -345,8 +345,8 @@ describe('RoadConstruction', () => {
 
     it('devrait retirer les ressources correctes', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
-      const northeast = center.neighbor(HexDirection.NE);
+      const north = center.neighborMain(MainHexDirection.SW);
+      const northeast = center.neighborMain(MainHexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),

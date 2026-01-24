@@ -2,7 +2,6 @@ import { HexCoord } from './HexCoord';
 import { Hex } from './Hex';
 import { Edge } from './Edge';
 import { Vertex } from './Vertex';
-import { HexDirection, ALL_DIRECTIONS } from './HexDirection';
 import { MainHexDirection, ALL_MAIN_DIRECTIONS } from './MainHexDirection';
 import { SecondaryHexDirection, ALL_SECONDARY_DIRECTIONS } from './SecondaryHexDirection';
 
@@ -69,8 +68,8 @@ export class HexGrid {
    */
   getNeighbors(coord: HexCoord): Hex[] {
     const neighbors: Hex[] = [];
-    for (const direction of ALL_DIRECTIONS) {
-      const neighborCoord = coord.neighbor(direction);
+    for (const direction of ALL_MAIN_DIRECTIONS) {
+      const neighborCoord = coord.neighborMain(direction);
       const neighbor = this.getHex(neighborCoord);
       if (neighbor) {
         neighbors.push(neighbor);
@@ -83,7 +82,7 @@ export class HexGrid {
    * Retourne les coordonnées des voisins (même s'ils n'existent pas dans la grille).
    */
   getNeighborCoords(coord: HexCoord): HexCoord[] {
-    return coord.neighbors();
+    return coord.neighborsMain();
   }
 
   /**

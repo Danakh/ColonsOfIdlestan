@@ -5,7 +5,7 @@ import { CivilizationId } from '../../../src/model/map/CivilizationId';
 import { HexGrid } from '../../../src/model/hex/HexGrid';
 import { Hex } from '../../../src/model/hex/Hex';
 import { HexCoord } from '../../../src/model/hex/HexCoord';
-import { HexDirection } from '../../../src/model/hex/HexDirection';
+import { MainHexDirection } from '../../../src/model/hex/MainHexDirection';
 import { Vertex } from '../../../src/model/hex/Vertex';
 import { CityLevel } from '../../../src/model/city/CityLevel';
 import { BuildingType } from '../../../src/model/city/BuildingType';
@@ -17,8 +17,8 @@ describe('CivilizationPoints', () => {
   describe('calculateCivilizationPoints', () => {
     it('devrait retourner 0 pour un outpost (niveau 0)', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
-      const northeast = center.neighbor(HexDirection.NE);
+      const north = center.neighborMain(MainHexDirection.SW);
+      const northeast = center.neighborMain(MainHexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -38,8 +38,8 @@ describe('CivilizationPoints', () => {
 
     it('devrait retourner 1 pour une colonie (niveau 1)', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
-      const northeast = center.neighbor(HexDirection.NE);
+      const north = center.neighborMain(MainHexDirection.SW);
+      const northeast = center.neighborMain(MainHexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -59,8 +59,8 @@ describe('CivilizationPoints', () => {
 
     it('devrait retourner 2 pour une ville (niveau 2)', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
-      const northeast = center.neighbor(HexDirection.NE);
+      const north = center.neighborMain(MainHexDirection.SW);
+      const northeast = center.neighborMain(MainHexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -80,8 +80,8 @@ describe('CivilizationPoints', () => {
 
     it('devrait retourner 3 pour une métropole (niveau 3)', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
-      const northeast = center.neighbor(HexDirection.NE);
+      const north = center.neighborMain(MainHexDirection.SW);
+      const northeast = center.neighborMain(MainHexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -101,8 +101,8 @@ describe('CivilizationPoints', () => {
 
     it('devrait retourner 4 pour une capitale (niveau 4)', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
-      const northeast = center.neighbor(HexDirection.NE);
+      const north = center.neighborMain(MainHexDirection.SW);
+      const northeast = center.neighborMain(MainHexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -122,8 +122,8 @@ describe('CivilizationPoints', () => {
 
     it('devrait ajouter 1 point par bibliothèque', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
-      const northeast = center.neighbor(HexDirection.NE);
+      const north = center.neighborMain(MainHexDirection.SW);
+      const northeast = center.neighborMain(MainHexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -153,9 +153,9 @@ describe('CivilizationPoints', () => {
 
     it('devrait compter plusieurs bibliothèques dans différentes villes', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
-      const northeast = center.neighbor(HexDirection.NE);
-      const southeast = center.neighbor(HexDirection.SE);
+      const north = center.neighborMain(MainHexDirection.SW);
+      const northeast = center.neighborMain(MainHexDirection.SE);
+      const southeast = center.neighborMain(MainHexDirection.E);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -204,8 +204,8 @@ describe('CivilizationPoints', () => {
   describe('hasLibrary', () => {
     it('devrait retourner false si aucune bibliothèque n\'existe', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
-      const northeast = center.neighbor(HexDirection.NE);
+      const north = center.neighborMain(MainHexDirection.SW);
+      const northeast = center.neighborMain(MainHexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -224,8 +224,8 @@ describe('CivilizationPoints', () => {
 
     it('devrait retourner true si au moins une bibliothèque existe', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
-      const northeast = center.neighbor(HexDirection.NE);
+      const north = center.neighborMain(MainHexDirection.SW);
+      const northeast = center.neighborMain(MainHexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -256,8 +256,8 @@ describe('CivilizationPoints', () => {
   describe('Temple', () => {
     it('devrait ajouter 1 point de civilisation par temple', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
-      const northeast = center.neighbor(HexDirection.NE);
+      const north = center.neighborMain(MainHexDirection.SW);
+      const northeast = center.neighborMain(MainHexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -287,8 +287,8 @@ describe('CivilizationPoints', () => {
 
     it('devrait être disponible seulement au niveau Metropolis (3) ou supérieur', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
-      const northeast = center.neighbor(HexDirection.NE);
+      const north = center.neighborMain(MainHexDirection.SW);
+      const northeast = center.neighborMain(MainHexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -315,7 +315,7 @@ describe('CivilizationPoints', () => {
       }).toThrow();
 
       // Tester avec Metropolis (niveau 3) - devrait pouvoir construire
-      const southeast = center.neighbor(HexDirection.SE);
+      const southeast = center.neighborMain(MainHexDirection.E);
       const grid2 = new HexGrid([
         new Hex(center),
         new Hex(north),
@@ -335,8 +335,8 @@ describe('CivilizationPoints', () => {
 
     it('devrait compter les temples et bibliothèques ensemble', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
-      const northeast = center.neighbor(HexDirection.NE);
+      const north = center.neighborMain(MainHexDirection.SW);
+      const northeast = center.neighborMain(MainHexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),

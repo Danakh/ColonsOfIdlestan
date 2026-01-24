@@ -1,7 +1,7 @@
 import { HexGrid } from '../model/hex/HexGrid';
 import { Hex } from '../model/hex/Hex';
 import { HexCoord } from '../model/hex/HexCoord';
-import { HexDirection, ALL_DIRECTIONS } from '../model/hex/HexDirection';
+import { MainHexDirection, ALL_MAIN_DIRECTIONS } from '../model/hex/MainHexDirection';
 import { Vertex } from '../model/hex/Vertex';
 import { GameMap } from '../model/map/GameMap';
 import { HexType } from '../model/map/HexType';
@@ -110,7 +110,7 @@ export class MapGenerator {
 
     // Étape 1: Placer les 2 premiers hexagones adjacents
     const firstCoord = new HexCoord(0, 0);
-    const secondCoord = firstCoord.neighbor(HexDirection.N);
+    const secondCoord = firstCoord.neighborMain(MainHexDirection.SW);
 
     hexes.push(new Hex(firstCoord));
     hexes.push(new Hex(secondCoord));
@@ -162,14 +162,14 @@ export class MapGenerator {
       const coord1 = new HexCoord(q, r);
 
       // Vérifier tous les voisins de ce hexagone
-      for (const direction of ALL_DIRECTIONS) {
-        const coord2 = coord1.neighbor(direction);
+      for (const direction of ALL_MAIN_DIRECTIONS) {
+        const coord2 = coord1.neighborMain(direction);
         
         // Si le voisin est aussi terrestre, on a une paire adjacente
         if (terrestrialCoords.has(coord2.hashCode())) {
           // Vérifier si cette paire a un voisin commun qui n'est pas terrestre
-          const neighbors1 = coord1.neighbors();
-          const neighbors2 = coord2.neighbors();
+          const neighbors1 = coord1.neighborsMain();
+          const neighbors2 = coord2.neighborsMain();
           
           // Trouver les voisins communs
           for (const n1 of neighbors1) {
@@ -211,8 +211,8 @@ export class MapGenerator {
       const [q, r] = coordHash.split(',').map(Number);
       const coord = new HexCoord(q, r);
 
-      for (const direction of ALL_DIRECTIONS) {
-        const neighbor = coord.neighbor(direction);
+      for (const direction of ALL_MAIN_DIRECTIONS) {
+        const neighbor = coord.neighborMain(direction);
         const neighborHash = neighbor.hashCode();
 
         // Si ce voisin n'est pas déjà placé, l'ajouter aux candidats
@@ -227,8 +227,8 @@ export class MapGenerator {
     for (const candidate of candidateMap.values()) {
       // Compter combien de voisins de ce candidat sont déjà placés
       let adjacentCount = 0;
-      for (const dir of ALL_DIRECTIONS) {
-        const neighbor = candidate.neighbor(dir);
+      for (const dir of ALL_MAIN_DIRECTIONS) {
+        const neighbor = candidate.neighborMain(dir);
         if (placedCoords.has(neighbor.hashCode())) {
           adjacentCount++;
         }
@@ -270,8 +270,8 @@ export class MapGenerator {
 
     // Trouver tous les hexagones d'eau nécessaires (voisins des hexagones terrestres)
     for (const hex of terrestrialHexes) {
-      for (const direction of ALL_DIRECTIONS) {
-        const neighborCoord = hex.coord.neighbor(direction);
+      for (const direction of ALL_MAIN_DIRECTIONS) {
+        const neighborCoord = hex.coord.neighborMain(direction);
         const neighborHash = neighborCoord.hashCode();
 
         // Si ce voisin n'est pas terrestre, c'est un hexagone d'eau
@@ -428,8 +428,8 @@ export class MapGenerator {
 
     // Méthode 2: Si la méthode 1 échoue, chercher les voisins communs
     // Trouver tous les voisins communs de woodCoord et brickCoord
-    const woodNeighbors = woodCoord.neighbors();
-    const brickNeighbors = brickCoord.neighbors();
+    const woodNeighbors = woodCoord.neighborsMain();
+    const brickNeighbors = brickCoord.neighborsMain();
     
     for (const neighborCoord of woodNeighbors) {
       // Vérifier si ce voisin est aussi voisin de brickCoord

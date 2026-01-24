@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { Edge } from '../../../src/model/hex/Edge';
 import { HexCoord } from '../../../src/model/hex/HexCoord';
-import { HexDirection } from '../../../src/model/hex/HexDirection';
+import { MainHexDirection } from '../../../src/model/hex/MainHexDirection';
 
 describe('Edge', () => {
   describe('création et validation', () => {
     it('devrait créer une arête entre deux hexagones adjacents', () => {
       const hex1 = new HexCoord(0, 0);
-      const hex2 = hex1.neighbor(HexDirection.N);
+      const hex2 = hex1.neighborMain(MainHexDirection.SW);
       
       const edge = Edge.create(hex1, hex2);
       
@@ -25,7 +25,7 @@ describe('Edge', () => {
 
     it('devrait normaliser l\'ordre des hexagones pour garantir l\'unicité', () => {
       const hex1 = new HexCoord(0, 0);
-      const hex2 = hex1.neighbor(HexDirection.NE);
+      const hex2 = hex1.neighborMain(MainHexDirection.SE);
       
       const edge1 = Edge.create(hex1, hex2);
       const edge2 = Edge.create(hex2, hex1);
@@ -38,7 +38,7 @@ describe('Edge', () => {
   describe('égalité et hashage', () => {
     it('devrait considérer deux arêtes égales si elles connectent les mêmes hexagones', () => {
       const hex1 = new HexCoord(2, 3);
-      const hex2 = hex1.neighbor(HexDirection.SW);
+      const hex2 = hex1.neighborMain(MainHexDirection.NW);
       
       const edge1 = Edge.create(hex1, hex2);
       const edge2 = Edge.create(hex2, hex1);
@@ -48,7 +48,7 @@ describe('Edge', () => {
 
     it('devrait générer le même hash code pour des arêtes égales', () => {
       const hex1 = new HexCoord(1, 1);
-      const hex2 = hex1.neighbor(HexDirection.SE);
+      const hex2 = hex1.neighborMain(MainHexDirection.E);
       
       const edge1 = Edge.create(hex1, hex2);
       const edge2 = Edge.create(hex2, hex1);
@@ -58,8 +58,8 @@ describe('Edge', () => {
 
     it('devrait générer des hash codes différents pour des arêtes différentes', () => {
       const center = new HexCoord(0, 0);
-      const edge1 = Edge.create(center, center.neighbor(HexDirection.N));
-      const edge2 = Edge.create(center, center.neighbor(HexDirection.NE));
+      const edge1 = Edge.create(center, center.neighborMain(MainHexDirection.SW));
+      const edge2 = Edge.create(center, center.neighborMain(MainHexDirection.SE));
       
       expect(edge1.hashCode()).not.toBe(edge2.hashCode());
     });
@@ -68,7 +68,7 @@ describe('Edge', () => {
   describe('méthodes utilitaires', () => {
     it('devrait retourner les deux hexagones de l\'arête', () => {
       const hex1 = new HexCoord(3, 4);
-      const hex2 = hex1.neighbor(HexDirection.NW);
+      const hex2 = hex1.neighborMain(MainHexDirection.W);
       
       const edge = Edge.create(hex1, hex2);
       const [h1, h2] = edge.getHexes();
@@ -81,8 +81,8 @@ describe('Edge', () => {
 
     it('devrait vérifier correctement l\'adjacence à un hexagone', () => {
       const hex1 = new HexCoord(0, 0);
-      const hex2 = hex1.neighbor(HexDirection.S);
-      const hex3 = hex1.neighbor(HexDirection.N);
+      const hex2 = hex1.neighborMain(MainHexDirection.NE);
+      const hex3 = hex1.neighborMain(MainHexDirection.SW);
       
       const edge = Edge.create(hex1, hex2);
       

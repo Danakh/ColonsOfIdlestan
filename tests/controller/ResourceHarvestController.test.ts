@@ -10,7 +10,7 @@ import { ResourceType } from '../../src/model/map/ResourceType';
 import { HexType } from '../../src/model/map/HexType';
 import { HexGrid } from '../../src/model/hex/HexGrid';
 import { Hex } from '../../src/model/hex/Hex';
-import { HexDirection } from '../../src/model/hex/HexDirection';
+import { MainHexDirection } from '../../src/model/hex/MainHexDirection';
 
 describe('ResourceHarvestController', () => {
   let map: GameMap;
@@ -25,8 +25,8 @@ describe('ResourceHarvestController', () => {
     ResourceHarvestController.resetCooldowns();
 
     const center = new HexCoord(0, 0);
-    const north = center.neighbor(HexDirection.N);
-    const northeast = center.neighbor(HexDirection.NE);
+    const north = center.neighborMain(MainHexDirection.SW);
+    const northeast = center.neighborMain(MainHexDirection.SE);
 
     const grid = new HexGrid([
       new Hex(center),
@@ -103,8 +103,8 @@ describe('ResourceHarvestController', () => {
 
     it('devrait permettre la récolte sur différents hexagones simultanément', () => {
       // Utiliser north et northeast qui sont déjà adjacents à la ville
-      const north = hexCoord.neighbor(HexDirection.N);
-      const northeast = hexCoord.neighbor(HexDirection.NE);
+      const north = hexCoord.neighborMain(MainHexDirection.SW);
+      const northeast = hexCoord.neighborMain(MainHexDirection.SE);
       
       // Les deux hexagones sont déjà dans la carte et adjacents à la ville
       map.setHexType(hexCoord, HexType.Wood);
@@ -124,7 +124,7 @@ describe('ResourceHarvestController', () => {
     it('devrait échouer si l\'hexagone ne peut pas être récolté', () => {
       // Créer un hexagone non récoltable (pas adjacent à une ville)
       const farHex = new HexCoord(10, 10);
-      const grid = new HexGrid([new Hex(hexCoord), new Hex(hexCoord.neighbor(HexDirection.N)), new Hex(hexCoord.neighbor(HexDirection.NE))]);
+      const grid = new HexGrid([new Hex(hexCoord), new Hex(hexCoord.neighborMain(MainHexDirection.SW)), new Hex(hexCoord.neighborMain(MainHexDirection.SE))]);
       const newMap = new GameMap(grid);
       newMap.registerCivilization(civId);
       newMap.addCity(vertex, civId);

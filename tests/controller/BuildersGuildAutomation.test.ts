@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Make7HexesMapWithPortAndCapital } from '../utils/GameProgressionTest';
 import { HexCoord } from '../../src/model/hex/HexCoord';
-import { HexDirection } from '../../src/model/hex/HexDirection';
+import { MainHexDirection } from '../../src/model/hex/MainHexDirection';
 import { Vertex } from '../../src/model/hex/Vertex';
 import { BuildingType } from '../../src/model/city/BuildingType';
 import { CityLevel } from '../../src/model/city/CityLevel';
@@ -29,8 +29,8 @@ describe('BuildersGuild Automation', () => {
       // Ville initiale (capitale)
       const capitalVertex = Vertex.create(
         center,
-        center.neighbor(HexDirection.N),
-        center.neighbor(HexDirection.NW)
+        center.neighborMain(MainHexDirection.SW),
+        center.neighborMain(MainHexDirection.W)
       );
       const capital = gameMap.getCity(capitalVertex);
       if (!capital) throw new Error('Capitale non trouvée');
@@ -66,8 +66,8 @@ describe('BuildersGuild Automation', () => {
 
       const capitalVertex = Vertex.create(
         center,
-        center.neighbor(HexDirection.N),
-        center.neighbor(HexDirection.NW)
+        center.neighborMain(MainHexDirection.SW),
+        center.neighborMain(MainHexDirection.W)
       );
       const capital = gameMap.getCity(capitalVertex);
       if (!capital) throw new Error('Capitale non trouvée');
@@ -129,8 +129,8 @@ describe('BuildersGuild Automation', () => {
 
       const capitalVertex = Vertex.create(
         center,
-        center.neighbor(HexDirection.N),
-        center.neighbor(HexDirection.NW)
+        center.neighborMain(MainHexDirection.SW),
+        center.neighborMain(MainHexDirection.W)
       );
       const capital = gameMap.getCity(capitalVertex);
       if (!capital) throw new Error('Capitale non trouvée');
@@ -174,8 +174,8 @@ describe('BuildersGuild Automation', () => {
 
       const capitalVertex = Vertex.create(
         center,
-        center.neighbor(HexDirection.N),
-        center.neighbor(HexDirection.NW)
+        center.neighborMain(MainHexDirection.SW),
+        center.neighborMain(MainHexDirection.W)
       );
       const capital = gameMap.getCity(capitalVertex);
       if (!capital) throw new Error('Capitale non trouvée');
@@ -230,8 +230,8 @@ describe('BuildersGuild Automation', () => {
 
       const capitalVertex = Vertex.create(
         center,
-        center.neighbor(HexDirection.N),
-        center.neighbor(HexDirection.NW)
+        center.neighborMain(MainHexDirection.SW),
+        center.neighborMain(MainHexDirection.W)
       );
       const capital = gameMap.getCity(capitalVertex);
       if (!capital) throw new Error('Capitale non trouvée');
@@ -286,8 +286,8 @@ describe('BuildersGuild Automation', () => {
 
       const capitalVertex = Vertex.create(
         center,
-        center.neighbor(HexDirection.N),
-        center.neighbor(HexDirection.NW)
+        center.neighborMain(MainHexDirection.SW),
+        center.neighborMain(MainHexDirection.W)
       );
       const capital = gameMap.getCity(capitalVertex);
       if (!capital) throw new Error('Capitale non trouvée');
@@ -351,8 +351,8 @@ describe('BuildersGuild Automation', () => {
 
       const capitalVertex = Vertex.create(
         center,
-        center.neighbor(HexDirection.N),
-        center.neighbor(HexDirection.NW)
+        center.neighborMain(MainHexDirection.SW),
+        center.neighborMain(MainHexDirection.W)
       );
       const capital = gameMap.getCity(capitalVertex);
       if (!capital) throw new Error('Capitale non trouvée');
@@ -419,8 +419,8 @@ describe('BuildersGuild Automation', () => {
 
       const capitalVertex = Vertex.create(
         center,
-        center.neighbor(HexDirection.N),
-        center.neighbor(HexDirection.NW)
+        center.neighborMain(MainHexDirection.SW),
+        center.neighborMain(MainHexDirection.W)
       );
       const capital = gameMap.getCity(capitalVertex);
       if (!capital) throw new Error('Capitale non trouvée');

@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { HexCoord } from '../../../src/model/hex/HexCoord';
-import { HexDirection } from '../../../src/model/hex/HexDirection';
+import { MainHexDirection, ALL_MAIN_DIRECTIONS } from '../../../src/model/hex/MainHexDirection';
 
 describe('HexCoord', () => {
   describe('neighbor lookup', () => {
     it('devrait retourner le voisin Nord', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
+      const north = center.neighborMain(MainHexDirection.SW);
       
       expect(north.q).toBe(0);
       expect(north.r).toBe(-1);
@@ -14,7 +14,7 @@ describe('HexCoord', () => {
 
     it('devrait retourner le voisin Nord-Est', () => {
       const center = new HexCoord(0, 0);
-      const northeast = center.neighbor(HexDirection.NE);
+      const northeast = center.neighborMain(MainHexDirection.SE);
       
       expect(northeast.q).toBe(1);
       expect(northeast.r).toBe(-1);
@@ -22,7 +22,7 @@ describe('HexCoord', () => {
 
     it('devrait retourner le voisin Sud-Est', () => {
       const center = new HexCoord(0, 0);
-      const southeast = center.neighbor(HexDirection.SE);
+      const southeast = center.neighborMain(MainHexDirection.E);
       
       expect(southeast.q).toBe(1);
       expect(southeast.r).toBe(0);
@@ -30,7 +30,7 @@ describe('HexCoord', () => {
 
     it('devrait retourner le voisin Sud', () => {
       const center = new HexCoord(0, 0);
-      const south = center.neighbor(HexDirection.S);
+      const south = center.neighborMain(MainHexDirection.NE);
       
       expect(south.q).toBe(0);
       expect(south.r).toBe(1);
@@ -38,7 +38,7 @@ describe('HexCoord', () => {
 
     it('devrait retourner le voisin Sud-Ouest', () => {
       const center = new HexCoord(0, 0);
-      const southwest = center.neighbor(HexDirection.SW);
+      const southwest = center.neighborMain(MainHexDirection.NW);
       
       expect(southwest.q).toBe(-1);
       expect(southwest.r).toBe(1);
@@ -46,7 +46,7 @@ describe('HexCoord', () => {
 
     it('devrait retourner le voisin Nord-Ouest', () => {
       const center = new HexCoord(0, 0);
-      const northwest = center.neighbor(HexDirection.NW);
+      const northwest = center.neighborMain(MainHexDirection.W);
       
       expect(northwest.q).toBe(-1);
       expect(northwest.r).toBe(0);
@@ -54,7 +54,7 @@ describe('HexCoord', () => {
 
     it('devrait retourner tous les 6 voisins', () => {
       const center = new HexCoord(0, 0);
-      const neighbors = center.neighbors();
+      const neighbors = center.neighborsMain();
       
       expect(neighbors).toHaveLength(6);
       
@@ -67,21 +67,21 @@ describe('HexCoord', () => {
       const center = new HexCoord(2, 3);
       
       // Pour chaque direction, vérifier que le voisin a le centre comme voisin dans la direction opposée
-      const oppositeDirections: Record<HexDirection, HexDirection> = {
-        [HexDirection.N]: HexDirection.S,
-        [HexDirection.NE]: HexDirection.SW,
-        [HexDirection.SE]: HexDirection.NW,
-        [HexDirection.S]: HexDirection.N,
-        [HexDirection.SW]: HexDirection.NE,
-        [HexDirection.NW]: HexDirection.SE,
+      const oppositeDirections: Record<MainHexDirection, MainHexDirection> = {
+        [MainHexDirection.W]: MainHexDirection.E,
+        [MainHexDirection.NW]: MainHexDirection.SE,
+        [MainHexDirection.SW]: MainHexDirection.NE,
+        [MainHexDirection.E]: MainHexDirection.W,
+        [MainHexDirection.SE]: MainHexDirection.NW,
+        [MainHexDirection.NE]: MainHexDirection.SW,
       };
 
       for (const [dir, oppositeDir] of Object.entries(oppositeDirections) as [
-        HexDirection,
-        HexDirection
+        MainHexDirection,
+        MainHexDirection
       ][]) {
-        const neighbor = center.neighbor(dir);
-        const backToCenter = neighbor.neighbor(oppositeDir);
+        const neighbor = center.neighborMain(dir);
+        const backToCenter = neighbor.neighborMain(oppositeDir);
         
         expect(backToCenter.equals(center)).toBe(true);
       }
@@ -89,7 +89,7 @@ describe('HexCoord', () => {
 
     it('devrait calculer correctement la distance entre hexagones', () => {
       const center = new HexCoord(0, 0);
-      const neighbor = center.neighbor(HexDirection.NE);
+      const neighbor = center.neighborMain(MainHexDirection.SE);
       
       expect(center.distanceTo(neighbor)).toBe(1);
       expect(neighbor.distanceTo(center)).toBe(1);

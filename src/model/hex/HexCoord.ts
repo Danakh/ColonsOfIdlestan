@@ -1,4 +1,3 @@
-import { HexDirection, ALL_DIRECTIONS } from './HexDirection';
 import { MainHexDirection, ALL_MAIN_DIRECTIONS } from './MainHexDirection';
 
 /**
@@ -25,31 +24,6 @@ export class HexCoord {
    */
   get s(): number {
     return -this.q - this.r;
-  }
-
-  /**
-   * Retourne les coordonnées du voisin dans la direction spécifiée.
-   * Les déplacements sont définis pour le système de coordonnées axiales.
-   */
-  neighbor(direction: HexDirection): HexCoord {
-    const deltas: Record<HexDirection, [number, number]> = {
-      [HexDirection.N]: [0, -1],
-      [HexDirection.NE]: [1, -1],
-      [HexDirection.SE]: [1, 0],
-      [HexDirection.S]: [0, 1],
-      [HexDirection.SW]: [-1, 1],
-      [HexDirection.NW]: [-1, 0],
-    };
-
-    const [dq, dr] = deltas[direction];
-    return new HexCoord(this.q + dq, this.r + dr);
-  }
-
-  /**
-   * Retourne tous les voisins de cet hexagone.
-   */
-  neighbors(): HexCoord[] {
-    return ALL_DIRECTIONS.map((dir) => this.neighbor(dir));
   }
 
   /**

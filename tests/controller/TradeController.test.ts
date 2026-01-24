@@ -5,7 +5,7 @@ import { BuildingProductionController } from '../../src/controller/BuildingProdu
 import { Make7HexesMap } from '../utils/GameStateGenerator';
 import { Make7HexesMapWithPortCity } from '../utils/GameProgressionTest';
 import { HexCoord } from '../../src/model/hex/HexCoord';
-import { HexDirection } from '../../src/model/hex/HexDirection';
+import { MainHexDirection } from '../../src/model/hex/MainHexDirection';
 import { Vertex } from '../../src/model/hex/Vertex';
 import { BuildingType } from '../../src/model/city/BuildingType';
 import { ResourceType } from '../../src/model/map/ResourceType';
@@ -23,8 +23,8 @@ describe('TradeController (Map7HexesScenario)', () => {
   // Vertex de la ville dans Map7HexesScenario : (center, N, NW)
   const cityVertex = Vertex.create(
     center,
-    center.neighbor(HexDirection.N),
-    center.neighbor(HexDirection.NW)
+    center.neighborMain(MainHexDirection.SW),
+    center.neighborMain(MainHexDirection.W)
   );
 
   beforeEach(() => {

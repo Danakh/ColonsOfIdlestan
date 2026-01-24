@@ -5,7 +5,7 @@ import { BuildingType } from '../../../src/model/city/BuildingType';
 import { CivilizationId } from '../../../src/model/map/CivilizationId';
 import { Vertex } from '../../../src/model/hex/Vertex';
 import { HexCoord } from '../../../src/model/hex/HexCoord';
-import { HexDirection } from '../../../src/model/hex/HexDirection';
+import { MainHexDirection } from '../../../src/model/hex/MainHexDirection';
 
 describe('City - Niveaux de bâtiments', () => {
   let city: City;
@@ -14,8 +14,8 @@ describe('City - Niveaux de bâtiments', () => {
 
   beforeEach(() => {
     const center = new HexCoord(0, 0);
-    const north = center.neighbor(HexDirection.N);
-    const northeast = center.neighbor(HexDirection.NE);
+    const north = center.neighborMain(MainHexDirection.SW);
+    const northeast = center.neighborMain(MainHexDirection.SE);
     vertex = Vertex.create(center, north, northeast);
     civId = CivilizationId.create('test-civ');
     city = new City(vertex, civId, CityLevel.Colony);

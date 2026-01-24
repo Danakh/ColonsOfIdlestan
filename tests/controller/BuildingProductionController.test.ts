@@ -7,7 +7,7 @@ import { CivilizationId } from '../../src/model/map/CivilizationId';
 import { HexType } from '../../src/model/map/HexType';
 import { HexGrid } from '../../src/model/hex/HexGrid';
 import { Hex } from '../../src/model/hex/Hex';
-import { HexDirection } from '../../src/model/hex/HexDirection';
+import { MainHexDirection } from '../../src/model/hex/MainHexDirection';
 import { City } from '../../src/model/city/City';
 import { BuildingType } from '../../src/model/city/BuildingType';
 import { CityLevel } from '../../src/model/city/CityLevel';
@@ -54,12 +54,12 @@ describe('BuildingProductionController', () => {
     beforeEach(() => {
       // Créer une grille avec plusieurs hexagones
       const center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
-      const northeast = center.neighbor(HexDirection.NE);
-      const northwest = center.neighbor(HexDirection.NW);
-      const south = center.neighbor(HexDirection.S);
-      const southeast = center.neighbor(HexDirection.SE);
-      const southwest = center.neighbor(HexDirection.SW);
+      const north = center.neighborMain(MainHexDirection.SW);
+      const northeast = center.neighborMain(MainHexDirection.SE);
+      const northwest = center.neighborMain(MainHexDirection.W);
+      const south = center.neighborMain(MainHexDirection.NE);
+      const southeast = center.neighborMain(MainHexDirection.E);
+      const southwest = center.neighborMain(MainHexDirection.NW);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -199,13 +199,13 @@ describe('BuildingProductionController', () => {
     it('devrait retourner false si l\'hex n\'est pas adjacent au vertex de la ville', () => {
       // Créer une ville sur un vertex différent
       const center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
-      const northeast = center.neighbor(HexDirection.NE);
+      const north = center.neighborMain(MainHexDirection.SW);
+      const northeast = center.neighborMain(MainHexDirection.SE);
       const cityVertex = Vertex.create(center, north, northeast);
       
       // Créer un hex loin de la ville
-      const south = center.neighbor(HexDirection.S);
-      const distantHex = south.neighbor(HexDirection.S);
+      const south = center.neighborMain(MainHexDirection.NE);
+      const distantHex = south.neighborMain(MainHexDirection.NE);
       
       // Ajouter l'hex distant à la grille
       const grid = map.getGrid();
@@ -216,7 +216,7 @@ describe('BuildingProductionController', () => {
       const newGrid = new HexGrid(allHexes);
       // Note: On ne peut pas modifier la grille directement, donc on recrée la map
       // Pour ce test, utilisons un hex qui existe déjà mais qui n'est pas adjacent
-      const southeast = center.neighbor(HexDirection.SE);
+      const southeast = center.neighborMain(MainHexDirection.E);
       map.setHexType(southeast, HexType.Wood);
       
       map.addCity(cityVertex, civId, CityLevel.Colony);
@@ -246,9 +246,9 @@ describe('BuildingProductionController', () => {
 
     it('devrait fonctionner avec des villes sur différents vertices adjacents au même hex', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
-      const northeast = center.neighbor(HexDirection.NE);
-      const southeast = center.neighbor(HexDirection.SE);
+      const north = center.neighborMain(MainHexDirection.SW);
+      const northeast = center.neighborMain(MainHexDirection.SE);
+      const southeast = center.neighborMain(MainHexDirection.E);
       
       map.setHexType(center, HexType.Wood);
       
@@ -288,9 +288,9 @@ describe('BuildingProductionController', () => {
     beforeEach(() => {
       // Créer une grille avec un hex central et deux villes adjacentes
       center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
-      const northeast = center.neighbor(HexDirection.NE);
-      const southeast = center.neighbor(HexDirection.SE);
+      const north = center.neighborMain(MainHexDirection.SW);
+      const northeast = center.neighborMain(MainHexDirection.SE);
+      const southeast = center.neighborMain(MainHexDirection.E);
 
       const grid = new HexGrid([
         new Hex(center),
@@ -462,8 +462,8 @@ describe('BuildingProductionController', () => {
   describe('processAutomaticProduction - plusieurs hexs adjacents de même ressource', () => {
     it('devrait récolter plusieurs hexs Wood adjacents avec un seul bâtiment', () => {
       const center = new HexCoord(0, 0);
-      const north = center.neighbor(HexDirection.N);
-      const northeast = center.neighbor(HexDirection.NE);
+      const north = center.neighborMain(MainHexDirection.SW);
+      const northeast = center.neighborMain(MainHexDirection.SE);
 
       const grid = new HexGrid([
         new Hex(center),

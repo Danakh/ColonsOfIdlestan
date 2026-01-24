@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Make7HexesMap } from '../../utils/GameStateGenerator';
 import { HexCoord } from '../../../src/model/hex/HexCoord';
-import { HexDirection } from '../../../src/model/hex/HexDirection';
+import { MainHexDirection, ALL_MAIN_DIRECTIONS } from '../../../src/model/hex/MainHexDirection';
 import { Vertex } from '../../../src/model/hex/Vertex';
 import { HexType } from '../../../src/model/map/HexType';
 import { CityLevel } from '../../../src/model/city/CityLevel';
@@ -22,12 +22,12 @@ function assertMap7Hexes(gs: GameState): void {
   expect(map.getHexType(center)).toBe(HexType.Brick);
 
   const neighborCoords = [
-    center.neighbor(HexDirection.N),
-    center.neighbor(HexDirection.NE),
-    center.neighbor(HexDirection.SE),
-    center.neighbor(HexDirection.S),
-    center.neighbor(HexDirection.SW),
-    center.neighbor(HexDirection.NW),
+    center.neighborMain(MainHexDirection.SW),
+    center.neighborMain(MainHexDirection.SE),
+    center.neighborMain(MainHexDirection.E),
+    center.neighborMain(MainHexDirection.NE),
+    center.neighborMain(MainHexDirection.NW),
+    center.neighborMain(MainHexDirection.W),
   ];
   const types = neighborCoords.map((c) => map.getHexType(c));
   expect(types.filter((t) => t === HexType.Wood).length).toBe(2);
@@ -40,15 +40,8 @@ function assertMap7Hexes(gs: GameState): void {
   const allMainHexes = [center, ...neighborCoords];
   const waterHexes: HexCoord[] = [];
   for (const hexCoord of allMainHexes) {
-    for (const direction of [
-      HexDirection.N,
-      HexDirection.NE,
-      HexDirection.SE,
-      HexDirection.S,
-      HexDirection.SW,
-      HexDirection.NW,
-    ]) {
-      const neighborCoord = hexCoord.neighbor(direction);
+    for (const direction of ALL_MAIN_DIRECTIONS) {
+      const neighborCoord = hexCoord.neighborMain(direction);
       const isMainHex = allMainHexes.some((h) => h.equals(neighborCoord));
       if (!isMainHex && map.getGrid().hasHex(neighborCoord)) {
         waterHexes.push(neighborCoord);
@@ -65,8 +58,8 @@ function assertMap7Hexes(gs: GameState): void {
 
   const cityVertex = Vertex.create(
     center,
-    center.neighbor(HexDirection.N),
-    center.neighbor(HexDirection.NW)
+    center.neighborMain(MainHexDirection.SW),
+    center.neighborMain(MainHexDirection.W)
   );
   expect(map.hasCity(cityVertex)).toBe(true);
   expect(map.getCityCount()).toBe(1);

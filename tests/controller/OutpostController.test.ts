@@ -3,7 +3,7 @@ import { OutpostController } from '../../src/controller/OutpostController';
 import { RoadController } from '../../src/controller/RoadController';
 import { Make7HexesMap } from '../utils/GameStateGenerator';
 import { HexCoord } from '../../src/model/hex/HexCoord';
-import { HexDirection } from '../../src/model/hex/HexDirection';
+import { MainHexDirection } from '../../src/model/hex/MainHexDirection';
 import { Vertex } from '../../src/model/hex/Vertex';
 import { Edge } from '../../src/model/hex/Edge';
 import { CivilizationId } from '../../src/model/map/CivilizationId';
@@ -22,8 +22,8 @@ describe('OutpostController', () => {
   // Vertex de la ville dans Map7HexesScenario : (center, N, NW)
   const cityVertex = Vertex.create(
     center,
-    center.neighbor(HexDirection.N),
-    center.neighbor(HexDirection.NW)
+    center.neighborMain(MainHexDirection.SW),
+    center.neighborMain(MainHexDirection.W)
   );
 
   beforeEach(() => {
@@ -38,7 +38,7 @@ describe('OutpostController', () => {
     it('devrait refuser si le vertex a déjà une ville', () => {
       // La ville existe déjà dans Make7HexesMap sur cityVertex
       // Construire une route pour que le vertex touche une route
-      const hexN = center.neighbor(HexDirection.N);
+      const hexN = center.neighborMain(MainHexDirection.SW);
       const edge = Edge.create(center, hexN); // Route qui touche le vertex de la ville
       
       // Ajouter les ressources pour la route
@@ -57,7 +57,7 @@ describe('OutpostController', () => {
     it('devrait refuser si le vertex ne touche pas de route de la civilisation', () => {
       // Créer un vertex valide qui ne touche pas de route
       // Utiliser un vertex autour de l'hex SE (qui n'a pas de route)
-      const hexSE = center.neighbor(HexDirection.SE);
+      const hexSE = center.neighborMain(MainHexDirection.E);
       const vertices = map!.getGrid().getVertices(hexSE);
       
       // Prendre le premier vertex qui n'a pas de ville
@@ -82,7 +82,7 @@ describe('OutpostController', () => {
     it('devrait refuser si le vertex est à distance < 2 d\'une ville', () => {
       // Construire une route depuis la ville (distance 1)
       // La route doit toucher le vertex de la ville
-      const hexN = center.neighbor(HexDirection.N);
+      const hexN = center.neighborMain(MainHexDirection.SW);
       const road1Edge = Edge.create(center, hexN); // Route qui touche le vertex de la ville
       
       // Ajouter les ressources pour la route
@@ -123,11 +123,11 @@ describe('OutpostController', () => {
       map!.registerCivilization(otherCivId);
       
       // Créer une ville pour l'autre civilisation
-      const hexSE = center.neighbor(HexDirection.SE);
+      const hexSE = center.neighborMain(MainHexDirection.E);
       const otherCityVertex = Vertex.create(
         center,
         hexSE,
-        center.neighbor(HexDirection.S)
+        center.neighborMain(MainHexDirection.NE)
       );
       map!.addCity(otherCityVertex, otherCivId, CityLevel.Colony);
       
@@ -159,8 +159,8 @@ describe('OutpostController', () => {
 
     it('devrait accepter si toutes les conditions sont remplies', () => {
       // Construire des routes exactement comme dans Map7HexesScenario
-      const hexN = center.neighbor(HexDirection.N);
-      const hexNE = center.neighbor(HexDirection.NE);
+      const hexN = center.neighborMain(MainHexDirection.SW);
+      const hexNE = center.neighborMain(MainHexDirection.SE);
       
       // Ajouter des ressources pour les routes
       resources.addResource(ResourceType.Brick, 10);
@@ -185,7 +185,7 @@ describe('OutpostController', () => {
       // Utiliser le même vertex que Map7HexesScenario : (center, SE, NE)
       const outpostVertex = Vertex.create(
         center,
-        center.neighbor(HexDirection.SE),
+        center.neighborMain(MainHexDirection.E),
         hexNE
       );
       
@@ -203,8 +203,8 @@ describe('OutpostController', () => {
   describe('buildOutpost - cas de refus', () => {
     it('devrait refuser la construction si les ressources sont insuffisantes', () => {
       // Construire des routes comme dans Map7HexesScenario
-      const hexN = center.neighbor(HexDirection.N);
-      const hexNE = center.neighbor(HexDirection.NE);
+      const hexN = center.neighborMain(MainHexDirection.SW);
+      const hexNE = center.neighborMain(MainHexDirection.SE);
       
       // Route 1: center-N
       const road1Edge = Edge.create(center, hexN);
@@ -256,7 +256,7 @@ describe('OutpostController', () => {
     it('devrait refuser la construction si le vertex a déjà une ville', () => {
       // La ville existe déjà sur cityVertex
       // Construire une route
-      const hexN = center.neighbor(HexDirection.N);
+      const hexN = center.neighborMain(MainHexDirection.SW);
       const edge = Edge.create(center, hexN);
       
       const roadCost = RoadConstruction.getCost(1);
@@ -281,7 +281,7 @@ describe('OutpostController', () => {
 
     it('devrait refuser la construction si la distance est insuffisante', () => {
       // Construire une route à distance 1 seulement
-      const hexN = center.neighbor(HexDirection.N);
+      const hexN = center.neighborMain(MainHexDirection.SW);
       const road1Edge = Edge.create(center, hexN);
       
       const roadCost = RoadConstruction.getCost(1);
@@ -327,9 +327,9 @@ describe('OutpostController', () => {
   describe('getBuildableOutpostVertices après construction d\'un avant-poste', () => {
     it('devrait exclure les vertices trop proches après la construction d\'un nouvel avant-poste', () => {
       // Construire des routes comme dans Map7HexesScenario
-      const hexN = center.neighbor(HexDirection.N);
-      const hexNE = center.neighbor(HexDirection.NE);
-      const hexSE = center.neighbor(HexDirection.SE);
+      const hexN = center.neighborMain(MainHexDirection.SW);
+      const hexNE = center.neighborMain(MainHexDirection.SE);
+      const hexSE = center.neighborMain(MainHexDirection.E);
       
       // Route 1: center-N (touche le vertex de la ville)
       const road1Edge = Edge.create(center, hexN);
