@@ -9,6 +9,7 @@ import { PlayerResources } from '../model/game/PlayerResources';
 import { BuildingController } from '../controller/BuildingController';
 import { TradeController } from '../controller/TradeController';
 import { HexMapRenderer } from './HexMapRenderer';
+import { Console } from 'console';
 
 /**
  * Callbacks pour les actions du panneau de ville.
@@ -42,10 +43,12 @@ export class CityPanelView {
   private cityBuildingsList: HTMLUListElement;
   private cityBuildingsTitle: HTMLHeadingElement;
   private tradeBtn: HTMLButtonElement | null = null;
+  private automationBtn: HTMLButtonElement | null = null;
   private callbacks: CityPanelCallbacks = {};
   private renderer: HexMapRenderer | null = null;
   private playerCivId: CivilizationId | null = null;
   private lastTradeKey: string | null = null;
+  private lastAutomationKey: string | null = null;
 
   private stateProvider: CityPanelStateProvider | null = null;
   private pendingScheduledUpdate: boolean = false;
@@ -76,6 +79,7 @@ export class CityPanelView {
     const buildingsList = document.getElementById('city-buildings-list') as HTMLUListElement;
     const buildingsTitle = document.querySelector('#city-buildings-section h3') as HTMLHeadingElement;
     const tradeBtn = document.getElementById('city-trade-btn') as HTMLButtonElement;
+    const automationBtn = document.getElementById('city-automation-btn') as HTMLButtonElement;
 
     if (!panel) {
       throw new Error(`Élément avec l'id "${cityPanelId}" introuvable`);
@@ -95,6 +99,7 @@ export class CityPanelView {
     this.cityBuildingsList = buildingsList;
     this.cityBuildingsTitle = buildingsTitle;
     this.tradeBtn = tradeBtn ?? null;
+    this.automationBtn = automationBtn ?? null;
 
     // Configurer les gestionnaires d'événements
     this.setupEventListeners();
@@ -171,6 +176,22 @@ export class CityPanelView {
    */
   setCallbacks(callbacks: CityPanelCallbacks): void {
     this.callbacks = callbacks;
+  }
+
+  /**
+   * Met à jour uniquement les boutons du footer (Commerce et Automatisation).
+   * Utile pour forcer la mise à jour indépendamment de la sélection de ville.
+   * IMPORTANT: Cette méthode est le seul point d'appel pour les boutons du footer.
+   */
+  updateFooter(): void {
+    if (!this.stateProvider) {
+      return;
+    }
+    const gameMap = this.stateProvider.getGameMap();
+    if (gameMap) {
+      this.updateTradeFooter(gameMap);
+      this.updateAutomationFooter(gameMap);
+    }
   }
 
   /**
@@ -303,21 +324,63 @@ export class CityPanelView {
       ? TradeController.getTradeRateForCivilization(this.playerCivId, gameMap)
       : null;
 
+    // Mettre à jour le bouton du footer
+    this.tradeBtn.hidden = !canTrade;
+    this.tradeBtn.disabled = !canTrade;
+    if (canTrade && rate) {
+      this.tradeBtn.textContent = `Commerce`;
+      this.tradeBtn.title = `Échanger au taux ${rate}:1.`;
+    }
+
     const tradeKey = canTrade ? `1:${rate}` : '0';
     if (tradeKey === this.lastTradeKey) {
       return false;
     }
     this.lastTradeKey = tradeKey;
 
-    // Le bouton doit être caché tant que le commerce n'est pas disponible (l'espace est réservé par le footer).
-    this.tradeBtn.hidden = !canTrade;
-    this.tradeBtn.disabled = !canTrade;
-    if (canTrade && rate) {
-      this.tradeBtn.textContent = `Commerce (${rate}:1)`;
-      this.tradeBtn.title = `Échanger au taux ${rate}:1.`;
+    return true;
+  }
+
+  /**
+   * Met à jour le bouton Automatisation global (footer). Retourne true si l'état a changé.
+   */
+  private updateAutomationFooter(gameMap: GameMap | null): boolean {
+    if (!this.automationBtn) {
+      return false;
     }
 
+    const canAutomate = Boolean(gameMap && this.playerCivId && this.hasAutomationBuilding(this.playerCivId, gameMap));
+    const automationKey = canAutomate ? '1' : '0';
+    
+    const cities = gameMap ? gameMap.getCitiesByCivilization(this.playerCivId) : [];
+    const hasGuild = cities.some(c => c.hasBuilding(BuildingType.BuildersGuild));
+
+    // Mettre à jour le bouton du footer
+    this.automationBtn.hidden = !canAutomate;
+    this.automationBtn.disabled = !canAutomate;
+    if (canAutomate) {
+      this.automationBtn.textContent = 'Automatisation';
+      this.automationBtn.title = 'Accédez aux options d\'automatisation.';
+    }
+    
+    if (automationKey === this.lastAutomationKey) {
+      return false;
+    }
+    this.lastAutomationKey = automationKey;
     return true;
+  }
+
+  /**
+   * Vérifie si une civilisation a accès à l'automatisation (Guilde des batisseurs).
+   */
+  private hasAutomationBuilding(civId: CivilizationId, map: GameMap): boolean {
+    const cities = map.getCitiesByCivilization(civId);
+    for (const city of cities) {
+      if (city.hasBuilding(BuildingType.BuildersGuild)) {
+        return true;
+      }
+    }
+    return false;
   }
 
 
@@ -354,11 +417,14 @@ export class CityPanelView {
     city: City | null,
     playerResources: PlayerResources
   ): void {
-    const tradeChanged = this.updateTradeFooter(gameMap);
+    // Les boutons du footer sont maintenant gérés uniquement par updateFooter()
+    // pour éviter les conflits de mise à jour
+    let tradeChanged = false;
+    let automationChanged = false;
 
     if (!selectedVertex || !gameMap || !city) {
       // Sidebar fixe : afficher un état "aucune sélection" au lieu de masquer.
-      if (this.lastNoSelectionRendered && !tradeChanged) {
+      if (this.lastNoSelectionRendered && !tradeChanged && !automationChanged) {
         return;
       }
 
@@ -416,7 +482,7 @@ export class CityPanelView {
     const buildingLevelsChanged = this.lastCityBuildingLevelsKey !== currentCityBuildingLevelsKey;
 
     // Rien à faire si aucun changement pertinent
-    if (!structureChanged && !resourcesChanged && !buildingLevelsChanged && !tradeChanged) {
+    if (!structureChanged && !resourcesChanged && !buildingLevelsChanged && !tradeChanged && !automationChanged) {
       return;
     }
 

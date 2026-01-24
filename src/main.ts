@@ -142,6 +142,10 @@ function main(): void {
     const gameMap = game.getGameMap();
     const civId = game.getPlayerCivilizationId();
     inventoryView.updateDisplay(playerResources, gameMap, civId);
+    // Mettre à jour les boutons du footer
+    if (gameMap) {
+      cityPanelView.updateFooter();
+    }
   }
 
   // Clé pour la sauvegarde automatique dans localStorage
@@ -195,6 +199,8 @@ function main(): void {
     gameStartTime = null;
     // Sauvegarder immédiatement après le chargement pour s'assurer qu'on a une sauvegarde valide
     autoSave();
+    // Mettre à jour la civilisation du joueur dans le panneau de ville (peut avoir changé lors du chargement)
+    cityPanelView.setPlayerCivilizationId(game.getPlayerCivilizationId());
   }
   
   const gameMap = game.getGameMap();
@@ -206,6 +212,8 @@ function main(): void {
   // Mettre à jour l'affichage après le chargement
   updateResourcesDisplay();
   cityPanelView.refreshNow();
+  // Mettre à jour les boutons du footer
+  cityPanelView.updateFooter();
 
   // Configurer les callbacks du panneau de ville
   cityPanelView.setCallbacks({
@@ -656,6 +664,9 @@ function main(): void {
           // Réinitialiser le temps de référence pour la boucle d'animation
           gameStartTime = null;
           
+          // Mettre à jour la civilisation du joueur dans le panneau de ville (peut avoir changé lors du chargement)
+          cityPanelView.setPlayerCivilizationId(game.getPlayerCivilizationId());
+          
           // Mettre à jour l'affichage
           const newGameMap = game.getGameMap();
           if (newGameMap) {
@@ -663,6 +674,8 @@ function main(): void {
             renderer.render(newGameMap, civId);
             updateResourcesDisplay();
             cityPanelView.refreshNow();
+            // Mettre à jour les boutons du footer avec la civilisation chargée
+            cityPanelView.updateFooter();
           }
         } catch (error) {
           console.error('Erreur lors de l\'import:', error);
