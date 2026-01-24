@@ -1,7 +1,5 @@
 import { GameMap } from '../model/map/GameMap';
 import { CivilizationId } from '../model/map/CivilizationId';
-import { City } from '../model/city/City';
-import { PlayerResources } from '../model/game/PlayerResources';
 import { CityLevel } from '../model/city/CityLevel';
 import { calculateCivilizationPoints } from '../model/game/CivilizationPoints';
 
@@ -11,7 +9,7 @@ import { calculateCivilizationPoints } from '../model/game/CivilizationPoints';
 export interface PrestigeActionResult {
   success: boolean;
   message: string;
-  resourcesGained?: Map<string, number>;
+  civilizationPointsGained?: number;
 }
 
 /**
@@ -72,20 +70,17 @@ export class PrestigeController {
   }
 
   /**
-   * Active l'action Prestige et octroie des ressources bonus.
+   * Active l'action Prestige et retourne les points de civilisation gagnés.
    * 
-   * Les ressources bonus sont basées sur le nombre de ports et le niveau de civilisation.
-   * Bonus: (nombre de ports * 10) + (points de civilisation - 20) ressources aléatoires
+   * Les points de civilisation bonus sont basés sur le niveau de civilisation.
    * 
    * @param civId - L'identifiant de la civilisation
    * @param map - La carte de jeu
-   * @param playerResources - Les ressources actuelles du joueur
-   * @returns Le résultat de l'action
+   * @returns Le résultat de l'action avec les points de civilisation gagnés
    */
   static activatePrestige(
     civId: CivilizationId,
-    map: GameMap,
-    playerResources: PlayerResources
+    map: GameMap
   ): PrestigeActionResult {
     // Vérifier les conditions
     if (!this.canActivatePrestige(civId, map)) {
@@ -96,36 +91,13 @@ export class PrestigeController {
       };
     }
 
-    // Calculer les ressources bonus
-    const cities = map.getCitiesByCivilization(civId);
-    
-    // Nombre de ports = nombre de villes avec un port maritime
-    let seaportCount = 0;
-    for (const city of cities) {
-      if (city.hasBuilding('Seaport' as any)) {
-        seaportCount++;
-      }
-    }
-
-    // Points de prestige = (nombre de ports * 10) + (points de civilisation - 20)
-    const civilizationPoints = calculateCivilizationPoints(map, civId);
-    const prestigeBonus = (seaportCount * 10) + (civilizationPoints - 20);
-
-    // Distribuer les ressources bonus de manière équilibrée
-    const resourcesGained = new Map<string, number>();
-    const baseGain = Math.floor(prestigeBonus / 4);
-    const remainder = prestigeBonus % 4;
-
-    // Distribuer aux ressources de manière proportionnelle
-    resourcesGained.set('Ore', baseGain + (remainder > 0 ? 1 : 0));
-    resourcesGained.set('Wood', baseGain + (remainder > 1 ? 1 : 0));
-    resourcesGained.set('Brick', baseGain + (remainder > 2 ? 1 : 0));
-    resourcesGained.set('Wheat', baseGain);
+    // Points de prestige = points de civilisation
+    const prestigePoints = calculateCivilizationPoints(map, civId);
 
     return {
       success: true,
-      message: `Action Prestige activée! ${prestigeBonus} ressources de prestige obtenues.`,
-      resourcesGained
+      message: `Action Prestige activée! ${prestigePoints} points de civilisation obtenus.`,
+      civilizationPointsGained: prestigePoints
     };
   }
 }

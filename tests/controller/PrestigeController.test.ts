@@ -115,18 +115,17 @@ describe('PrestigeController', () => {
   });
 
   describe('activatePrestige', () => {
-    it('devrait octroyer des ressources au prestige', () => {
+    it('devrait ajouter des points de civilisation lors du prestige', () => {
       const generatedState = createScenarioWithCapitalAndResources(42);
       const map = generatedState.gameMap;
       const civId = generatedState.civId;
-      const playerResources = generatedState.playerResources;
 
-      const result = PrestigeController.activatePrestige(civId, map, playerResources);
+      const result = PrestigeController.activatePrestige(civId, map);
 
       expect(result.success).toBe(true);
       expect(result.message).toBeDefined();
-      expect(result.resourcesGained).toBeDefined();
-      expect(result.resourcesGained!.size).toBeGreaterThan(0);
+      expect(result.civilizationPointsGained).toBeDefined();
+      expect(result.civilizationPointsGained).toBeGreaterThan(0);
     });
 
     it('devrait retourner false si les conditions ne sont pas remplies', () => {
@@ -134,9 +133,8 @@ describe('PrestigeController', () => {
       const controller = game.getController();
       const map = controller.getGameMap();
       const civId = controller.getPlayerCivilizationId();
-      const playerResources = controller.getGameState().getPlayerResources();
 
-      const result = PrestigeController.activatePrestige(civId, map!, playerResources);
+      const result = PrestigeController.activatePrestige(civId, map!);
 
       expect(result.success).toBe(false);
       expect(result.message).toBeDefined();
@@ -146,7 +144,6 @@ describe('PrestigeController', () => {
       const generatedState = createScenarioWithCapitalAndResources(42);
       const map = generatedState.gameMap;
       const civId = generatedState.civId;
-      const playerResources = generatedState.playerResources;
 
       // Compter les ports actuels
       const cities = map.getCitiesByCivilization(civId);
@@ -157,12 +154,12 @@ describe('PrestigeController', () => {
         }
       }
 
-      const result = PrestigeController.activatePrestige(civId, map, playerResources);
+      const result = PrestigeController.activatePrestige(civId, map);
 
       expect(result.success).toBe(true);
       // Au moins un port devrait être présent pour cette validation
       if (seaportCount > 0) {
-        expect(result.message).toContain('ressources');
+        expect(result.message).toContain('points de civilisation');
       }
     });
   });

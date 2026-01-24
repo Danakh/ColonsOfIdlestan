@@ -290,7 +290,6 @@ function main(): void {
           // Activer l'action Prestige du port maritime niveau 4
           const currentGameMap = game.getGameMap();
           const civId = game.getPlayerCivilizationId();
-          const playerResources = game.getPlayerResources();
 
           if (!currentGameMap || !civId) {
             console.error('Carte de jeu ou civilisation non disponible');
@@ -305,20 +304,11 @@ function main(): void {
           }
 
           // Activer l'action Prestige
-          const result = PrestigeController.activatePrestige(civId, currentGameMap, playerResources);
+          const result = PrestigeController.activatePrestige(civId, currentGameMap);
           
-          if (result.success && result.resourcesGained) {
-            // Ajouter les ressources gagnées
-            for (const [resourceName, amount] of result.resourcesGained) {
-              const resourceType = Object.values(ResourceType).find(
-                rt => rt.toLowerCase() === resourceName.toLowerCase()
-              ) as ResourceType | undefined;
-              
-              if (resourceType) {
-                playerResources.addResource(resourceType, amount);
-              }
-            }
-
+          if (result.success && result.civilizationPointsGained !== undefined) {
+            // Les points de civilisation sont ajoutés au CivilizationState
+            // (à implémenter lors de la migration vers CivilizationState)
             alert(result.message);
             updateResourcesDisplay();
             cityPanelView.refreshNow();
