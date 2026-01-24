@@ -41,31 +41,23 @@ export class AutomationController {
     
     // Pour chaque ville, vérifier si elle a une Guilde des batisseurs
     for (const city of cities) {
-      const buildersGuild = city.getBuilding(BuildingType.BuildersGuild);
-      if (!buildersGuild) {
-        continue;
-      }
-
       const cityVertex = city.vertex;
-      const level = buildersGuild.level;
 
       // Niveau 1 : Construction automatique de routes
-      if (level >= 1 && civilization.isAutoRoadConstructionEnabled()) {
+      if (civilization.isAutoRoadConstructionEnabled()) {
         this.processAutomaticRoadConstruction(civId, map, resources, cityVertex);
       }
 
       // Niveau 2 : Construction automatique d'outposts et amélioration automatique de villes
-      if (level >= 2) {
-        if (civilization.isAutoOutpostConstructionEnabled()) {
-          this.processAutomaticOutpostConstruction(civId, map, resources);
-        }
-        if (civilization.isAutoCityUpgradeEnabled()) {
-          this.processAutomaticCityUpgrade(civId, map, resources, city);
-        }
+      if (civilization.isAutoOutpostConstructionEnabled()) {
+        this.processAutomaticOutpostConstruction(civId, map, resources);
+      }
+      if (civilization.isAutoCityUpgradeEnabled()) {
+        this.processAutomaticCityUpgrade(civId, map, resources, city);
       }
 
       // Niveau 3 : Construction automatique de bâtiments de production
-      if (level >= 3 && civilization.isAutoProductionBuildingConstructionEnabled()) {
+      if (civilization.isAutoProductionBuildingConstructionEnabled()) {
         this.processAutomaticProductionBuildingConstruction(civId, map, resources, city, cityVertex);
       }
     }
