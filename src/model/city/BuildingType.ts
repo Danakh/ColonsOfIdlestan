@@ -5,12 +5,10 @@ import { HexType } from '../map/HexType';
  * Types de bâtiments constructibles dans les villes.
  */
 export enum BuildingType {
-  /** Port maritime - Permet le commerce maritime (3:1), nécessite de l'eau. Disponible au niveau Ville (2). */
-  Seaport = 'Seaport',
-  /** Marché - Permet le commerce (4:1) */
-  Market = 'Market',
   /** Hôtel de ville - Permet l'amélioration de la ville */
   TownHall = 'TownHall',
+  /** Marché - Permet le commerce (4:1) */
+  Market = 'Market',
   /** Scierie - Produit du bois */
   Sawmill = 'Sawmill',
   /** Briqueterie - Produit de la brique */
@@ -21,6 +19,8 @@ export enum BuildingType {
   Sheepfold = 'Sheepfold',
   /** Mine - Produit du minerai */
   Mine = 'Mine',
+  /** Port maritime - Permet le commerce maritime (3:1), nécessite de l'eau. Disponible au niveau Ville (2). */
+  Seaport = 'Seaport',
   /** Entrepôt - Augmente la capacité de stockage des ressources */
   Warehouse = 'Warehouse',
   /** Forge - Améliore la production de minerai et permet la création d'outils */

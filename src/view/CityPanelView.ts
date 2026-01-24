@@ -352,7 +352,7 @@ export class CityPanelView {
     const canAutomate = Boolean(gameMap && this.playerCivId && this.hasAutomationBuilding(this.playerCivId, gameMap));
     const automationKey = canAutomate ? '1' : '0';
     
-    const cities = gameMap ? gameMap.getCitiesByCivilization(this.playerCivId) : [];
+    const cities = (gameMap && this.playerCivId) ? gameMap.getCitiesByCivilization(this.playerCivId) : [];
     const hasGuild = cities.some(c => c.hasBuilding(BuildingType.BuildersGuild));
 
     // Mettre à jour le bouton du footer
@@ -792,7 +792,7 @@ export class CityPanelView {
         if (!canUpgrade) {
           upgradeBtn.disabled = true;
         } else {
-          upgradeBtn.disabled = !BuildingController.canUpgrade(buildingType, city, playerResources);
+          upgradeBtn.disabled = !BuildingController.canUpgrade(buildingType, city, gameMap, playerResources);
         }
       }
 

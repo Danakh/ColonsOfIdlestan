@@ -7,3 +7,4 @@ coverage/
 /main.js.map
 deploy/
 saves/
+test-output.txt

@@ -32,12 +32,14 @@ export class BuildingController {
    * Vérifie si un bâtiment peut être amélioré ET si le joueur a les ressources.
    * @param buildingType - Le type de bâtiment
    * @param city - La ville
+   * @param map - La carte de jeu
    * @param resources - Les ressources du joueur
    * @returns true si l'amélioration est possible
    */
   static canUpgrade(
     buildingType: BuildingType,
     city: City,
+    map: GameMap,
     resources: PlayerResources
   ): boolean {
     const building = city.getBuilding(buildingType);
@@ -47,6 +49,20 @@ export class BuildingController {
     if (!building.canUpgrade()) {
       return false;
     }
+    
+    // Vérifier la contrainte : une seule Capitale par civilisation
+    if (buildingType === BuildingType.TownHall) {
+      const nextLevel = city.level + 1;
+      if (nextLevel === CityLevel.Capital) {
+        // Vérifier s'il existe déjà une Capitale
+        const cities = map.getCitiesByCivilization(city.owner);
+        const hasCapital = cities.some(c => c.level === CityLevel.Capital);
+        if (hasCapital) {
+          return false;
+        }
+      }
+    }
+    
     const cost = building.getUpgradeCost();
     return resources.canAfford(cost);
   }
@@ -55,12 +71,14 @@ export class BuildingController {
    * Améliore un bâtiment en consommant les ressources nécessaires.
    * @param buildingType - Le type de bâtiment à améliorer
    * @param city - La ville
+   * @param map - La carte de jeu
    * @param resources - Les ressources du joueur
    * @throws Error si l'amélioration est impossible ou si les ressources sont insuffisantes
    */
   static upgradeBuilding(
     buildingType: BuildingType,
     city: City,
+    map: GameMap,
     resources: PlayerResources
   ): void {
     const building = city.getBuilding(buildingType);
@@ -69,6 +87,19 @@ export class BuildingController {
     }
     if (!building.canUpgrade()) {
       throw new Error(`Le bâtiment ${buildingType} est déjà au niveau maximum (${building.getMaxLevel()}).`);
+    }
+    
+    // Vérifier la contrainte : une seule Capitale par civilisation
+    if (buildingType === BuildingType.TownHall) {
+      const nextLevel = city.level + 1;
+      if (nextLevel === CityLevel.Capital) {
+        // Vérifier s'il existe déjà une Capitale
+        const cities = map.getCitiesByCivilization(city.owner);
+        const hasCapital = cities.some(c => c.level === CityLevel.Capital);
+        if (hasCapital) {
+          throw new Error('Une Capitale existe déjà. Seule une Capitale est autorisée par civilisation.');
+        }
+      }
     }
 
     const cost = building.getUpgradeCost();

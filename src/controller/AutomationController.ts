@@ -208,12 +208,12 @@ export class AutomationController {
 
     try {
       // Vérifier si on peut améliorer et si on a les ressources
-      if (!BuildingController.canUpgrade(BuildingType.TownHall, city, resources)) {
+      if (!BuildingController.canUpgrade(BuildingType.TownHall, city, map, resources)) {
         return;
       }
 
       // Améliorer la ville (le contrôleur vérifie les ressources)
-      BuildingController.upgradeBuilding(BuildingType.TownHall, city, resources);
+      BuildingController.upgradeBuilding(BuildingType.TownHall, city, map, resources);
     } catch (error) {
       // Ignorer les erreurs (ressources insuffisantes, etc.)
     }

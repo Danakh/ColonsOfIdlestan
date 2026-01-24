@@ -246,14 +246,16 @@ function main(): void {
       try {
         if (action === BuildingAction.Upgrade) {
           const playerResources = game.getPlayerResources();
-          BuildingController.upgradeBuilding(buildingType, city, playerResources);
+          const currentGameMap = game.getGameMap();
+          if (!currentGameMap) {
+            console.error('Carte de jeu non disponible');
+            return;
+          }
+          BuildingController.upgradeBuilding(buildingType, city, currentGameMap, playerResources);
           updateResourcesDisplay();
           cityPanelView.refreshNow();
-          const currentGameMap = game.getGameMap();
-          if (currentGameMap) {
-            const civId = game.getPlayerCivilizationId();
-            renderer.render(currentGameMap, civId);
-          }
+          const civId = game.getPlayerCivilizationId();
+          renderer.render(currentGameMap, civId);
         } else if (action === BuildingAction.Trade) {
           // Mettre à jour le contexte de jeu pour le panneau de commerce
           const currentGameMap = game.getGameMap();

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Make7HexesMap, saveGameState } from '../utils/GameStateGenerator';
+import { Make7HexesMapWithPortAndCapital } from '../utils/GameProgressionTest';
 import { HexCoord } from '../../src/model/hex/HexCoord';
 import { HexDirection } from '../../src/model/hex/HexDirection';
 import { Vertex } from '../../src/model/hex/Vertex';
@@ -115,4 +116,61 @@ describe('Map7HexesScenario', () => {
       expect(city.level).toBeGreaterThanOrEqual(CityLevel.Colony);
     }
   });
-});
+
+  it('on ne peut pas avoir 2 capitales - seule capitale existante reste au niveau Capital', () => {
+    const gs = Make7HexesMapWithPortAndCapital();
+    const map = gs.getGameMap()!;
+    const civId = gs.getPlayerCivilizationId();
+    const resources = gs.getPlayerResources();
+    const gameClock = gs.getGameClock();
+
+    // Vérifier que la carte a bien 2 villes : la capitale initiale et la ville portuaire (Metropolis)
+    const cities = map.getCitiesByCivilization(civId);
+    expect(cities.length).toBe(2);
+
+    // Trouver la capitale (niveau 4) et la métropole (niveau 3)
+    const capitalCity = cities.find(c => c.level === CityLevel.Capital);
+    const metropolisCity = cities.find(c => c.level === CityLevel.Metropolis);
+    
+    expect(capitalCity).toBeDefined();
+    expect(metropolisCity).toBeDefined();
+    expect(capitalCity).not.toEqual(metropolisCity);
+
+    // Vérifier qu'il n'y a qu'une seule capitale
+    const capitalCount = cities.filter(c => c.level === CityLevel.Capital).length;
+    expect(capitalCount).toBe(1);
+
+    // Essayer d'améliorer la métropole au niveau capitale
+    const metropolis = metropolisCity!;
+    const townHall = metropolis.getBuilding(BuildingType.TownHall)!;
+    
+    // Vérifier qu'on est au niveau 3 (Métropole) avec TownHall niveau 3
+    expect(metropolis.level).toBe(CityLevel.Metropolis);
+    expect(townHall.level).toBe(3);
+    expect(townHall.canUpgrade()).toBe(true);
+
+    // Essayer d'améliorer le TownHall au niveau 4
+    try {
+    GameAutoPlayer.playUntilImproveBuilding(
+      BuildingType.TownHall,
+      metropolis.vertex,
+      civId,
+      map,
+      resources,
+      gameClock
+    );
+    } catch (e) {
+      // Si l'amélioration échoue, c'est aussi acceptable
+      // (cela signifie qu'on empêche l'amélioration si une capitale existe déjà)
+      expect(true).toBe(true);
+    }
+    
+    // Vérifier que la métropole est restée au niveau 3 (pas pu passer au niveau 4 = Capital)
+    const updatedMetropolis = map.getCity(metropolis.vertex)!;
+    expect(updatedMetropolis.level).toBeLessThanOrEqual(CityLevel.Metropolis);
+    
+    // Vérifier qu'il y a toujours qu'une seule capitale
+    const updatedCities = map.getCitiesByCivilization(civId);
+    const updatedCapitalCount = updatedCities.filter(c => c.level === CityLevel.Capital).length;
+    expect(updatedCapitalCount).toBe(1);
+  });});

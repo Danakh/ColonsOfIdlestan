@@ -536,9 +536,9 @@ export class GameAutoPlayer {
 
     while (iterations < maxIterations) {
       // Vérifier si on peut améliorer le bâtiment
-      if (BuildingController.canUpgrade(buildingType, city, resources)) {
+      if (BuildingController.canUpgrade(buildingType, city, map, resources)) {
         try {
-          BuildingController.upgradeBuilding(buildingType, city, resources);
+          BuildingController.upgradeBuilding(buildingType, city, map, resources);
           return true;
         } catch (e) {
           // Erreur lors de l'amélioration, continuer
