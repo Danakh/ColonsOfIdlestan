@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Make7HexesMap } from '../../utils/GameStateGenerator';
 import { HexCoord } from '../../../src/model/hex/HexCoord';
 import { MainHexDirection, ALL_MAIN_DIRECTIONS } from '../../../src/model/hex/MainHexDirection';
-import { Vertex } from '../../../src/model/hex/Vertex';
+import { SecondaryHexDirection } from '../../../src/model/hex/SecondaryHexDirection';
 import { HexType } from '../../../src/model/map/HexType';
 import { CityLevel } from '../../../src/model/city/CityLevel';
 import { BuildingType } from '../../../src/model/city/BuildingType';
@@ -56,11 +56,7 @@ function assertMap7Hexes(gs: GameState): void {
 
   expect(map.isCivilizationRegistered(civilizationId)).toBe(true);
 
-  const cityVertex = Vertex.create(
-    center,
-    center.neighborMain(MainHexDirection.SW),
-    center.neighborMain(MainHexDirection.W)
-  );
+  const cityVertex = center.vertex(SecondaryHexDirection.N);
   expect(map.hasCity(cityVertex)).toBe(true);
   expect(map.getCityCount()).toBe(1);
 

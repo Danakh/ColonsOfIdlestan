@@ -1,6 +1,7 @@
 import { HexCoord } from './HexCoord';
 import { MainHexDirection } from './MainHexDirection';
 import { SecondaryHexDirection } from './SecondaryHexDirection';
+import { SECONDARY_TO_MAIN_DIRECTION_PAIRS } from './SecondaryHexDirectionMappings';
 import { Edge } from './Edge';
 import { Vertex } from './Vertex';
 
@@ -75,17 +76,7 @@ export class Hex {
    * - WN : entre W et NW
    */
   getVertexBySecondaryDirection(direction: SecondaryHexDirection): Vertex {
-    // Mapping des directions secondaires vers les paires de directions principales
-    const directionPairs: Record<SecondaryHexDirection, [MainHexDirection, MainHexDirection]> = {
-      [SecondaryHexDirection.N]: [MainHexDirection.NW, MainHexDirection.NE],
-      [SecondaryHexDirection.EN]: [MainHexDirection.NE, MainHexDirection.E],
-      [SecondaryHexDirection.ES]: [MainHexDirection.E, MainHexDirection.SE],
-      [SecondaryHexDirection.S]: [MainHexDirection.SE, MainHexDirection.SW],
-      [SecondaryHexDirection.WS]: [MainHexDirection.SW, MainHexDirection.W],
-      [SecondaryHexDirection.WN]: [MainHexDirection.W, MainHexDirection.NW],
-    };
-
-    const [dir1, dir2] = directionPairs[direction];
+    const [dir1, dir2] = SECONDARY_TO_MAIN_DIRECTION_PAIRS[direction];
     const neighbor1 = this.neighborMain(dir1);
     const neighbor2 = this.neighborMain(dir2);
 

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { Make7HexesMapWithPortAndCapital } from '../utils/GameProgressionTest';
 import { HexCoord } from '../../src/model/hex/HexCoord';
 import { MainHexDirection } from '../../src/model/hex/MainHexDirection';
+import { SecondaryHexDirection } from '../../src/model/hex/SecondaryHexDirection';
 import { Vertex } from '../../src/model/hex/Vertex';
 import { BuildingType } from '../../src/model/city/BuildingType';
 import { CityLevel } from '../../src/model/city/CityLevel';
@@ -30,11 +31,7 @@ describe('GameAutomation', () => {
       const center = new HexCoord(0, 0);
 
       // Ville initiale (capitale)
-      const capitalVertex = Vertex.create(
-        center,
-        center.neighborMain(MainHexDirection.SW),
-        center.neighborMain(MainHexDirection.W)
-      );
+      const capitalVertex = center.vertex(SecondaryHexDirection.N);
       const capital = gameMap.getCity(capitalVertex);
       if (!capital) throw new Error('Capitale non trouvée');
 
@@ -115,11 +112,7 @@ describe('GameAutomation', () => {
       const gameClock = gs.getGameClock();
       const center = new HexCoord(0, 0);
 
-      const capitalVertex = Vertex.create(
-        center,
-        center.neighborMain(MainHexDirection.SW),
-        center.neighborMain(MainHexDirection.W)
-      );
+      const capitalVertex = center.vertex(SecondaryHexDirection.N);
       const capital = gameMap.getCity(capitalVertex);
       if (!capital) throw new Error('Capitale non trouvée');
 
@@ -209,11 +202,7 @@ describe('GameAutomation', () => {
       const gameClock = gs.getGameClock();
       const center = new HexCoord(0, 0);
 
-      const capitalVertex = Vertex.create(
-        center,
-        center.neighborMain(MainHexDirection.SW),
-        center.neighborMain(MainHexDirection.W)
-      );
+      const capitalVertex = center.vertex(SecondaryHexDirection.N);
       const capital = gameMap.getCity(capitalVertex);
       if (!capital) throw new Error('Capitale non trouvée');
 
@@ -366,11 +355,7 @@ describe('GameAutomation', () => {
       const gameClock = gs.getGameClock();
       const center = new HexCoord(0, 0);
 
-      const capitalVertex = Vertex.create(
-        center,
-        center.neighborMain(MainHexDirection.SW),
-        center.neighborMain(MainHexDirection.W)
-      );
+      const capitalVertex = center.vertex(SecondaryHexDirection.N);
       const capital = gameMap.getCity(capitalVertex);
       if (!capital) throw new Error('Capitale non trouvée');
 

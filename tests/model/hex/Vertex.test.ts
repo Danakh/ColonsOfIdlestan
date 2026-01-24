@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Vertex } from '../../../src/model/hex/Vertex';
 import { HexCoord } from '../../../src/model/hex/HexCoord';
 import { MainHexDirection } from '../../../src/model/hex/MainHexDirection';
+import { SecondaryHexDirection } from '../../../src/model/hex/SecondaryHexDirection';
 
 describe('Vertex', () => {
   describe('création et validation', () => {
@@ -115,6 +116,35 @@ describe('Vertex', () => {
       expect(vertex.isAdjacentTo(north)).toBe(true);
       expect(vertex.isAdjacentTo(northeast)).toBe(true);
       expect(vertex.isAdjacentTo(south)).toBe(false);
+    });
+
+    it('devrait retourner l\'hexagone qui a ce vertex dans sa direction opposée', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighborMain(MainHexDirection.SW);
+      const northeast = center.neighborMain(MainHexDirection.SE);
+      
+      const vertex = Vertex.create(center, north, northeast);
+      
+      // Le vertex est au nord (N) du center
+      // Donc vertex.hex(N) devrait retourner center
+      const hexInNorthDir = vertex.hex(SecondaryHexDirection.N);
+      expect(hexInNorthDir).not.toBeNull();
+      expect(hexInNorthDir?.equals(center)).toBe(true);
+    });
+
+    it('devrait retourner l\'hexagone qui a ce vertex dans la direction spécifiée', () => {
+      const center = new HexCoord(0, 0);
+      const north = center.neighborMain(MainHexDirection.SW);
+      const northeast = center.neighborMain(MainHexDirection.SE);
+      
+      const vertex = Vertex.create(center, north, northeast);
+      
+      // Chercher l'hexagone dans la direction N depuis le vertex
+      const hexInNorthDir = vertex.hex(SecondaryHexDirection.N);
+      
+      // Le hex retourné devrait être l'un des 3 hexs du vertex
+      expect(hexInNorthDir).not.toBeNull();
+      expect(vertex.isAdjacentTo(hexInNorthDir!)).toBe(true);
     });
   });
 });

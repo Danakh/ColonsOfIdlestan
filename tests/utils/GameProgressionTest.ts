@@ -14,6 +14,7 @@ import { OutpostController } from '../../src/controller/OutpostController';
 import { RoadConstruction } from '../../src/model/game/RoadConstruction';
 import { GameAutoPlayer } from './GameAutoPlayer';
 import { Make7HexesMap, saveGameState } from './GameStateGenerator';
+import { SecondaryHexDirection } from '../../src/model/hex';
 
 /**
  * Crée une carte 7Hexes avec des routes et une ville niveau 3 au bord de l'eau avec un port spécialisé en argile.
@@ -37,11 +38,7 @@ export function Make7HexesMapWithPortCity(): GameState {
   ResourceHarvestController.resetCooldowns();
   
   // Ville initiale créée par Make7HexesMap (niveau Colony avec TownHall niveau 1)
-  const initialCityVertex = Vertex.create(
-    center,
-    center.neighborMain(MainHexDirection.SW),
-    center.neighborMain(MainHexDirection.W)
-  );
+  const initialCityVertex = center.vertex(SecondaryHexDirection.N);
   const initialCity = gameMap.getCity(initialCityVertex);
   if (!initialCity) throw new Error('Ville initiale non trouvée');
   
@@ -56,9 +53,16 @@ export function Make7HexesMapWithPortCity(): GameState {
   );
   
   // Étape 2: Construire des bâtiments de production pour accélérer la récolte
-  // Construire une briqueterie (Brickworks) pour produire automatiquement de la brique
   GameAutoPlayer.playUntilBuilding(
     BuildingType.Brickworks,
+    initialCityVertex,
+    civId,
+    gameMap,
+    resources,
+    gameClock
+  );
+  GameAutoPlayer.playUntilBuilding(
+    BuildingType.Sawmill,
     initialCityVertex,
     civId,
     gameMap,
@@ -77,101 +81,27 @@ export function Make7HexesMapWithPortCity(): GameState {
   );
   
   // Étape 4: Construire des routes pour étendre le territoire
-  const seHex = center.neighborMain(MainHexDirection.E);
-  const sHex = center.neighborMain(MainHexDirection.NE);
+  // Route 1
+  const road1 = center.edge(MainHexDirection.NE);
+  GameAutoPlayer.playUntilBuildingRoad(road1, civId, gameMap, resources, gameClock);
   
-  // Route 1: centre -> SE
-  const road1 = Edge.create(center, seHex);
-  if (RoadConstruction.canBuildRoad(road1, civId, gameMap)) {
-    GameAutoPlayer.playUntilBuildingRoad(road1, civId, gameMap, resources, gameClock);
-  }
-  
-  // Route 2: SE -> S
-  const road2 = Edge.create(seHex, sHex);
-  if (RoadConstruction.canBuildRoad(road2, civId, gameMap)) {
-    GameAutoPlayer.playUntilBuildingRoad(road2, civId, gameMap, resources, gameClock);
-  }
-  
-  // Route 3: centre -> S
-  const road3 = Edge.create(center, sHex);
-  if (RoadConstruction.canBuildRoad(road3, civId, gameMap)) {
-    GameAutoPlayer.playUntilBuildingRoad(road3, civId, gameMap, resources, gameClock);
-  }
+  // Route 2
+  const road2 = center.outgoingEdge(SecondaryHexDirection.EN);
+  GameAutoPlayer.playUntilBuildingRoad(road2, civId, gameMap, resources, gameClock);
   
   // Étape 5: Trouver un vertex au bord de l'eau pour créer la ville portuaire
-  let portCityVertex: Vertex | undefined;
+  const portCityVertex = road2.otherVertex(center.vertex(SecondaryHexDirection.EN));
   const grid = gameMap.getGrid();
   
-  // Chercher parmi les vertices du centre qui touchent l'eau
-  const centerVertices = grid.getVerticesForHex(center);
-  
-  for (const vertex of centerVertices) {
-    const hexes = vertex.getHexes();
-    let hasWater = false;
-    let hasLand = false;
-    
-    for (const hexCoord of hexes) {
-      const hexType = gameMap.getHexType(hexCoord);
-      if (hexType === HexType.Water) {
-        hasWater = true;
-      } else if (hexType !== undefined) {
-        hasLand = true;
-      }
-    }
-    
-    if (hasWater && hasLand && !gameMap.hasCity(vertex)) {
-      portCityVertex = vertex;
-      break;
-    }
+  // Verifie que portCityVertex est bien au bord de l'eau
+  const waterHex = portCityVertex.hex(SecondaryHexDirection.EN);
+  if (!waterHex || gameMap.getHexType(waterHex) !== HexType.Water) {
+    throw new Error('Le vertex du port n\'est pas au bord de l\'eau comme prévu');
   }
-  
-  // Si pas trouvé, chercher parmi les vertices du hex SE
-  if (!portCityVertex) {
-    const seVertices = grid.getVerticesForHex(seHex);
-    for (const vertex of seVertices) {
-      const hexes = vertex.getHexes();
-      let hasWater = false;
-      let hasLand = false;
-      
-      for (const hexCoord of hexes) {
-        const hexType = gameMap.getHexType(hexCoord);
-        if (hexType === HexType.Water) {
-          hasWater = true;
-        } else if (hexType !== undefined) {
-          hasLand = true;
-        }
-      }
-      
-      if (hasWater && hasLand && !gameMap.hasCity(vertex)) {
-        portCityVertex = vertex;
-        break;
-      }
-    }
-  }
-  
-  // Si toujours pas trouvé, utiliser le premier vertex valide du centre qui n'a pas de ville
-  if (!portCityVertex) {
-    for (const vertex of centerVertices) {
-      if (!gameMap.hasCity(vertex)) {
-        portCityVertex = vertex;
-        break;
-      }
-    }
-  }
-  
-  if (!portCityVertex) {
-    throw new Error('Impossible de trouver un vertex valide pour la ville portuaire');
-  }
-  
+
   // Étape 6: Créer un outpost au bord de l'eau (niveau 0)
   // Pour créer un outpost, il faut qu'il touche une route et soit à 2+ routes d'une ville
-  if (OutpostController.canBuildOutpost(portCityVertex, civId, gameMap)) {
-    GameAutoPlayer.playUntilOutpost(portCityVertex, civId, gameMap, resources, gameClock);
-  } else {
-    // Si on ne peut pas créer d'outpost (pas assez de routes), créer directement un outpost
-    // (on peut créer un outpost directement avec addCity et CityLevel.Outpost)
-    gameMap.addCity(portCityVertex, civId, CityLevel.Outpost);
-  }
+  GameAutoPlayer.playUntilOutpost(portCityVertex, civId, gameMap, resources, gameClock);
   
   const portCity = gameMap.getCity(portCityVertex);
   if (!portCity) throw new Error('Ville portuaire non trouvée après addCity');
@@ -312,11 +242,7 @@ export function Make7HexesMapWithPortAndCapital(): GameState {
   
   // Ville initiale créée par Make7HexesMap (niveau Colony avec TownHall niveau 1)
   // Après Make7HexesMapWithPortCity(), elle devrait être au niveau Town (2) avec TownHall niveau 2
-  const initialCityVertex = Vertex.create(
-    center,
-    center.neighborMain(MainHexDirection.SW),
-    center.neighborMain(MainHexDirection.W)
-  );
+  const initialCityVertex = center.vertex(SecondaryHexDirection.N);
   const initialCity = gameMap.getCity(initialCityVertex);
   if (!initialCity) throw new Error('Ville initiale non trouvée');
   

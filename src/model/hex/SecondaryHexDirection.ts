@@ -37,3 +37,19 @@ export const ALL_SECONDARY_DIRECTIONS: readonly SecondaryHexDirection[] = [
   SecondaryHexDirection.WS,
   SecondaryHexDirection.WN,
 ] as const;
+
+/**
+ * Retourne la direction inverse (opposée) d'une direction secondaire.
+ * N ↔ S, EN ↔ WS, ES ↔ WN
+ */
+export function inverseSecondaryHexDirection(direction: SecondaryHexDirection): SecondaryHexDirection {
+  const inverseMap: Record<SecondaryHexDirection, SecondaryHexDirection> = {
+    [SecondaryHexDirection.N]: SecondaryHexDirection.S,
+    [SecondaryHexDirection.S]: SecondaryHexDirection.N,
+    [SecondaryHexDirection.EN]: SecondaryHexDirection.WS,
+    [SecondaryHexDirection.WS]: SecondaryHexDirection.EN,
+    [SecondaryHexDirection.ES]: SecondaryHexDirection.WN,
+    [SecondaryHexDirection.WN]: SecondaryHexDirection.ES,
+  };
+  return inverseMap[direction];
+}

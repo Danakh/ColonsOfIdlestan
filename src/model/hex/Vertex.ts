@@ -1,4 +1,6 @@
 import { HexCoord } from './HexCoord';
+import { SecondaryHexDirection } from './SecondaryHexDirection';
+import { inverseSecondaryHexDirection } from './SecondaryHexDirection';
 
 /**
  * Représente un sommet (vertex) partagé par plusieurs hexagones.
@@ -118,6 +120,40 @@ export class Vertex {
   hashCode(): string {
     const normalized = Vertex.normalize(this.hex1, this.hex2, this.hex3);
     return `${normalized[0].hashCode()}-${normalized[1].hashCode()}-${normalized[2].hashCode()}`;
+  }
+
+  /**
+   * Retourne l'hexagone présent dans cette direction, s'il existe.
+   * 
+   * Si direction = N (Nord), retourne l'hexagone qui a ce vertex dans sa direction S (Sud).
+   * 
+   * Cet hexagone doit être l'un des trois hexagones du vertex et doit avoir ce vertex
+   * comme l'un de ses sommets dans la direction opposée (direction inverse).
+   * 
+   * @param direction - La direction secondaire
+   * @returns L'hexagone dans cette direction, ou null s'il n'existe pas
+   */
+  hex(direction: SecondaryHexDirection): HexCoord | null {
+    // Déterminer la direction inverse
+    const oppositeDirection = inverseSecondaryHexDirection(direction);
+
+    // Chercher lequel des 3 hexagones a ce vertex dans la direction inverse
+    const hexes = this.getHexes();
+    for (const hexCoord of hexes) {
+      // Créer le vertex depuis cet hex dans la direction inverse
+      // et vérifier si c'est ce vertex
+      try {
+        const vertexInOppositeDir = hexCoord.vertex(oppositeDirection);
+        if (vertexInOppositeDir.equals(this)) {
+          return hexCoord;
+        }
+      } catch (e) {
+        // Ignorer les erreurs de création de vertex (hex invalides)
+        continue;
+      }
+    }
+
+    return null;
   }
 
   /** Sérialise le sommet en [h1, h2, h3] (chaque hi = [q, r]). */

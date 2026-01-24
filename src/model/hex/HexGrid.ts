@@ -4,6 +4,7 @@ import { Edge } from './Edge';
 import { Vertex } from './Vertex';
 import { MainHexDirection, ALL_MAIN_DIRECTIONS } from './MainHexDirection';
 import { SecondaryHexDirection, ALL_SECONDARY_DIRECTIONS } from './SecondaryHexDirection';
+import { SECONDARY_TO_MAIN_DIRECTION_PAIRS } from './SecondaryHexDirectionMappings';
 
 /**
  * Grille hexagonale générique basée sur des coordonnées axiales.
@@ -253,17 +254,7 @@ export class HexGrid {
       return undefined;
     }
 
-    // Mapping des directions secondaires vers les paires de directions principales
-    const directionPairs: Record<SecondaryHexDirection, [MainHexDirection, MainHexDirection]> = {
-      [SecondaryHexDirection.N]: [MainHexDirection.NW, MainHexDirection.NE],
-      [SecondaryHexDirection.EN]: [MainHexDirection.NE, MainHexDirection.E],
-      [SecondaryHexDirection.ES]: [MainHexDirection.E, MainHexDirection.SE],
-      [SecondaryHexDirection.S]: [MainHexDirection.SE, MainHexDirection.SW],
-      [SecondaryHexDirection.WS]: [MainHexDirection.SW, MainHexDirection.W],
-      [SecondaryHexDirection.WN]: [MainHexDirection.W, MainHexDirection.NW],
-    };
-
-    const [dir1, dir2] = directionPairs[direction];
+    const [dir1, dir2] = SECONDARY_TO_MAIN_DIRECTION_PAIRS[direction];
     const neighbor1 = coord.neighborMain(dir1);
     const neighbor2 = coord.neighborMain(dir2);
 
@@ -291,50 +282,6 @@ export class HexGrid {
     }
 
     const neighborCoord = coord.neighborMain(direction);
-    const edge = Edge.create(coord, neighborCoord);
-    const edgeKey = edge.hashCode();
-    
-    if (!this.edgeCache.has(edgeKey)) {
-      this.edgeCache.set(edgeKey, edge);
-    }
-    return this.edgeCache.get(edgeKey)!;
-  }
-
-  /**
-   * Retourne l'edge correspondant à une direction secondaire pour un hexagone donné.
-   * Un edge est formé par l'hexagone et un de ses voisins selon les directions principales.
-   * 
-   * Les directions secondaires s'intercalent entre les directions principales.
-   * Chaque direction secondaire correspond à l'edge qui part de l'hex dans la direction
-   * principale la plus proche dans le sens horaire :
-   * - N : edge vers NE (direction principale suivante dans le sens horaire)
-   * - EN : edge vers E
-   * - ES : edge vers SE
-   * - S : edge vers SW
-   * - WS : edge vers W
-   * - WN : edge vers NW
-   */
-  getEdgeBySecondaryDirection(coord: HexCoord, direction: SecondaryHexDirection): Edge | undefined {
-    const hex = this.getHex(coord);
-    if (!hex) {
-      return undefined;
-    }
-
-    // Mapping des directions secondaires vers les directions principales pour les edges
-    // Chaque direction secondaire correspond à l'edge qui part dans la direction principale
-    // qui suit dans le sens horaire
-    const edgeDirections: Record<SecondaryHexDirection, MainHexDirection> = {
-      [SecondaryHexDirection.N]: MainHexDirection.NE,
-      [SecondaryHexDirection.EN]: MainHexDirection.E,
-      [SecondaryHexDirection.ES]: MainHexDirection.SE,
-      [SecondaryHexDirection.S]: MainHexDirection.SW,
-      [SecondaryHexDirection.WS]: MainHexDirection.W,
-      [SecondaryHexDirection.WN]: MainHexDirection.NW,
-    };
-
-    const neighborDir = edgeDirections[direction];
-    const neighborCoord = coord.neighborMain(neighborDir);
-
     const edge = Edge.create(coord, neighborCoord);
     const edgeKey = edge.hashCode();
     

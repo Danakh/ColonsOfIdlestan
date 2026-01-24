@@ -36,3 +36,19 @@ export const ALL_MAIN_DIRECTIONS: readonly MainHexDirection[] = [
   MainHexDirection.NW,
   MainHexDirection.SW,
 ] as const;
+
+/**
+ * Retourne la direction inverse (opposée) d'une direction principale.
+ * W ↔ E, NE ↔ SW, NW ↔ SE
+ */
+export function inverseMainHexDirection(direction: MainHexDirection): MainHexDirection {
+  const inverseMap: Record<MainHexDirection, MainHexDirection> = {
+    [MainHexDirection.W]: MainHexDirection.E,
+    [MainHexDirection.E]: MainHexDirection.W,
+    [MainHexDirection.NE]: MainHexDirection.SW,
+    [MainHexDirection.SW]: MainHexDirection.NE,
+    [MainHexDirection.NW]: MainHexDirection.SE,
+    [MainHexDirection.SE]: MainHexDirection.NW,
+  };
+  return inverseMap[direction];
+}

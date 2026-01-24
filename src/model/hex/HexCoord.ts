@@ -1,4 +1,8 @@
 import { MainHexDirection, ALL_MAIN_DIRECTIONS } from './MainHexDirection';
+import { SecondaryHexDirection } from './SecondaryHexDirection';
+import { SECONDARY_TO_MAIN_DIRECTION_PAIRS } from './SecondaryHexDirectionMappings';
+import { Vertex } from './Vertex';
+import { Edge } from './Edge';
 
 /**
  * Système de coordonnées axiales pour les grilles hexagonales.
@@ -49,6 +53,47 @@ export class HexCoord {
    */
   neighborsMain(): HexCoord[] {
     return ALL_MAIN_DIRECTIONS.map((dir) => this.neighborMain(dir));
+  }
+
+  /**
+   * Retourne le vertex correspondant à une direction secondaire.
+   * Un vertex est formé par cet hexagone et deux de ses voisins selon les directions principales.
+   * 
+   * @param direction - La direction secondaire du vertex
+   * @returns Le vertex correspondant
+   */
+  vertex(direction: SecondaryHexDirection): Vertex {
+    const [dir1, dir2] = SECONDARY_TO_MAIN_DIRECTION_PAIRS[direction];
+    const neighbor1 = this.neighborMain(dir1);
+    const neighbor2 = this.neighborMain(dir2);
+    return Vertex.create(this, neighbor1, neighbor2);
+  }
+
+  /**
+   * Retourne l'edge correspondant à une direction principale.
+   * Un edge est formé par cet hexagone et son voisin dans la direction principale spécifiée.
+   * 
+   * @param direction - La direction principale de l'edge
+   * @returns L'edge correspondant
+   */
+  edge(direction: MainHexDirection): Edge {
+    const neighbor = this.neighborMain(direction);
+    return Edge.create(this, neighbor);
+  }
+
+  /**
+   * Retourne l'edge sortant correspondant à une direction secondaire.
+   * Un edge sortant part de cet hexagone dans la direction principale qui suit 
+   * la direction secondaire dans le sens horaire.
+   * 
+   * @param direction - La direction secondaire de l'edge sortant
+   * @returns L'edge sortant correspondant
+   */
+  outgoingEdge(direction: SecondaryHexDirection): Edge {
+    const mainDirs = SECONDARY_TO_MAIN_DIRECTION_PAIRS[direction];
+    const neighbor0 = this.neighborMain(mainDirs[0]);
+    const neighbor1 = this.neighborMain(mainDirs[1]);
+    return Edge.create(neighbor0, neighbor1);
   }
 
   /**

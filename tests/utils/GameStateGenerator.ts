@@ -17,6 +17,7 @@ import { writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { SecondaryHexDirection } from '../../src/model/hex';
 
 /**
  * Utilitaire de test (couche model uniquement).
@@ -71,9 +72,9 @@ export function Make7HexesMap(): GameState {
   gameMap.setHexType(center, HexType.Brick);
   // 6 voisins : 5 types avec bois en double → Wood, Wood, Wheat, Sheep, Ore (Ore en double pour 6 hexes)
   gameMap.setHexType(center.neighborMain(MainHexDirection.SW), HexType.Wood);
-  gameMap.setHexType(center.neighborMain(MainHexDirection.SE), HexType.Wood);
+  gameMap.setHexType(center.neighborMain(MainHexDirection.NE), HexType.Wood);
   gameMap.setHexType(center.neighborMain(MainHexDirection.E), HexType.Wheat);
-  gameMap.setHexType(center.neighborMain(MainHexDirection.NE), HexType.Sheep);
+  gameMap.setHexType(center.neighborMain(MainHexDirection.SE), HexType.Sheep);
   gameMap.setHexType(center.neighborMain(MainHexDirection.NW), HexType.Ore);
   gameMap.setHexType(center.neighborMain(MainHexDirection.W), HexType.Ore);
   
@@ -87,11 +88,7 @@ export function Make7HexesMap(): GameState {
   gameMap.registerCivilization(civId);
 
   // Sommet au nord de (0,0) : (0,0), (0,-1), (-1,0)
-  const cityVertex = Vertex.create(
-    center,
-    center.neighborMain(MainHexDirection.SW),
-    center.neighborMain(MainHexDirection.W)
-  );
+  const cityVertex = center.vertex(SecondaryHexDirection.N);
   gameMap.addCity(cityVertex, civId, CityLevel.Colony);
 
   const city = gameMap.getCity(cityVertex);

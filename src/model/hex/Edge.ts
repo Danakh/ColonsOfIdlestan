@@ -1,4 +1,6 @@
 import { HexCoord } from './HexCoord';
+import { SecondaryHexDirection } from './SecondaryHexDirection';
+import { Vertex } from './Vertex';
 
 /**
  * Représente une arête (edge) entre deux hexagones adjacents.
@@ -73,6 +75,55 @@ export class Edge {
    */
   isAdjacentTo(hex: HexCoord): boolean {
     return this.hex1.equals(hex) || this.hex2.equals(hex);
+  }
+
+  /**
+   * Retourne l'autre hexagone de l'arête donné un hexagone.
+   */
+  otherHex(hex: HexCoord): HexCoord {
+    if (this.hex1.equals(hex)) {
+      return this.hex2;
+    } else if (this.hex2.equals(hex)) {
+      return this.hex1;
+    } else {
+      throw new Error('L\'hexagone fourni n\'est pas connecté à cette arête.');
+    }
+  }
+
+  otherVertex(vertex: Vertex): Vertex {
+    const [h1, h2] = this.getHexes();
+    const verticesH1 = [
+      h1.vertex(SecondaryHexDirection.N),
+      h1.vertex(SecondaryHexDirection.EN),
+      h1.vertex(SecondaryHexDirection.ES),
+      h1.vertex(SecondaryHexDirection.S),
+      h1.vertex(SecondaryHexDirection.WS),
+      h1.vertex(SecondaryHexDirection.WN)
+    ];
+    const verticesH2 = [
+      h2.vertex(SecondaryHexDirection.N),
+      h2.vertex(SecondaryHexDirection.EN),
+      h2.vertex(SecondaryHexDirection.ES),
+      h2.vertex(SecondaryHexDirection.S),
+      h2.vertex(SecondaryHexDirection.WS),
+      h2.vertex(SecondaryHexDirection.WN)
+    ];
+
+    // Trouver les deux vertex communs aux deux hexagones
+    const commonVertices = verticesH1.filter(v1 =>
+      verticesH2.some(v2 => v1.equals(v2))
+    );
+    if (commonVertices.length !== 2) {
+      throw new Error('Les hexagones ne partagent pas exactement deux vertex.');
+    }
+    // Retourner l'autre vertex
+    if (commonVertices[0].equals(vertex)) {
+      return commonVertices[1];
+    } else if (commonVertices[1].equals(vertex)) {
+      return commonVertices[0];
+    } else {
+      throw new Error('Le vertex fourni n\'est pas connecté à cette arête.');
+    }
   }
 
   /**
