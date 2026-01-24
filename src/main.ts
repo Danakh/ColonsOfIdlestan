@@ -371,30 +371,6 @@ function main(): void {
     onCancel: () => {
       tradePanelView.hide();
     },
-    onPortAutoTradeChange: (city: City, vertex: Vertex, enabled: boolean) => {
-      try {
-        const seaport = city.getBuilding(BuildingType.Seaport);
-        if (seaport && seaport.level === 3) {
-          seaport.setAutoTradeEnabled(enabled);
-          
-          // Mettre à jour l'affichage
-          updateResourcesDisplay();
-          cityPanelView.scheduleRefresh();
-          
-          // Re-rendre la carte
-          const currentGameMap = game.getGameMap();
-          if (currentGameMap) {
-            const civId = game.getPlayerCivilizationId();
-            renderer.render(currentGameMap, civId);
-          }
-          
-          // Sauvegarder le jeu
-          autoSave();
-        }
-      } catch (error) {
-        console.error('Erreur lors de la modification du commerce automatique:', error);
-      }
-    },
   });
 
   // Configurer les callbacks du panneau de spécialisation
@@ -503,26 +479,6 @@ function main(): void {
     const action = e.detail.buildingAction as BuildingAction;
     const buildingType = e.detail.buildingType as BuildingType;
     const checked = e.detail.checked as boolean | undefined;
-    
-    // Si c'est l'action Auto et qu'on a l'état de la checkbox, l'utiliser directement
-    if (action === BuildingAction.Auto && checked !== undefined) {
-      const seaport = city.getBuilding(BuildingType.Seaport);
-      if (seaport && seaport.level === 3) {
-        seaport.setAutoTradeEnabled(checked);
-        
-        // Mettre à jour l'affichage
-        updateResourcesDisplay();
-        cityPanelView.refreshNow();
-        
-        // Re-rendre la carte
-        const civId = game.getPlayerCivilizationId();
-        renderer.render(currentGameMap, civId);
-        
-        // Sauvegarder le jeu
-        autoSave();
-        return;
-      }
-    }
     
     cityPanelView.handleBuildingAction(action, buildingType, city);
   }) as EventListener);
