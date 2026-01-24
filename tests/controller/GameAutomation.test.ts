@@ -444,5 +444,77 @@ describe('GameAutomation', () => {
       // On vérifie au moins que l'automation ne bloque pas
       expect(productionBuildings.size).toBeGreaterThanOrEqual(initialProductionBuildings.size);
     });
+
+    it('ne devrait pas construire de routes à distance > 2', () => {
+      const gs = Make7HexesMapWithPortAndCapital();
+      const gameMap = gs.getGameMap();
+      if (!gameMap) throw new Error('Carte non trouvée');
+
+      const civId = gs.getPlayerCivilizationId();
+      const resources = gs.getPlayerResources();
+      const gameClock = gs.getGameClock();
+      const center = new HexCoord(0, 0);
+
+      const capitalVertex = center.vertex(SecondaryHexDirection.N);
+      const capital = gameMap.getCity(capitalVertex);
+      if (!capital) throw new Error('Capitale non trouvée');
+
+      // Construire la Guilde des batisseurs niveau 1 (pour les routes)
+      GameAutoPlayer.playUntilBuilding(
+        BuildingType.BuildersGuild,
+        capitalVertex,
+        civId,
+        gameMap,
+        resources,
+        gameClock
+      );
+
+      // Vérifier que la Guilde des batisseurs est au niveau 1
+      let currentCapital = gameMap.getCity(capitalVertex);
+      if (!currentCapital) throw new Error('Capitale non trouvée');
+      const buildersGuild = currentCapital.getBuilding(BuildingType.BuildersGuild);
+      expect(buildersGuild?.level).toBeGreaterThanOrEqual(1);
+
+      const allRoadsBefore = gameMap.getRoadsForCivilization(civId);
+
+      // Activer l'automation de construction de routes
+      const civilization = gs.getCivilization(civId);
+      civilization.setAutoRoadConstruction(true);
+
+      // Faire dérouler la gameloop pour permettre à l'automation de fonctionner longtemps
+      const maxIterations = 500;
+      let iterations = 0;
+
+      while (iterations < maxIterations) {
+        // Avancer le temps et récolter beaucoup pour avoir des ressources
+        for (let i = 0; i < 5; i++) {
+          GameAutoPlayer.advanceTimeAndHarvest(civId, gameMap, resources, gameClock);
+        }
+        
+        // Traiter les automations
+        AutomationController.processAllAutomations(civId, civilization, gameMap, resources);
+        
+        // Avancer le temps
+        gameClock.updateTime(gameClock.getCurrentTime() + 1);
+        
+        iterations++;
+      }
+
+      // Vérifier que toutes les routes construites ont une distance <= 2
+      const allRoads = gameMap.getRoadsForCivilization(civId);
+      
+      // Vérifier qu'au moins 4 routes ont été construites
+      expect(allRoads.length).toBeGreaterThanOrEqual(allRoadsBefore.length + 10);
+      
+      for (const road of allRoads) {
+        const distance = gameMap.calculateBuildableRoadDistance(road, civId);
+        // Si distance est undefined, c'est que la route n'est pas constructible depuis nos routes existantes
+        // Donc elle doit avoir été présente dès le départ (ce qui ne peut pas arriver en partant d'une capitale)
+        // Les routes que nous avons construites doivent toutes être à distance <= 2
+        if (distance !== undefined) {
+          expect(distance).toBeLessThanOrEqual(2);
+        }
+      }
+    });
   });
 });

@@ -172,6 +172,12 @@ export class AutomationController {
             if (distance === undefined) {
               continue; // Route non constructible
             }
+            
+            // Limiter à distance 2 pour éviter une expansion excessive
+            // (distance 2 est nécessaire pour créer les outposts)
+            if (distance > 2) {
+              continue; // Route trop loin
+            }
 
             // Construire la route (le contrôleur vérifie les ressources)
             RoadController.buildRoad(edge, civId, map, resources);

@@ -2060,30 +2060,19 @@ export class HexMapRenderer {
       return; // Ne pas vérifier les edges ni les hexagones si on a cliqué sur une ville
     }
 
-    // Si on a cliqué ailleurs que sur une ville, désélectionner
-    if (this.selectedVertex !== null) {
-      this.selectedVertex = null;
-      if (this.onSelectionChangeCallback) {
-        this.onSelectionChangeCallback(null);
-      }
-      if (this.renderCallback) {
-        this.renderCallback();
-      }
-    }
-
     // PRIORITÉ 2: Vérifier si on a cliqué sur un vertex constructible pour un avant-poste
     if (this.onOutpostVertexClickCallback && this.currentCivilizationId) {
       // Utiliser pixelToVertexAny pour trouver tous les vertices, pas seulement ceux avec une ville
       // Utiliser une distance maximale de 16 pixels (2x le rayon de base de 8)
-      const vertex = this.pixelToVertexAny(pixelX, pixelY, 16);
-      if (vertex && this.currentGameMap) {
+      const vertexOutpost = this.pixelToVertexAny(pixelX, pixelY, 16);
+      if (vertexOutpost && this.currentGameMap) {
         // Vérifier que ce vertex n'a pas déjà une ville
-        if (!this.currentGameMap.hasCity(vertex)) {
+        if (!this.currentGameMap.hasCity(vertexOutpost)) {
           const buildableOutposts = this.currentGameMap.getBuildableOutpostVertices(this.currentCivilizationId);
-          const isBuildableOutpost = buildableOutposts.some(buildableVertex => buildableVertex.equals(vertex));
+          const isBuildableOutpost = buildableOutposts.some(buildableVertex => buildableVertex.equals(vertexOutpost));
           
           if (isBuildableOutpost) {
-            this.onOutpostVertexClickCallback(vertex);
+            this.onOutpostVertexClickCallback(vertexOutpost);
             return; // Ne pas vérifier les edges ni les hexagones si on a cliqué sur un avant-poste
           }
         }
@@ -2091,23 +2080,38 @@ export class HexMapRenderer {
     }
 
     // PRIORITÉ 3: Vérifier si on a cliqué sur un edge
+    let edgeClicked = false;
     if (this.onEdgeClickCallback) {
       const edge = this.pixelToEdge(pixelX, pixelY);
       if (edge) {
         this.onEdgeClickCallback(edge);
-        return; // Ne pas vérifier les hexagones si on a cliqué sur un edge
+        edgeClicked = true;
+        // Ne pas retourner tout de suite, on veut désélectionner si une action a lieu
       }
     }
 
     // PRIORITÉ 4: Vérifier si on a cliqué sur un hexagone
+    let hexClicked = false;
     if (this.onHexClickCallback) {
       const hexCoord = this.pixelToHexCoord(pixelX, pixelY);
       if (hexCoord && this.currentGameMap && this.currentCivilizationId) {
         // Bloquer les clics sur les hexes automatiquement récoltés
-        if (BuildingProductionController.isHexAutoHarvested(hexCoord, this.currentCivilizationId, this.currentGameMap)) {
-          return; // Ne pas traiter le clic si l'hex est auto-récolté
+        if (!BuildingProductionController.isHexAutoHarvested(hexCoord, this.currentCivilizationId, this.currentGameMap)) {
+          this.onHexClickCallback(hexCoord);
+          hexClicked = true;
         }
-        this.onHexClickCallback(hexCoord);
+      }
+    }
+
+    // Si on a cliqué sur un edge ou un hexagone interactif, on ne désélectionne pas la ville
+    // Sinon si on clique sur du vide, on désélectionne
+    if (!edgeClicked && !hexClicked && this.selectedVertex !== null) {
+      this.selectedVertex = null;
+      if (this.onSelectionChangeCallback) {
+        this.onSelectionChangeCallback(null);
+      }
+      if (this.renderCallback) {
+        this.renderCallback();
       }
     }
   };
