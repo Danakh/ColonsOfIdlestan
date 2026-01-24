@@ -516,5 +516,260 @@ describe('GameAutomation', () => {
         }
       }
     });
+
+    it('devrait créer un TownHall automatiquement pour une nouvelle ville', () => {
+      const gs = Make7HexesMapWithPortAndCapital();
+      const gameMap = gs.getGameMap();
+      if (!gameMap) throw new Error('Carte non trouvée');
+
+      const civId = gs.getPlayerCivilizationId();
+      const resources = gs.getPlayerResources();
+      const gameClock = gs.getGameClock();
+      const center = new HexCoord(0, 0);
+
+      const capitalVertex = center.vertex(SecondaryHexDirection.N);
+      const capital = gameMap.getCity(capitalVertex);
+      if (!capital) throw new Error('Capitale non trouvée');
+
+      // Construire la Guilde des batisseurs niveau 2 (pour l'automation de villes)
+      GameAutoPlayer.playUntilBuilding(
+        BuildingType.BuildersGuild,
+        capitalVertex,
+        civId,
+        gameMap,
+        resources,
+        gameClock
+      );
+
+      GameAutoPlayer.playUntilImproveBuilding(
+        BuildingType.BuildersGuild,
+        capitalVertex,
+        civId,
+        gameMap,
+        resources,
+        gameClock
+      );
+
+      // Vérifier que la Guilde des batisseurs est au niveau 2
+      let currentCapital = gameMap.getCity(capitalVertex);
+      if (!currentCapital) throw new Error('Capitale non trouvée');
+      const buildersGuild = currentCapital.getBuilding(BuildingType.BuildersGuild);
+      expect(buildersGuild?.level).toBe(2);
+
+      // Utiliser l'automation pour créer un outpost
+      const civilization = gs.getCivilization(civId);
+      civilization.setAutoRoadConstruction(true);
+      civilization.setAutoOutpostConstruction(true);
+      civilization.setAutoCityUpgrade(true);
+
+      const initialCityCount = civilization.getCityCount(gameMap);
+
+      // Faire dérouler la gameloop jusqu'à ce qu'une nouvelle ville soit créée
+      const maxIterations = 400;
+      let iterations = 0;
+      let cityCount = initialCityCount;
+      let outpostVertex: Vertex | null = null;
+
+      while (iterations < maxIterations && cityCount === initialCityCount) {
+        // Avancer le temps et récolter
+        GameAutoPlayer.advanceTimeAndHarvest(civId, gameMap, resources, gameClock);
+        
+        // Traiter les automations
+        AutomationController.processAllAutomations(civId, civilization, gameMap, resources);
+        
+        // Vérifier le nouveau nombre de villes
+        const newCityCount = civilization.getCityCount(gameMap);
+        if (newCityCount > initialCityCount) {
+          cityCount = newCityCount;
+          // Trouver la nouvelle ville
+          const cities = gameMap.getCitiesByCivilization(civId);
+          for (const city of cities) {
+            if (!city.equals(capital)) {
+              outpostVertex = city.vertex;
+              break;
+            }
+          }
+        }
+        
+        iterations++;
+      }
+
+      if (!outpostVertex) {
+        // Si on ne peut pas créer un outpost, skip le test
+        return;
+      }
+
+      // Vérifier que l'outpost existe et n'a pas de TownHall
+      let outpostCity = gameMap.getCity(outpostVertex);
+      expect(outpostCity).toBeDefined();
+      let townHall = outpostCity?.getBuilding(BuildingType.TownHall);
+      expect(townHall).toBeUndefined();
+
+      // Réinitialiser les flags d'automation pour l'étape suivante
+      civilization.setAutoRoadConstruction(false);
+      civilization.setAutoOutpostConstruction(false);
+
+      // Maintenant tester que l'automation crée et améliore le TownHall
+      let townHallCreated = false;
+      let townHallUpgraded = false;
+      iterations = 0;
+
+      while (iterations < maxIterations && !townHallUpgraded) {
+        // Avancer le temps et récolter
+        GameAutoPlayer.advanceTimeAndHarvest(civId, gameMap, resources, gameClock);
+        
+        // Traiter les automations
+        AutomationController.processAllAutomations(civId, civilization, gameMap, resources);
+        
+        // Vérifier le statut du TownHall
+        const currentCity = gameMap.getCity(outpostVertex);
+        if (currentCity) {
+          const currentTownHall = currentCity.getBuilding(BuildingType.TownHall);
+          if (currentTownHall) {
+            townHallCreated = true;
+            if (currentTownHall.level > 1) {
+              townHallUpgraded = true;
+            }
+          }
+        }
+        
+        iterations++;
+      }
+
+      // Vérifier que le TownHall a été créé et amélioré
+      expect(townHallCreated).toBe(true);
+      expect(townHallUpgraded).toBe(true);
+    });
+
+    it('devrait améliorer un TownHall existant automatiquement', () => {
+      const gs = Make7HexesMapWithPortAndCapital();
+      const gameMap = gs.getGameMap();
+      if (!gameMap) throw new Error('Carte non trouvée');
+
+      const civId = gs.getPlayerCivilizationId();
+      const resources = gs.getPlayerResources();
+      const gameClock = gs.getGameClock();
+      const center = new HexCoord(0, 0);
+
+      const capitalVertex = center.vertex(SecondaryHexDirection.N);
+      const capital = gameMap.getCity(capitalVertex);
+      if (!capital) throw new Error('Capitale non trouvée');
+
+      // Construire la Guilde des batisseurs niveau 2 (minimal pour l'automation de villes)
+      GameAutoPlayer.playUntilBuilding(
+        BuildingType.BuildersGuild,
+        capitalVertex,
+        civId,
+        gameMap,
+        resources,
+        gameClock
+      );
+
+      GameAutoPlayer.playUntilImproveBuilding(
+        BuildingType.BuildersGuild,
+        capitalVertex,
+        civId,
+        gameMap,
+        resources,
+        gameClock
+      );
+
+      // Utiliser l'automation pour créer un outpost
+      const civilization = gs.getCivilization(civId);
+      civilization.setAutoRoadConstruction(true);
+      civilization.setAutoOutpostConstruction(true);
+
+      const initialCityCount = civilization.getCityCount(gameMap);
+
+      // Faire dérouler la gameloop jusqu'à ce qu'une nouvelle ville soit créée
+      const maxIterations = 400;
+      let iterations = 0;
+      let cityCount = initialCityCount;
+      let testVertex: Vertex | null = null;
+
+      while (iterations < maxIterations && cityCount === initialCityCount) {
+        // Avancer le temps et récolter
+        GameAutoPlayer.advanceTimeAndHarvest(civId, gameMap, resources, gameClock);
+        
+        // Traiter les automations
+        AutomationController.processAllAutomations(civId, civilization, gameMap, resources);
+        
+        // Vérifier le nouveau nombre de villes
+        const newCityCount = civilization.getCityCount(gameMap);
+        if (newCityCount > initialCityCount) {
+          cityCount = newCityCount;
+          // Trouver la nouvelle ville
+          const cities = gameMap.getCitiesByCivilization(civId);
+          for (const city of cities) {
+            if (!city.equals(capital)) {
+              testVertex = city.vertex;
+              break;
+            }
+          }
+        }
+        
+        iterations++;
+      }
+
+      if (!testVertex) return;
+
+      // Désactiver l'automation de route et outpost, mais pas de création de TownHall
+      civilization.setAutoRoadConstruction(false);
+      civilization.setAutoOutpostConstruction(false);
+
+      // Créer manuellement un TownHall niveau 1 (si l'automation ne l'a pas déjà fait)
+      let testCity = gameMap.getCity(testVertex);
+      expect(testCity).toBeDefined();
+      if (!testCity) throw new Error('Ville non trouvée');
+
+      let townHall = testCity.getBuilding(BuildingType.TownHall);
+      if (!townHall) {
+        // Créer le TownHall manuellement
+        GameAutoPlayer.playUntilBuilding(
+          BuildingType.TownHall,
+          testVertex,
+          civId,
+          gameMap,
+          resources,
+          gameClock
+        );
+      }
+
+      // Vérifier que le TownHall existe et est au niveau 1
+      testCity = gameMap.getCity(testVertex);
+      townHall = testCity?.getBuilding(BuildingType.TownHall);
+      expect(townHall).toBeDefined();
+      const initialLevel = townHall?.level;
+      expect(initialLevel).toBe(1);
+
+      // Activer l'automation d'amélioration de villes
+      civilization.setAutoCityUpgrade(true);
+
+      // Faire dérouler la gameloop pour permettre à l'automation d'améliorer le TownHall
+      let townHallUpgraded = false;
+      iterations = 0;
+
+      while (iterations < maxIterations && !townHallUpgraded) {
+        // Avancer le temps et récolter
+        GameAutoPlayer.advanceTimeAndHarvest(civId, gameMap, resources, gameClock);
+        
+        // Traiter les automations
+        AutomationController.processAllAutomations(civId, civilization, gameMap, resources);
+        
+        // Vérifier le niveau actuel du TownHall
+        const currentCity = gameMap.getCity(testVertex);
+        if (currentCity) {
+          const currentTownHall = currentCity.getBuilding(BuildingType.TownHall);
+          if (currentTownHall && currentTownHall.level > (initialLevel || 1)) {
+            townHallUpgraded = true;
+          }
+        }
+        
+        iterations++;
+      }
+
+      // Vérifier que le TownHall a été amélioré
+      expect(townHallUpgraded).toBe(true);
+    });
   });
 });

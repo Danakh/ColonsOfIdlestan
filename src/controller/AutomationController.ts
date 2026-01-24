@@ -265,8 +265,8 @@ export class AutomationController {
   }
 
   /**
-   * Traite l'amélioration automatique de villes.
-   * Trouve les villes améliorables et les améliore automatiquement.
+   * Traite l'amélioration automatique de villes (TownHall).
+   * Crée d'abord un TownHall s'il n'existe pas, puis essaie de l'améliorer.
    * 
    * @param civId - L'identifiant de la civilisation
    * @param map - La carte de jeu
@@ -279,12 +279,23 @@ export class AutomationController {
     resources: PlayerResources,
     city: City
   ): void {
-    // Vérifier si la ville peut être améliorée (via TownHall)
-    const townHall = city.getBuilding(BuildingType.TownHall);
+    // Première étape: créer un TownHall s'il n'existe pas
+    let townHall = city.getBuilding(BuildingType.TownHall);
     if (!townHall) {
-      return; // Pas de TownHall, pas d'amélioration possible
+      try {
+        // Vérifier si on peut construire un TownHall et si on a les ressources
+        if (BuildingController.canBuild(BuildingType.TownHall, city, map, city.vertex, resources)) {
+          // Construire le TownHall
+          BuildingController.buildBuilding(BuildingType.TownHall, city, map, city.vertex, resources);
+          return; // Attendre le prochain cycle pour améliorer
+        }
+      } catch (error) {
+        // Ignorer les erreurs (ressources insuffisantes, etc.)
+      }
+      return; // Pas de TownHall et on ne peut pas en construire un
     }
 
+    // Deuxième étape: améliorer le TownHall existant
     try {
       // Vérifier si on peut améliorer et si on a les ressources
       if (!BuildingController.canUpgrade(BuildingType.TownHall, city, map, resources)) {
