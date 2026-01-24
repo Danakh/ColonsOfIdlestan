@@ -6,6 +6,7 @@ import { City } from '../model/city/City';
 import { BuildingType } from '../model/city/BuildingType';
 import { Edge } from '../model/hex/Edge';
 import { Vertex } from '../model/hex/Vertex';
+import { SecondaryHexDirection } from '../model/hex/SecondaryHexDirection';
 import { RoadController } from './RoadController';
 import { OutpostController } from './OutpostController';
 import { BuildingController } from './BuildingController';
@@ -72,12 +73,12 @@ export class AutomationController {
 
   /**
    * Traite la construction automatique de routes.
-   * Trouve les routes constructibles et les construit automatiquement.
+   * Trouve les routes constructibles à partir de toutes les routes existantes et les construit automatiquement.
    * 
    * @param civId - L'identifiant de la civilisation
    * @param map - La carte de jeu
    * @param resources - Les ressources du joueur
-   * @param cityVertex - Le sommet de la ville (pour trouver les routes adjacentes)
+   * @param cityVertex - Paramètre non utilisé (garder pour compatibilité)
    */
   private static processAutomaticRoadConstruction(
     civId: CivilizationId,
@@ -85,31 +86,103 @@ export class AutomationController {
     resources: PlayerResources,
     cityVertex: Vertex
   ): void {
-    // Obtenir toutes les arêtes adjacentes à la ville
-    const edges = map.getEdgesForVertex(cityVertex);
+    // Obtenir toutes les routes de la civilisation
+    const roads = map.getRoadsForCivilization(civId);
     
-    // Essayer de construire une route sur chaque arête constructible
-    for (const edge of edges) {
-      // Vérifier si la route peut être construite
-      if (map.hasRoad(edge)) {
-        continue; // Route déjà construite
-      }
-
-      try {
-        // Vérifier si on peut construire et si on a les ressources
-        const distance = map.calculateBuildableRoadDistance(edge, civId);
-        if (distance === undefined) {
-          continue; // Route non constructible
+    if (roads.length === 0) {
+      // Pas de routes, construire depuis la ville
+      const edges = map.getEdgesForVertex(cityVertex);
+      for (const edge of edges) {
+        if (map.hasRoad(edge)) {
+          continue;
         }
 
-        // Construire la route (le contrôleur vérifie les ressources)
-        RoadController.buildRoad(edge, civId, map, resources);
+        try {
+          const distance = map.calculateBuildableRoadDistance(edge, civId);
+          if (distance === undefined) {
+            continue;
+          }
+
+          RoadController.buildRoad(edge, civId, map, resources);
+          return;
+        } catch (error) {
+          continue;
+        }
+      }
+      return;
+    }
+
+    // Ensemble des arêtes déjà vérifiées pour éviter les doublons
+    const checkedEdges = new Set<string>();
+    
+    // Pour chaque route existante, chercher les routes adjacentes constructibles
+    for (const road of roads) {
+      // Une arête partage 2 vertices. Créer les vertices en utilisant les hexagones de l'arête
+      const [hex1, hex2] = road.getHexes();
+      
+      // Créer tous les vertices des deux hexagones
+      const vertices: Vertex[] = [];
+      const directions = [
+        SecondaryHexDirection.N,
+        SecondaryHexDirection.EN,
+        SecondaryHexDirection.ES,
+        SecondaryHexDirection.S,
+        SecondaryHexDirection.WS,
+        SecondaryHexDirection.WN
+      ];
+      
+      for (const dir of directions) {
+        const v1 = hex1.vertex(dir);
+        vertices.push(v1);
         
-        // Construire une seule route par cycle pour éviter de tout construire d'un coup
-        return;
-      } catch (error) {
-        // Ignorer les erreurs (ressources insuffisantes, etc.)
-        continue;
+        const v2 = hex2.vertex(dir);
+        vertices.push(v2);
+      }
+      
+      // Éliminer les doublons
+      const uniqueVertices: Vertex[] = [];
+      const vertexSet = new Set<string>();
+      for (const v of vertices) {
+        const key = v.hashCode();
+        if (!vertexSet.has(key)) {
+          vertexSet.add(key);
+          uniqueVertices.push(v);
+        }
+      }
+      
+      // Pour chaque vertex de la route, chercher les arêtes adjacentes
+      for (const vertex of uniqueVertices) {
+        const adjacentEdges = map.getEdgesForVertex(vertex);
+        
+        for (const edge of adjacentEdges) {
+          const edgeKey = edge.hashCode();
+          if (checkedEdges.has(edgeKey)) {
+            continue; // Déjà vérifié
+          }
+          checkedEdges.add(edgeKey);
+          
+          // Vérifier si la route peut être construite
+          if (map.hasRoad(edge)) {
+            continue; // Route déjà construite
+          }
+
+          try {
+            // Vérifier si on peut construire et si on a les ressources
+            const distance = map.calculateBuildableRoadDistance(edge, civId);
+            if (distance === undefined) {
+              continue; // Route non constructible
+            }
+
+            // Construire la route (le contrôleur vérifie les ressources)
+            RoadController.buildRoad(edge, civId, map, resources);
+            
+            // Construire une seule route par cycle pour éviter de tout construire d'un coup
+            return;
+          } catch (error) {
+            // Ignorer les erreurs (ressources insuffisantes, etc.)
+            continue;
+          }
+        }
       }
     }
   }
@@ -222,6 +295,7 @@ export class AutomationController {
   /**
    * Traite la construction automatique de bâtiments de production.
    * Trouve les villes où on peut construire des bâtiments de production et les construit automatiquement.
+   * Améliore aussi les bâtiments existants au niveau supérieur.
    * 
    * @param civId - L'identifiant de la civilisation
    * @param map - La carte de jeu
@@ -239,7 +313,30 @@ export class AutomationController {
     // Obtenir tous les types de bâtiments de production
     const productionBuildings = getResourceProductionBuildings();
     
-    // Essayer de construire chaque type de bâtiment de production
+    // Première passe: Essayer d'améliorer les bâtiments de production existants
+    for (const buildingType of productionBuildings) {
+      if (!city.hasBuilding(buildingType)) {
+        continue;
+      }
+
+      try {
+        // Vérifier si on peut améliorer et si on a les ressources
+        if (!BuildingController.canUpgrade(buildingType, city, map, resources)) {
+          continue;
+        }
+
+        // Améliorer le bâtiment (le contrôleur vérifie les ressources)
+        BuildingController.upgradeBuilding(buildingType, city, map, resources);
+        
+        // Améliorer un seul bâtiment par cycle pour éviter de tout améliorer d'un coup
+        return;
+      } catch (error) {
+        // Ignorer les erreurs (ressources insuffisantes, etc.)
+        continue;
+      }
+    }
+    
+    // Deuxième passe: Essayer de construire les bâtiments de production manquants
     for (const buildingType of productionBuildings) {
       // Vérifier si le bâtiment est déjà construit
       if (city.hasBuilding(buildingType)) {
