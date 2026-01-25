@@ -6,6 +6,9 @@ import { GameState } from '../model/game/GameState';
 import { PlayerResources } from '../model/game/PlayerResources';
 import { GameClock } from '../model/game/GameClock';
 import { CivilizationId } from '../model/map/CivilizationId';
+import { CivilizationState } from '../model/game/CivilizationState';
+import { GodState } from '../model/game/GodState';
+import { PlayerSave } from '../model/game/PlayerSave';
 
 /**
  * Point d'entrée applicatif : NewGame (génération de carte), SaveGame et LoadGame.
@@ -13,16 +16,17 @@ import { CivilizationId } from '../model/map/CivilizationId';
  */
 export class MainGame {
   private readonly mapGenerator: MapGenerator;
-  private readonly controller: MainGameController;
+  private controller: MainGameController;
+  private playerSave: PlayerSave;
 
   constructor() {
     this.mapGenerator = new MapGenerator();
-    const gameState = new GameState(
-      new PlayerResources(),
-      CivilizationId.create('player1'),
-      new GameClock()
-    );
-    this.controller = new MainGameController(gameState);
+    // Initialisation du PlayerSave (création si absent)
+    const civId = CivilizationId.create('player1');
+    const civilizationState = CivilizationState.createNew(civId);
+    const godState = new GodState(0, civilizationState);
+    this.playerSave = new PlayerSave(godState);
+    this.controller = new MainGameController(godState);
   }
 
   /**
@@ -36,9 +40,16 @@ export class MainGame {
    * Démarre une nouvelle partie : génère une carte et réinitialise l'état.
    * @param seed - Seed optionnel pour la génération (par défaut: timestamp)
    */
+  /**
+   * Démarre une nouvelle partie : détruit le GameState et en crée un nouveau dans le PlayerSave.
+   * Ne touche pas aux GodPoints.
+   */
   newGame(seed?: number): void {
     const actualSeed = seed ?? Date.now();
-    const state = this.controller.getGameState();
+    // On recrée le CivilizationState et GameState
+    const civId = CivilizationId.create('player1');
+    const civilizationState = CivilizationState.createNew(civId);
+    const state = civilizationState.getGameState();
 
     const resourceDistribution = new Map<HexType, number>([
       [HexType.Wood, 5],
@@ -62,21 +73,41 @@ export class MainGame {
     state.setSeed(actualSeed);
     state.getPlayerResources().clear();
     state.getGameClock().reset();
+
+    // On conserve les GodPoints existants
+    const godPoints = this.playerSave.getGodState().getGodPoints();
+    const godState = new GodState(godPoints, civilizationState);
+    this.playerSave = new PlayerSave(godState);
+    this.controller = new MainGameController(godState);
   }
 
   /**
-   * Sauvegarde la partie en une chaîne (sérialisation de GameState).
+   * Sauvegarde la partie en une chaîne (sérialisation de PlayerSave).
    */
   saveGame(): string {
-    return this.controller.getGameState().serialize();
+    return JSON.stringify(this.playerSave.serialize());
   }
 
   /**
    * Charge une partie depuis une chaîne et remplace l'état du contrôleur.
    */
   loadGame(serialized: string): void {
-    const state = GameState.deserialize(serialized);
-    this.controller.setGameState(state);
+    const data = JSON.parse(serialized);
+    this.playerSave = PlayerSave.deserialize(data);
+    const godState = this.playerSave.getGodState();
+    const civilizationState = godState.getCivilizationState();
+    this.controller = new MainGameController(godState);
+  }
+
+  /**
+   * Efface la sauvegarde (détruit le PlayerSave et recrée tout).
+   */
+  clearSave(): void {
+    const civId = CivilizationId.create('player1');
+    const civilizationState = CivilizationState.createNew(civId);
+    const godState = new GodState(0, civilizationState);
+    this.playerSave = new PlayerSave(godState);
+    this.controller = new MainGameController(godState);
   }
 
   // ——— Délégations vers le contrôleur (compatibilité / raccourcis) ———
