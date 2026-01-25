@@ -26,6 +26,7 @@ import { BuildingType, BuildingAction, getResourceProductionBuildings } from './
 import { City } from './model/city/City';
 import { IslandMap } from './model/map/IslandMap';
 import { APP_VERSION, APP_NAME } from './config/version';
+import { SaveManager } from './application/SaveManager';
 
 /**
  * Point d'entrée principal de l'application web.
@@ -168,73 +169,8 @@ function main(): void {
     }
   }
 
-  // Clé pour la sauvegarde automatique dans localStorage
-  const AUTOSAVE_KEY = 'colons-of-idlestan-autosave';
-
-  function offerInvalidSaveDownload(serialized: string, context: string): void {
-    try {
-      const shouldDownload = window.confirm(`La sauvegarde ${context} est corrompue. Voulez-vous l'enregistrer dans un fichier pour diagnostic ?`);
-      if (!shouldDownload) {
-        return;
-      }
-      const blob = new Blob([serialized], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `colons-of-idlestan-save-invalid-${Date.now()}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (downloadError) {
-      console.error('Impossible de télécharger la sauvegarde corrompue:', downloadError);
-    }
-  }
-
-  /**
-   * Sauvegarde automatique de la partie dans localStorage.
-   */
-  function autoSave(): void {
-    try {
-      const serialized = game.saveGame();
-      localStorage.setItem(AUTOSAVE_KEY, serialized);
-    } catch (error) {
-      console.error('Erreur lors de la sauvegarde automatique:', error);
-    }
-  }
-
-  /**
-   * Charge automatiquement la partie depuis localStorage si elle existe.
-   */
-  function autoLoad(): boolean {
-    try {
-      const saved = localStorage.getItem(AUTOSAVE_KEY);
-      if (!saved) {
-        console.log('Aucune sauvegarde trouvée dans localStorage');
-        return false;
-      }
-
-      console.log('Chargement automatique de la sauvegarde...');
-      const loaded = game.loadGame(saved);
-      if (loaded) {
-        console.log('Sauvegarde chargée avec succès');
-        return true;
-      }
-
-      console.warn('Sauvegarde corrompue, suppression de l\'autosave');
-      offerInvalidSaveDownload(saved, 'locale');
-      localStorage.removeItem(AUTOSAVE_KEY);
-    } catch (error) {
-      console.error('Erreur lors du chargement automatique:', error);
-      const saved = localStorage.getItem(AUTOSAVE_KEY);
-      if (saved) {
-        offerInvalidSaveDownload(saved, 'locale');
-      }
-      // En cas d'erreur, on supprime la sauvegarde corrompue
-      localStorage.removeItem(AUTOSAVE_KEY);
-    }
-    return false;
-  }
+  // Save manager centralise autosave / export / import
+  const saveManager = new SaveManager(game);
 
   // Boucle principale d'animation pour gérer le temps et la production automatique
   let lastAnimationFrame: number | null = null;
@@ -316,7 +252,7 @@ function main(): void {
     game.newGame();
     gameStartTime = null;
 
-    autoSave();
+    saveManager.saveToLocal();
 
     cityPanelView.setPlayerCivilizationId(game.getPlayerCivilizationId());
 
@@ -365,7 +301,7 @@ function main(): void {
   };
 
   // Charger automatiquement la sauvegarde si elle existe, sinon créer une nouvelle partie
-  const loaded = autoLoad();
+  const loaded = saveManager.loadFromLocal();
   if (!loaded) {
     game.newGame();
   } else {
@@ -373,7 +309,7 @@ function main(): void {
     // Cela permettra à la boucle de repartir correctement
     gameStartTime = null;
     // Sauvegarder immédiatement après le chargement pour s'assurer qu'on a une sauvegarde valide
-    autoSave();
+    saveManager.saveToLocal();
     // Mettre à jour la civilisation du joueur dans le panneau de ville (peut avoir changé lors du chargement)
     cityPanelView.setPlayerCivilizationId(game.getPlayerCivilizationId());
   }
@@ -596,7 +532,7 @@ function main(): void {
           renderer.render(currentIslandMap, civId);
           
           // Sauvegarder le jeu
-          autoSave();
+          saveManager.saveToLocal();
           
           // Fermer le panneau de spécialisation
           portSpecializationPanelView.hide();
@@ -621,7 +557,7 @@ function main(): void {
     refreshCityPanel: () => cityPanelView.refreshNow(),
     getCurrentCity: () => cityPanelView.getCurrentCity(),
     renderMap: (islandMap, civId) => renderer.render(islandMap, civId),
-    autoSave: () => autoSave(),
+    autoSave: () => saveManager.saveToLocal(),
   });
 
   // Configurer les callbacks du panneau de confirmation de prestige
@@ -831,7 +767,7 @@ function main(): void {
     gameStartTime = null;
     
     // Sauvegarder immédiatement après la régénération
-    autoSave();
+    saveManager.saveToLocal();
     
     const newIslandMap = game.getIslandMap();
     if (newIslandMap) {
@@ -846,22 +782,7 @@ function main(): void {
 
   // Gérer le bouton d'export dans le menu
   exportBtn.addEventListener('click', () => {
-    try {
-      const serialized = game.saveGame();
-      const blob = new Blob([serialized], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `colons-of-idlestan-save-${Date.now()}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Erreur lors de l\'export:', error);
-      alert('Erreur lors de l\'export de la partie');
-    }
-    
+    saveManager.exportSave();
     // Fermer le menu après l'action
     settingsMenu.classList.add('hidden');
   });
@@ -873,53 +794,35 @@ function main(): void {
     input.accept = '.json';
     input.style.display = 'none';
     
-    input.addEventListener('change', (e) => {
+    input.addEventListener('change', async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) {
         return;
       }
-      
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const content = event.target?.result as string;
-          const loaded = game.loadGame(content);
-          if (!loaded) {
-            alert('Erreur lors de l\'import de la partie. Le fichier est peut-être invalide.');
-            offerInvalidSaveDownload(content, 'importée');
-            return;
-          }
-          
-          // Sauvegarder immédiatement après l'import
-          autoSave();
-          
-          // Réinitialiser le temps de référence pour la boucle d'animation
-          gameStartTime = null;
-          
-          // Mettre à jour la civilisation du joueur dans le panneau de ville (peut avoir changé lors du chargement)
-          cityPanelView.setPlayerCivilizationId(game.getPlayerCivilizationId());
-          
-          // Mettre à jour l'affichage
-          const newIslandMap = game.getIslandMap();
-          if (newIslandMap) {
-            const civId = game.getPlayerCivilizationId();
-            renderer.render(newIslandMap, civId);
-            updateResourcesDisplay();
-            cityPanelView.refreshNow();
-            // Mettre à jour les boutons du footer avec la civilisation chargée
-            cityPanelView.updateFooter();
-          }
-        } catch (error) {
-          console.error('Erreur lors de l\'import:', error);
-          alert('Erreur lors de l\'import de la partie. Le fichier est peut-être invalide.');
-          const content = event.target?.result as string | undefined;
-          if (content) {
-            offerInvalidSaveDownload(content, 'importée');
-          }
-        }
-      };
-      
-      reader.readAsText(file);
+
+      const result = await saveManager.importFromFile(file);
+      if (!result.success) {
+        alert('Erreur lors de l\'import de la partie. Le fichier est peut-être invalide.');
+        return;
+      }
+
+      // Réinitialiser le temps de référence pour la boucle d'animation
+      gameStartTime = null;
+
+      // Mettre à jour la civilisation du joueur dans le panneau de ville (peut avoir changé lors du chargement)
+      cityPanelView.setPlayerCivilizationId(game.getPlayerCivilizationId());
+
+      // Mettre à jour l'affichage
+      const newIslandMap = game.getIslandMap();
+      if (newIslandMap) {
+        const civId = game.getPlayerCivilizationId();
+        renderer.render(newIslandMap, civId);
+        updateResourcesDisplay();
+        cityPanelView.refreshNow();
+        // Mettre à jour les boutons du footer avec la civilisation chargée
+        cityPanelView.updateFooter();
+      }
+      // Retirer l'input du DOM
       document.body.removeChild(input);
     });
     
@@ -1070,10 +973,8 @@ function main(): void {
   // Démarrer la boucle d'animation
   lastAnimationFrame = requestAnimationFrame(gameLoop);
 
-  // Sauvegarder automatiquement toutes les secondes
-  setInterval(() => {
-    autoSave();
-  }, 1000);
+  // Sauvegarder automatiquement toutes les secondes via SaveManager
+  saveManager.startAutosave(1000);
 }
 
 // Lancer l'application quand le DOM est prêt
