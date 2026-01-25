@@ -54,6 +54,7 @@ function main(): void {
   const settingsBtn = document.getElementById('settings-btn') as HTMLButtonElement;
   const settingsMenu = document.getElementById('settings-menu') as HTMLElement;
   const regenerateBtn = document.getElementById('regenerate-btn') as HTMLButtonElement;
+  const hardResetBtn = document.getElementById('hard-reset-btn') as HTMLButtonElement;
   const exportBtn = document.getElementById('export-btn') as HTMLButtonElement;
   const importBtn = document.getElementById('import-btn') as HTMLButtonElement;
   const cheatBtn = document.getElementById('cheat-btn') as HTMLButtonElement;
@@ -77,6 +78,10 @@ function main(): void {
 
   if (!regenerateBtn) {
     throw new Error('Bouton de régénération introuvable');
+  }
+
+  if (!hardResetBtn) {
+    throw new Error('Bouton de hard reset introuvable');
   }
 
   if (!exportBtn) {
@@ -163,29 +168,25 @@ function main(): void {
 
   function setActiveTab(mode: 'classic' | 'prestige'): void {
     if (mode === 'classic') {
-      classicTabBtn.classList.add('active');
-      classicTabBtn.setAttribute('aria-pressed', 'true');
-      prestigeTabBtn.classList.remove('active');
-      prestigeTabBtn.setAttribute('aria-pressed', 'false');
+      classicTabBtn!.classList.add('active');
+      classicTabBtn!.setAttribute('aria-pressed', 'true');
+      prestigeTabBtn!.classList.remove('active');
+      prestigeTabBtn!.setAttribute('aria-pressed', 'false');
     } else {
-      prestigeTabBtn.classList.add('active');
-      prestigeTabBtn.setAttribute('aria-pressed', 'true');
-      classicTabBtn.classList.remove('active');
-      classicTabBtn.setAttribute('aria-pressed', 'false');
+      prestigeTabBtn!.classList.add('active');
+      prestigeTabBtn!.setAttribute('aria-pressed', 'true');
+      classicTabBtn!.classList.remove('active');
+      classicTabBtn!.setAttribute('aria-pressed', 'false');
     }
   }
 
   function updatePrestigeTabsVisibility(): void {
     const unlocked = game.getController().getCivilizationState().hasPrestige();
-    gameTabs.classList.toggle('hidden', !unlocked);
-    prestigeTabBtn.disabled = !unlocked;
+    gameTabs!.classList.toggle('hidden', !unlocked);
+    prestigeTabBtn!.disabled = !unlocked;
   }
 
   function unlockPrestigeAccess(): void {
-    if (!prestigeUnlocked) {
-      prestigeUnlocked = true;
-      localStorage.setItem(PRESTIGE_UNLOCK_KEY, 'true');
-    }
     updatePrestigeTabsVisibility();
   }
 
@@ -712,6 +713,45 @@ function main(): void {
     settingsMenu.classList.add('hidden');
   });
 
+  // Gérer le bouton de hard reset dans le menu
+  hardResetBtn.addEventListener('click', () => {
+    const ok = confirm(
+      "Hard reset: détruire l'état divin (GodState) et la sauvegarde locale ? Cette action est irréversible."
+    );
+    if (!ok) return;
+
+    // Effacer complètement la sauvegarde (réinitialise GodState)
+    game.clearSave();
+    // Sauvegarder l'état vidé
+    saveManager.saveToLocal();
+
+    // Démarrer une nouvelle partie comme 'Nouvelle Carte'
+    game.newGame();
+    gameLoop.resetStartTime();
+
+    // Réinitialiser les variables UI liées au prestige / panneaux
+    pendingPrestigeGain = 0;
+    currentUpgradePanelMode = null;
+    civilizationUpgradePanel.hide();
+    prestigeConfirmationPanel.hide();
+    setActiveTab('classic');
+    updatePrestigeTabsVisibility();
+
+    // Mettre à jour l'UI générale
+    cityPanelView.setPlayerCivilizationId(game.getPlayerCivilizationId());
+    const newIslandMap2 = game.getIslandMap();
+    if (newIslandMap2) {
+      const civId = game.getPlayerCivilizationId();
+      renderer.render(newIslandMap2, civId);
+      updateResourcesDisplay();
+      cityPanelView.refreshNow();
+      cityPanelView.updateFooter();
+    }
+
+    // Fermer le menu après l'action
+    settingsMenu.classList.add('hidden');
+  });
+
   // Gérer le bouton d'export dans le menu
   exportBtn.addEventListener('click', () => {
     saveManager.exportSave();
@@ -737,9 +777,6 @@ function main(): void {
         alert('Erreur lors de l\'import de la partie. Le fichier est peut-être invalide.');
         return;
       }
-
-      // Réinitialiser le temps de référence pour la boucle d'animation
-      gameStartTime = null;
 
       // Mettre à jour la civilisation du joueur dans le panneau de ville (peut avoir changé lors du chargement)
       cityPanelView.setPlayerCivilizationId(game.getPlayerCivilizationId());
