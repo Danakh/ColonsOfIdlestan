@@ -310,3 +310,204 @@ export function Make7HexesMapWithPortAndCapital(): IslandState {
   
   return gs;
 }
+
+/**
+ * Crée une carte 7Hexes avec 5 villes niveau 3 (Metropolis), chacune avec une bibliothèque, et un port niveau 4.
+ * Part de Make7HexesMapWithPortAndCapital() et développe le territoire avec 3 nouvelles villes.
+ * 
+ * @returns Un IslandState avec une carte 7Hexes, 5 villes Metropolis avec bibliothèques, et un port niveau 4
+ */
+export function Make7HexesMapWith5CitiesAndLibraries(): IslandState {
+  // Partir de la carte avec port et capitale
+  const gs = Make7HexesMapWithPortAndCapital();
+  const islandMap = gs.getIslandMap();
+  if (!islandMap) throw new Error('Carte non trouvée');
+  
+  const civId = gs.getPlayerCivilizationId();
+  const resources = gs.getPlayerResources();
+  const gameClock = gs.getGameClock();
+  const center = new HexCoord(0, 0);
+  
+  // Réinitialiser les cooldowns de récolte pour la simulation
+  ResourceHarvestController.resetCooldowns();
+  
+  // À ce stade, on a 2 villes:
+  // - Ville initiale au centre (niveau Capital/4) au vertex N
+  // - Ville portuaire (niveau Metropolis/3) au vertex EN
+  
+  const initialCityVertex = center.vertex(SecondaryHexDirection.N);
+  const portCityVertex = center.outgoingEdge(SecondaryHexDirection.EN).otherVertex(center.vertex(SecondaryHexDirection.EN));
+  
+  // On va créer 3 nouvelles villes pour arriver à 5 villes
+  // Construire des routes pour étendre le territoire
+  
+  // Routes depuis l'hex centre pour étendre le réseau
+  // Construire d'abord NW (touche la ville au vertex N), puis étendre W et SW
+  const roadNW = center.edge(HexDirection.NW);
+  GameAutoPlayer.playUntilBuildingRoad(roadNW, civId, islandMap, resources, gameClock);
+  
+  const roadW = center.edge(HexDirection.W);
+  GameAutoPlayer.playUntilBuildingRoad(roadW, civId, islandMap, resources, gameClock);
+  
+  const roadSW = center.edge(HexDirection.SW);
+  GameAutoPlayer.playUntilBuildingRoad(roadSW, civId, islandMap, resources, gameClock);
+  
+  // Étendre également vers SE pour débloquer davantage de vertices constructibles
+  const roadSE = center.edge(HexDirection.SE);
+  GameAutoPlayer.playUntilBuildingRoad(roadSE, civId, islandMap, resources, gameClock);
+  
+  // Créer 3 nouveaux outposts sur des vertices valides (calculés par la carte)
+  const buildableVertices = islandMap.getBuildableOutpostVertices(civId);
+  if (buildableVertices.length < 3) {
+    throw new Error(`Pas assez de vertices constructibles pour des avant-postes (trouvés: ${buildableVertices.length})`);
+  }
+  const city3Vertex = buildableVertices[0];
+  const city4Vertex = buildableVertices[1];
+  const city5Vertex = buildableVertices[2];
+  
+  // Booster temporairement les ressources pour accélérer la création des avant-postes dans le scénario
+  resources.addResource(ResourceType.Wood, 200);
+  resources.addResource(ResourceType.Brick, 200);
+  resources.addResource(ResourceType.Wheat, 200);
+  resources.addResource(ResourceType.Sheep, 200);
+
+  // Ajouter directement des avant-postes (niveau 0) pour ce scénario d'intégration
+  islandMap.addCity(city3Vertex, civId, CityLevel.Outpost);
+  islandMap.addCity(city4Vertex, civId, CityLevel.Outpost);
+  islandMap.addCity(city5Vertex, civId, CityLevel.Outpost);
+  
+  // Liste des villes à développer (toutes sauf la capitale qui est déjà au niveau 4)
+  const citiesToDevelop = [
+    { vertex: portCityVertex, name: 'Ville portuaire' },
+    { vertex: city3Vertex, name: 'Ville 3' },
+    { vertex: city4Vertex, name: 'Ville 4' },
+    { vertex: city5Vertex, name: 'Ville 5' }
+  ];
+  
+  // Améliorer toutes les nouvelles villes jusqu'au niveau 3 (Metropolis)
+  for (const cityInfo of citiesToDevelop) {
+    const city = islandMap.getCity(cityInfo.vertex);
+    if (!city) throw new Error(`${cityInfo.name} non trouvée`);
+    
+    // Si c'est un outpost, construire le TownHall niveau 1 pour passer à Colony
+    if (city.level === CityLevel.Outpost) {
+      GameAutoPlayer.playUntilBuilding(
+        BuildingType.TownHall,
+        cityInfo.vertex,
+        civId,
+        islandMap,
+        resources,
+        gameClock
+      );
+    }
+    
+    // Améliorer le TownHall au niveau 2 pour passer à Town
+    let currentCity = islandMap.getCity(cityInfo.vertex);
+    if (!currentCity) throw new Error(`${cityInfo.name} non trouvée après construction TownHall`);
+    if (currentCity.level < CityLevel.Town) {
+      GameAutoPlayer.playUntilImproveBuilding(
+        BuildingType.TownHall,
+        cityInfo.vertex,
+        civId,
+        islandMap,
+        resources,
+        gameClock
+      );
+    }
+    
+    // Améliorer le TownHall au niveau 3 pour passer à Metropolis
+    currentCity = islandMap.getCity(cityInfo.vertex);
+    if (!currentCity) throw new Error(`${cityInfo.name} non trouvée`);
+    if (currentCity.level < CityLevel.Metropolis) {
+      GameAutoPlayer.playUntilImproveBuilding(
+        BuildingType.TownHall,
+        cityInfo.vertex,
+        civId,
+        islandMap,
+        resources,
+        gameClock
+      );
+    }
+  }
+  
+  // Vérifier que la ville portuaire est bien au niveau 3 (normalement déjà le cas)
+  const portCity = islandMap.getCity(portCityVertex);
+  if (!portCity) throw new Error('Ville portuaire non trouvée');
+  if (portCity.level !== CityLevel.Metropolis) {
+    throw new Error(`La ville portuaire devrait être au niveau Metropolis (3), mais elle est au niveau ${portCity.level}`);
+  }
+  
+  // Améliorer le port de niveau 3 à niveau 4
+  const seaport = portCity.getBuilding(BuildingType.Seaport);
+  if (!seaport) throw new Error('Le port n\'existe pas dans la ville portuaire');
+  if (seaport.level === 3) {
+    GameAutoPlayer.playUntilImproveBuilding(
+      BuildingType.Seaport,
+      portCityVertex,
+      civId,
+      islandMap,
+      resources,
+      gameClock
+    );
+  }
+  
+  // Vérifier que le port est au niveau 4
+  const finalPortCity = islandMap.getCity(portCityVertex);
+  if (!finalPortCity) throw new Error('Ville portuaire non trouvée après amélioration du port');
+  const finalSeaport = finalPortCity.getBuilding(BuildingType.Seaport);
+  if (!finalSeaport) throw new Error('Le port n\'existe pas après amélioration');
+  if (finalSeaport.level !== 4) {
+    throw new Error(`Le port devrait être au niveau 4, mais il est au niveau ${finalSeaport.level}`);
+  }
+  
+  // Construire une bibliothèque dans chaque ville
+  // Liste de toutes les 5 villes (y compris la capitale)
+  const allCities = [
+    { vertex: initialCityVertex, name: 'Capitale' },
+    { vertex: portCityVertex, name: 'Ville portuaire' },
+    { vertex: city3Vertex, name: 'Ville 3' },
+    { vertex: city4Vertex, name: 'Ville 4' },
+    { vertex: city5Vertex, name: 'Ville 5' }
+  ];
+  
+  for (const cityInfo of allCities) {
+    GameAutoPlayer.playUntilBuilding(
+      BuildingType.Library,
+      cityInfo.vertex,
+      civId,
+      islandMap,
+      resources,
+      gameClock
+    );
+  }
+  
+  // Vérifications finales
+  const cities = islandMap.getCitiesByCivilization(civId);
+  if (cities.length !== 5) {
+    throw new Error(`Devrait avoir 5 villes, mais il y en a ${cities.length}`);
+  }
+  
+  // Vérifier que toutes les villes (sauf la capitale) sont au niveau 3
+  for (const cityInfo of citiesToDevelop) {
+    const city = islandMap.getCity(cityInfo.vertex);
+    if (!city) throw new Error(`${cityInfo.name} non trouvée`);
+    if (city.level !== CityLevel.Metropolis) {
+      throw new Error(`${cityInfo.name} devrait être au niveau Metropolis (3), mais elle est au niveau ${city.level}`);
+    }
+  }
+  
+  // Vérifier que toutes les villes ont une bibliothèque
+  for (const cityInfo of allCities) {
+    const city = islandMap.getCity(cityInfo.vertex);
+    if (!city) throw new Error(`${cityInfo.name} non trouvée`);
+    const library = city.getBuilding(BuildingType.Library);
+    if (!library) {
+      throw new Error(`${cityInfo.name} n'a pas de bibliothèque`);
+    }
+  }
+  
+  // Sauvegarder le scénario
+  saveIslandState(gs, '7HexesMapWith5CitiesAndLibraries');
+  
+  return gs;
+}
