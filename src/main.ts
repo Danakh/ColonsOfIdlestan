@@ -9,6 +9,7 @@ import { CivilizationUpgradePanelView, CivilizationUpgrade } from './view/Civili
 import { ResourceSprites } from './view/ResourceSprites';
 import { InventoryView } from './view/InventoryView';
 import { ResourceLoader } from './view/ResourceLoader';
+import { GameCoordinator } from './controller/GameCoordinator';
 import { ResourceHarvest } from './model/game/ResourceHarvest';
 import { RoadConstruction } from './model/game/RoadConstruction';
 import { RoadController } from './controller/RoadController';
@@ -169,6 +170,9 @@ function main(): void {
 
   // Save manager centralise autosave / export / import
   const saveManager = new SaveManager(game);
+
+  // Game coordinator centralise les appels aux controllers
+  const coordinator = new GameCoordinator(game, renderer, saveManager);
 
   // Boucle principale d'animation pour gérer le temps et la production automatique
   let lastAnimationFrame: number | null = null;
@@ -468,24 +472,11 @@ function main(): void {
       if (!currentIslandMap) {
         return;
       }
-
-      const civId = game.getPlayerCivilizationId();
-      const playerResources = game.getPlayerResources();
-
-      try {
-        // Effectuer l'échange batch via le contrôleur
-        TradeController.performBatchTrade(offered, requested, civId, currentIslandMap, playerResources);
-
-        // Mettre à jour l'affichage des ressources
+      const result = coordinator.performBatchTrade(offered, requested);
+      if (result.success) {
         updateResourcesDisplay();
         cityPanelView.scheduleRefresh();
-
-        // Fermer le panneau de commerce
         tradePanelView.hide();
-      } catch (error) {
-        console.error('Erreur lors de l\'échange:', error);
-        // On pourrait afficher un message à l'utilisateur si nécessaire
-        // Pour l'instant, on garde le panneau ouvert pour que l'utilisateur puisse corriger
       }
     },
     onCancel: () => {
@@ -520,18 +511,18 @@ function main(): void {
         const seaport = city.getBuilding(BuildingType.Seaport);
         if (seaport) {
           seaport.setSpecialization(resource);
-          
+
           // Mettre à jour l'affichage
           updateResourcesDisplay();
           cityPanelView.refreshNow();
-          
+
           // Re-rendre la carte
           const civId = game.getPlayerCivilizationId();
           renderer.render(currentIslandMap, civId);
-          
-          // Sauvegarder le jeu
+
+          // Sauvegarder le jeu via SaveManager
           saveManager.saveToLocal();
-          
+
           // Fermer le panneau de spécialisation
           portSpecializationPanelView.hide();
         }
@@ -658,26 +649,13 @@ function main(): void {
     if (!currentIslandMap) {
       return;
     }
-
-    const civId = game.getPlayerCivilizationId();
-    const playerResources = game.getPlayerResources();
-
-    try {
-      // Construire l'avant-poste (le contrôleur vérifie les conditions et consomme les ressources)
-      OutpostController.buildOutpost(vertex, civId, currentIslandMap, playerResources);
-      
-      // Mettre à jour l'affichage des ressources
+    const result = coordinator.buildOutpost(vertex);
+    if (result.success) {
       updateResourcesDisplay();
       cityPanelView.scheduleRefresh();
-      
-      // Re-rendre la carte pour afficher la nouvelle ville
+      const civId = game.getPlayerCivilizationId();
       renderer.render(currentIslandMap, civId);
-      
-      // Mettre à jour le panneau de ville si une ville était sélectionnée
       cityPanelView.refreshNow();
-    } catch (error) {
-      // Ignorer silencieusement les erreurs de construction
-      // On pourrait afficher un message à l'utilisateur si nécessaire
     }
   });
 
@@ -687,23 +665,12 @@ function main(): void {
     if (!currentIslandMap) {
       return;
     }
-
-    const civId = game.getPlayerCivilizationId();
-    const playerResources = game.getPlayerResources();
-
-    try {
-      // Construire la route (le contrôleur vérifie les conditions et consomme les ressources)
-      RoadController.buildRoad(edge, civId, currentIslandMap, playerResources);
-      
-      // Mettre à jour l'affichage des ressources
+    const result = coordinator.buildRoad(edge);
+    if (result.success) {
       updateResourcesDisplay();
       cityPanelView.scheduleRefresh();
-      
-      // Re-rendre la carte pour afficher la nouvelle route
+      const civId = game.getPlayerCivilizationId();
       renderer.render(currentIslandMap, civId);
-    } catch (error) {
-      // Ignorer silencieusement les erreurs de construction
-      // On pourrait afficher un message à l'utilisateur si nécessaire
     }
   });
 
@@ -713,16 +680,7 @@ function main(): void {
     if (!currentIslandMap) {
       return;
     }
-
-    const civId = game.getPlayerCivilizationId();
-    const playerResources = game.getPlayerResources();
-
-    // Récolter la ressource via le contrôleur (qui gère la limitation de taux)
-    // Appliquer le multiplicateur de gain de ressource propre à la civilisation
-    const civObj = game.getIslandState().getCivilization(civId);
-    const resourceMultiplier = civObj.getResourceGainMultiplier();
-    const result = ResourceHarvestController.harvest(hexCoord, civId, currentIslandMap, playerResources, { resourceMultiplier });
-    
+    const result = coordinator.harvestHex(hexCoord);
     if (result.success && result.cityVertex) {
       // Déclencher l'effet visuel de récolte (manuel, donc avec effet de réduction)
       renderer.triggerHarvestEffect(hexCoord, false);
