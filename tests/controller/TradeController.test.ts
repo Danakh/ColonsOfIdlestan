@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { TradeController } from '../../src/controller/TradeController';
 import { BuildingController } from '../../src/controller/BuildingController';
 import { BuildingProductionController } from '../../src/controller/BuildingProductionController';
-import { Make7HexesMap } from '../utils/GameStateGenerator';
+import { Make7HexesMap } from '../utils/IslandStateGenerator';
 import { Make7HexesMapWithPortCity } from '../utils/GameProgressionTest';
 import { HexCoord } from '../../src/model/hex/HexCoord';
 import { HexDirection } from '../../src/model/hex/HexDirection';
@@ -10,14 +10,14 @@ import { SecondaryHexDirection } from '../../src/model/hex/SecondaryHexDirection
 import { Vertex } from '../../src/model/hex/Vertex';
 import { BuildingType } from '../../src/model/city/BuildingType';
 import { ResourceType } from '../../src/model/map/ResourceType';
-import { GameState } from '../../src/model/game/GameState';
+import { IslandState } from '../../src/model/game/IslandState';
 import { PlayerResources } from '../../src/model/game/PlayerResources';
 import { calculateInventoryCapacity } from '../../src/model/game/InventoryCapacity';
 
 describe('TradeController (Map7HexesScenario)', () => {
-  let gameState: GameState;
-  let map: ReturnType<GameState['getIslandMap']>;
-  let civId: ReturnType<GameState['getPlayerCivilizationId']>;
+  let islandState: IslandState;
+  let map: ReturnType<IslandState['getIslandMap']>;
+  let civId: ReturnType<IslandState['getPlayerCivilizationId']>;
   let resources: PlayerResources;
 
   const center = new HexCoord(0, 0);
@@ -25,10 +25,10 @@ describe('TradeController (Map7HexesScenario)', () => {
   const cityVertex = center.vertex(SecondaryHexDirection.N);
 
   beforeEach(() => {
-    gameState = Make7HexesMap();
-    map = gameState.getIslandMap()!;
-    civId = gameState.getPlayerCivilizationId();
-    resources = gameState.getPlayerResources();
+    islandState = Make7HexesMap();
+    map = islandState.getIslandMap()!;
+    civId = islandState.getPlayerCivilizationId();
+    resources = islandState.getPlayerResources();
   });
 
   it('ne doit pas être disponible avant le Market, et doit être disponible après', () => {
@@ -49,18 +49,18 @@ describe('TradeController (Map7HexesScenario)', () => {
 });
 
 describe('TradeController (Map7HexesWithPortCity)', () => {
-  let gameState: GameState;
-  let map: ReturnType<GameState['getIslandMap']>;
-  let civId: ReturnType<GameState['getPlayerCivilizationId']>;
+  let islandState: IslandState;
+  let map: ReturnType<IslandState['getIslandMap']>;
+  let civId: ReturnType<IslandState['getPlayerCivilizationId']>;
   let resources: PlayerResources;
 
   const center = new HexCoord(0, 0);
   
   beforeEach(() => {
-    gameState = Make7HexesMapWithPortCity();
-    map = gameState.getIslandMap()!;
-    civId = gameState.getPlayerCivilizationId();
-    resources = gameState.getPlayerResources();
+    islandState = Make7HexesMapWithPortCity();
+    map = islandState.getIslandMap()!;
+    civId = islandState.getPlayerCivilizationId();
+    resources = islandState.getPlayerResources();
   });
 
   it('devrait avoir un port niveau 3 spécialisé en Brick avec auto-trade désactivé par défaut', () => {
@@ -195,7 +195,7 @@ describe('TradeController (Map7HexesWithPortCity)', () => {
     expect(resources.getResource(ResourceType.Brick)).toBe(capacity);
 
     // Obtenir la GameClock
-    const gameClock = gameState.getGameClock();
+    const gameClock = islandState.getGameClock();
     const brickBeforeProduction = resources.getResource(ResourceType.Brick);
     
     // Faire avancer le temps et produire automatiquement jusqu'à ce qu'une production se fasse

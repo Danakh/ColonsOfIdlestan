@@ -420,7 +420,7 @@ function main(): void {
     getSelectedVertex: () => renderer.getSelectedVertex(),
     getIslandMap: () => game.getIslandMap(),
     getPlayerCivilizationId: () => game.getPlayerCivilizationId(),
-    getCivilization: (civId) => game.getGameState().getCivilization(civId),
+    getCivilization: (civId) => game.getIslandState().getCivilization(civId),
     updateResourcesDisplay: () => updateResourcesDisplay(),
     refreshCityPanel: () => cityPanelView.refreshNow(),
     getCurrentCity: () => cityPanelView.getCurrentCity(),
@@ -807,7 +807,7 @@ function main(): void {
     if (currentIslandMap) {
       const civId = game.getPlayerCivilizationId();
       const playerResources = game.getPlayerResources();
-      const civilization = game.getGameState().getCivilization(civId);
+      const civilization = game.getIslandState().getCivilization(civId);
       AutomationController.processAllAutomations(civId, civilization, currentIslandMap, playerResources);
       
       // Mettre à jour l'affichage si des automatisations ont été exécutées

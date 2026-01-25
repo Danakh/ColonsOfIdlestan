@@ -2,4 +2,4 @@ export { PlayerResources } from './PlayerResources';
 export { ResourceHarvest } from './ResourceHarvest';
 export { RoadConstruction } from './RoadConstruction';
 export { GameClock } from './GameClock';
-export { GameState } from './GameState';export { CivilizationState } from './CivilizationState';
+export { IslandState } from './IslandState';export { CivilizationState } from './CivilizationState';

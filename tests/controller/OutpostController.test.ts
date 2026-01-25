@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { OutpostController } from '../../src/controller/OutpostController';
 import { RoadController } from '../../src/controller/RoadController';
-import { Make7HexesMap } from '../utils/GameStateGenerator';
+import { Make7HexesMap } from '../utils/IslandStateGenerator';
 import { HexCoord } from '../../src/model/hex/HexCoord';
 import { HexDirection } from '../../src/model/hex/HexDirection';
 import { SecondaryHexDirection } from '../../src/model/hex/SecondaryHexDirection';
@@ -12,14 +12,14 @@ import { PlayerResources } from '../../src/model/game/PlayerResources';
 import { ResourceType } from '../../src/model/map/ResourceType';
 import { RoadConstruction } from '../../src/model/game/RoadConstruction';
 import { CityLevel } from '../../src/model/city/CityLevel';
-import { GameState } from '../../src/model/game/GameState';
+import { IslandState } from '../../src/model/game/IslandState';
 import { GameAutoPlayer } from '../utils/GameAutoPlayer';
 import { BuildingType } from '../../src/model/city';
 
 describe('OutpostController', () => {
-  let gameState: GameState;
-  let map: ReturnType<GameState['getIslandMap']>;
-  let civId: ReturnType<GameState['getPlayerCivilizationId']>;
+  let islandState: IslandState;
+  let map: ReturnType<IslandState['getIslandMap']>;
+  let civId: ReturnType<IslandState['getPlayerCivilizationId']>;
   let resources: PlayerResources;
   const center = new HexCoord(0, 0);
   // Vertex de la ville dans Map7HexesScenario : au nord du centre
@@ -27,10 +27,10 @@ describe('OutpostController', () => {
 
   beforeEach(() => {
     // Utiliser la carte de Map7HexesScenario
-    gameState = Make7HexesMap();
-    map = gameState.getIslandMap()!;
-    civId = gameState.getPlayerCivilizationId();
-    resources = gameState.getPlayerResources();
+    islandState = Make7HexesMap();
+    map = islandState.getIslandMap()!;
+    civId = islandState.getPlayerCivilizationId();
+    resources = islandState.getPlayerResources();
   });
 
   describe('canBuildOutpost - cas de refus', () => {
@@ -158,12 +158,12 @@ describe('OutpostController', () => {
 
     it('devrait accepter si toutes les conditions sont remplies', () => {
       // Construire des routes exactement comme dans Map7HexesScenario
-      GameAutoPlayer.playUntilBuilding(BuildingType.Market, cityVertex, civId, map!, resources, gameState.getGameClock());
-      GameAutoPlayer.playUntilBuilding(BuildingType.Sawmill, cityVertex, civId, map!, resources, gameState.getGameClock());
-      GameAutoPlayer.playUntilBuilding(BuildingType.Brickworks, cityVertex, civId, map!, resources, gameState.getGameClock());
+      GameAutoPlayer.playUntilBuilding(BuildingType.Market, cityVertex, civId, map!, resources, islandState.getGameClock());
+      GameAutoPlayer.playUntilBuilding(BuildingType.Sawmill, cityVertex, civId, map!, resources, islandState.getGameClock());
+      GameAutoPlayer.playUntilBuilding(BuildingType.Brickworks, cityVertex, civId, map!, resources, islandState.getGameClock());
 
-      GameAutoPlayer.playUntilBuildingRoad(center.edge(HexDirection.NW), civId, map!, resources, gameState.getGameClock());
-      GameAutoPlayer.playUntilBuildingRoad(center.edge(HexDirection.W), civId, map!, resources, gameState.getGameClock());
+      GameAutoPlayer.playUntilBuildingRoad(center.edge(HexDirection.NW), civId, map!, resources, islandState.getGameClock());
+      GameAutoPlayer.playUntilBuildingRoad(center.edge(HexDirection.W), civId, map!, resources, islandState.getGameClock());
 
       const outpostVertex = center.vertex(SecondaryHexDirection.WS); // Vertex à l'ouest-nord-ouest du centre
       
@@ -187,12 +187,12 @@ describe('OutpostController', () => {
   describe('buildOutpost - cas de refus', () => {
     it('devrait refuser la construction si les ressources sont insuffisantes', () => {
       // Construire des routes comme dans Map7HexesScenario
-      GameAutoPlayer.playUntilBuilding(BuildingType.Market, cityVertex, civId, map!, resources, gameState.getGameClock());
-      GameAutoPlayer.playUntilBuilding(BuildingType.Sawmill, cityVertex, civId, map!, resources, gameState.getGameClock());
-      GameAutoPlayer.playUntilBuilding(BuildingType.Brickworks, cityVertex, civId, map!, resources, gameState.getGameClock());
+      GameAutoPlayer.playUntilBuilding(BuildingType.Market, cityVertex, civId, map!, resources, islandState.getGameClock());
+      GameAutoPlayer.playUntilBuilding(BuildingType.Sawmill, cityVertex, civId, map!, resources, islandState.getGameClock());
+      GameAutoPlayer.playUntilBuilding(BuildingType.Brickworks, cityVertex, civId, map!, resources, islandState.getGameClock());
 
-      GameAutoPlayer.playUntilBuildingRoad(center.edge(HexDirection.NW), civId, map!, resources, gameState.getGameClock());
-      GameAutoPlayer.playUntilBuildingRoad(center.edge(HexDirection.W), civId, map!, resources, gameState.getGameClock());
+      GameAutoPlayer.playUntilBuildingRoad(center.edge(HexDirection.NW), civId, map!, resources, islandState.getGameClock());
+      GameAutoPlayer.playUntilBuildingRoad(center.edge(HexDirection.W), civId, map!, resources, islandState.getGameClock());
       
       // Obtenir tous les vertices constructibles
       const allBuildableVertices = map!.getBuildableOutpostVertices(civId);

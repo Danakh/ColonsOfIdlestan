@@ -2,7 +2,7 @@ import { MapGenerator, MapGeneratorConfig } from '../controller/MapGenerator';
 import { MainGameController } from '../controller/MainGameController';
 import { IslandMap } from '../model/map/IslandMap';
 import { HexType } from '../model/map/HexType';
-import { GameState } from '../model/game/GameState';
+import { IslandState } from '../model/game/IslandState';
 import { PlayerResources } from '../model/game/PlayerResources';
 import { GameClock } from '../model/game/GameClock';
 import { CivilizationId } from '../model/map/CivilizationId';
@@ -41,15 +41,15 @@ export class MainGame {
    * @param seed - Seed optionnel pour la génération (par défaut: timestamp)
    */
   /**
-   * Démarre une nouvelle partie : détruit le GameState et en crée un nouveau dans le PlayerSave.
+   * Démarre une nouvelle partie : détruit le IslandState et en crée un nouveau dans le PlayerSave.
    * Ne touche pas aux GodPoints.
    */
   newGame(seed?: number): void {
     const actualSeed = seed ?? Date.now();
-    // On recrée le CivilizationState et GameState
+    // On recrée le CivilizationState et IslandState
     const civId = CivilizationId.create('player1');
     const civilizationState = CivilizationState.createNew(civId);
-    const state = civilizationState.getGameState();
+    const state = civilizationState.getIslandState();
 
     const resourceDistribution = new Map<HexType, number>([
       [HexType.Wood, 5],
@@ -112,8 +112,8 @@ export class MainGame {
 
   // ——— Délégations vers le contrôleur (compatibilité / raccourcis) ———
 
-  getGameState(): GameState {
-    return this.controller.getGameState();
+  getIslandState(): IslandState {
+    return this.controller.getIslandState();
   }
 
   getIslandMap(): IslandMap | null {

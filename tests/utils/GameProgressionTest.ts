@@ -8,12 +8,12 @@ import { CivilizationId } from '../../src/model/map/CivilizationId';
 import { CityLevel } from '../../src/model/city/CityLevel';
 import { BuildingType } from '../../src/model/city/BuildingType';
 import { ResourceType } from '../../src/model/map/ResourceType';
-import { GameState } from '../../src/model/game/GameState';
+import { IslandState } from '../../src/model/game/IslandState';
 import { ResourceHarvestController } from '../../src/controller/ResourceHarvestController';
 import { OutpostController } from '../../src/controller/OutpostController';
 import { RoadConstruction } from '../../src/model/game/RoadConstruction';
 import { GameAutoPlayer } from './GameAutoPlayer';
-import { Make7HexesMap, saveGameState } from './GameStateGenerator';
+import { Make7HexesMap, saveIslandState } from './IslandStateGenerator';
 import { SecondaryHexDirection } from '../../src/model/hex';
 
 /**
@@ -21,9 +21,9 @@ import { SecondaryHexDirection } from '../../src/model/hex';
  * Simule une partie complète en utilisant les nouvelles méthodes utilitaires de GameAutoPlayer.
  * Part d'un outpost, construit des bâtiments de production et progresse jusqu'au port niveau 3.
  * 
- * @returns Un GameState avec une carte 7Hexes, des routes, et une ville Metropolis (niveau 3) avec un port niveau 3 spécialisé en Brick
+ * @returns Un IslandState avec une carte 7Hexes, des routes, et une ville Metropolis (niveau 3) avec un port niveau 3 spécialisé en Brick
  */
-export function Make7HexesMapWithPortCity(): GameState {
+export function Make7HexesMapWithPortCity(): IslandState {
   // Partir de la carte de base
   const gs = Make7HexesMap();
   const islandMap = gs.getIslandMap();
@@ -214,7 +214,7 @@ export function Make7HexesMapWithPortCity(): GameState {
   }
   
   // Sauvegarder le scénario
-  saveGameState(gs, '7HexesMapWithPortCity');
+  saveIslandState(gs, '7HexesMapWithPortCity');
   
   return gs;
 }
@@ -223,10 +223,10 @@ export function Make7HexesMapWithPortCity(): GameState {
  * Crée une carte 7Hexes avec une ville portuaire niveau 3 et une capitale (niveau 4) sur la ville initiale.
  * Part de Make7HexesMapWithPortCity() et améliore la ville initiale jusqu'au niveau Capital.
  * 
- * @returns Un GameState avec une carte 7Hexes, une ville portuaire Metropolis (niveau 3) avec un port niveau 3,
+ * @returns Un IslandState avec une carte 7Hexes, une ville portuaire Metropolis (niveau 3) avec un port niveau 3,
  *          et la ville initiale au niveau Capital (niveau 4)
  */
-export function Make7HexesMapWithPortAndCapital(): GameState {
+export function Make7HexesMapWithPortAndCapital(): IslandState {
   // Partir de la carte avec port
   const gs = Make7HexesMapWithPortCity();
   const islandMap = gs.getIslandMap();
@@ -306,7 +306,7 @@ export function Make7HexesMapWithPortAndCapital(): GameState {
   }
   
   // Sauvegarder le scénario
-  saveGameState(gs, '7HexesMapWithPortAndCapital');
+  saveIslandState(gs, '7HexesMapWithPortAndCapital');
   
   return gs;
 }

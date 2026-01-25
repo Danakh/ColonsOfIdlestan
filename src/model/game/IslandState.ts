@@ -9,7 +9,7 @@ import { GameClock } from './GameClock';
  * Couche modèle regroupant les données de jeu.
  * La sérialisation est déléguée à chaque sous-objet (PlayerResources, GameClock, IslandMap, etc.).
  */
-export class GameState {
+export class IslandState {
   private islandMap: IslandMap | null = null;
   private civilizations: CivilizationId[] = [];
   private civilizationData: Map<string, Civilization> = new Map();
@@ -119,7 +119,7 @@ export class GameState {
   }
 
   /**
-   * Désérialise un GameState depuis un objet.
+   * Désérialise un IslandState depuis un objet.
    * Utilisé par CivilizationState pour la désérialisation complète.
    */
   static deserializeFromObject(obj: {
@@ -129,11 +129,11 @@ export class GameState {
     civilizations: string[];
     civilizationsData: CivilizationSerialized[];
     seed: number | null;
-  }): GameState {
+  }): IslandState {
     const pr = PlayerResources.deserialize(obj.playerResources);
     const civId = CivilizationId.deserialize(obj.playerCivilizationId);
     const gc = new GameClock();
-    const gs = new GameState(pr, civId, gc);
+    const gs = new IslandState(pr, civId, gc);
     gs.setCivilizations((obj.civilizations as string[]).map((s: string) => CivilizationId.deserialize(s)));
     
     // Désérialiser les données de civilisation si disponibles
@@ -180,15 +180,15 @@ export class GameState {
   }
 
   /**
-   * Désérialise un GameState depuis une chaîne JSON.
+   * Désérialise un IslandState depuis une chaîne JSON.
    * Chaque sous-objet est reconstruit via sa méthode deserialize.
    */
-  static deserialize(json: string): GameState {
+  static deserialize(json: string): IslandState {
     const obj = JSON.parse(json);
     const pr = PlayerResources.deserialize(obj.playerResources);
     const civId = CivilizationId.deserialize(obj.playerCivilizationId);
     const gc = GameClock.deserialize(obj.gameClock);
-    const gs = new GameState(pr, civId, gc);
+    const gs = new IslandState(pr, civId, gc);
     gs.setCivilizations((obj.civilizations as string[]).map((s: string) => CivilizationId.deserialize(s)));
     
     // Désérialiser les données de civilisation si disponibles

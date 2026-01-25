@@ -1,4 +1,4 @@
-import { GameState } from '../model/game/GameState';
+import { IslandState } from '../model/game/IslandState';
 import { IslandMap } from '../model/map/IslandMap';
 import { PlayerResources } from '../model/game/PlayerResources';
 import { CivilizationId } from '../model/map/CivilizationId';
@@ -27,8 +27,8 @@ export class MainGameController {
     return this.godState.getCivilizationState();
   }
 
-  getGameState(): GameState {
-    return this.godState.getCivilizationState().getGameState();
+  getIslandState(): IslandState {
+    return this.godState.getCivilizationState().getIslandState();
   }
 
   getGodPoints(): number {
@@ -36,26 +36,26 @@ export class MainGameController {
   }
 
   getIslandMap(): IslandMap | null {
-    return this.getGameState().getIslandMap();
+    return this.getIslandState().getIslandMap();
   }
 
   getPlayerResources(): PlayerResources {
-    return this.getGameState().getPlayerResources();
+    return this.getIslandState().getPlayerResources();
   }
 
   getPlayerCivilizationId(): CivilizationId {
-    return this.getGameState().getPlayerCivilizationId();
+    return this.getIslandState().getPlayerCivilizationId();
   }
 
   getGameClock(): GameClock {
-    return this.getGameState().getGameClock();
+    return this.getIslandState().getGameClock();
   }
 
   getSeed(): number | null {
-    return this.getGameState().getSeed();
+    return this.getIslandState().getSeed();
   }
 
   updateGameTime(timeSeconds: number): void {
-    this.getGameState().getGameClock().updateTime(timeSeconds);
+    this.getIslandState().getGameClock().updateTime(timeSeconds);
   }
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { CivilizationState } from '../../../src/model/game/CivilizationState';
 import { CivilizationId } from '../../../src/model/map/CivilizationId';
-import { GameState } from '../../../src/model/game/GameState';
+import { IslandState } from '../../../src/model/game/IslandState';
 
 describe('CivilizationState', () => {
   let civState: CivilizationState;
@@ -11,8 +11,8 @@ describe('CivilizationState', () => {
     civState = CivilizationState.createNew(playerId);
   });
 
-  it('devrait créer une nouvelle CivilizationState avec GameState', () => {
-    expect(civState.getGameState()).toBeDefined();
+  it('devrait créer une nouvelle CivilizationState avec IslandState', () => {
+    expect(civState.getIslandState()).toBeDefined();
     expect(civState.getGameClock()).toBeDefined();
     expect(civState.getPlayerCivilizationId()).toEqual(playerId);
   });
@@ -20,7 +20,7 @@ describe('CivilizationState', () => {
   it('devrait accéder aux ressources du joueur via getPlayerResources', () => {
     const resources = civState.getPlayerResources();
     expect(resources).toBeDefined();
-    expect(resources).toEqual(civState.getGameState().getPlayerResources());
+    expect(resources).toEqual(civState.getIslandState().getPlayerResources());
   });
 
   it('devrait sérialiser et désérialiser correctement', () => {
@@ -46,15 +46,15 @@ describe('CivilizationState', () => {
     expect(deserialized.getGameClock().getCurrentTime()).toEqual(123.45);
   });
 
-  it('devrait avoir GameClock accessible via getGameClock et via GameState.getGameClock', () => {
+  it('devrait avoir GameClock accessible via getGameClock et via IslandState.getGameClock', () => {
     civState.getGameClock().updateTime(50);
 
     const clockFromCivState = civState.getGameClock();
-    const clockFromGameState = civState.getGameState().getGameClock();
+    const clockFromIslandState = civState.getIslandState().getGameClock();
 
     expect(clockFromCivState.getCurrentTime()).toEqual(50);
-    expect(clockFromGameState.getCurrentTime()).toEqual(50);
-    expect(clockFromCivState).toBe(clockFromGameState);
+    expect(clockFromIslandState.getCurrentTime()).toEqual(50);
+    expect(clockFromCivState).toBe(clockFromIslandState);
   });
 
   it('devrait gérer les points de civilisation', () => {

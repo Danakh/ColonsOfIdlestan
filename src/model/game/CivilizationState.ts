@@ -1,4 +1,4 @@
-import { GameState } from './GameState';
+import { IslandState } from './IslandState';
 import { GameClock } from './GameClock';
 import { PlayerResources } from './PlayerResources';
 import { CivilizationId } from '../map/CivilizationId';
@@ -6,25 +6,25 @@ import { calculateCivilizationPoints } from './CivilizationPoints';
 import { IslandMap } from '../map/IslandMap';
 
 /**
- * État d'une civilisation : contient GameState, horloge de jeu et points de civilisation.
+ * État d'une civilisation : contient IslandState, horloge de jeu et points de civilisation.
  * C'est le conteneur principal pour l'état d'une partie.
  * 
  * Structure:
- * - gameState: contient les ressources du joueur, la civilisation, la carte et les données civiles
- * - gameClock: l'horloge de jeu (temps écoulé) - aussi accessible via gameState
+ * - islandState: contient les ressources du joueur, la civilisation, la carte et les données civiles
+ * - gameClock: l'horloge de jeu (temps écoulé) - aussi accessible via islandState
  * - civilizationPoints: points de civilisation basés sur les villes et les bâtiments
  * 
  * Responsabilités:
  * - Créer une nouvelle partie
  * - Gérer la sérialisation/désérialisation
- * - Encapsuler l'accès à GameState, GameClock et points de civilisation
+ * - Encapsuler l'accès à IslandState, GameClock et points de civilisation
  * - Calculer et mettre à jour les points de civilisation
  */
 export class CivilizationState {
   private civilizationPoints: number = 0;
 
   constructor(
-    private readonly gameState: GameState,
+    private readonly islandState: IslandState,
     private readonly gameClock: GameClock
   ) {}
 
@@ -34,13 +34,13 @@ export class CivilizationState {
   static createNew(playerCivilizationId: CivilizationId): CivilizationState {
     const playerResources = new PlayerResources();
     const gameClock = new GameClock();
-    const gameState = new GameState(playerResources, playerCivilizationId, gameClock);
-    return new CivilizationState(gameState, gameClock);
+    const islandState = new IslandState(playerResources, playerCivilizationId, gameClock);
+    return new CivilizationState(islandState, gameClock);
   }
 
   /** Accès à l'état du jeu. */
-  getGameState(): GameState {
-    return this.gameState;
+  getIslandState(): IslandState {
+    return this.islandState;
   }
 
   /** Accès à l'horloge de jeu. */
@@ -50,12 +50,12 @@ export class CivilizationState {
 
   /** Accès aux ressources du joueur. */
   getPlayerResources(): PlayerResources {
-    return this.gameState.getPlayerResources();
+    return this.islandState.getPlayerResources();
   }
 
   /** Accès à l'identifiant de civilisation du joueur. */
   getPlayerCivilizationId(): CivilizationId {
-    return this.gameState.getPlayerCivilizationId();
+    return this.islandState.getPlayerCivilizationId();
   }
 
   /** Retourne les points de civilisation actuels. */
@@ -73,8 +73,8 @@ export class CivilizationState {
    * Doit être appelé chaque fois que la carte change (construction de bâtiments, amélioration de villes, etc.).
    */
   updateCivilizationPoints(): void {
-    const islandMap = this.gameState.getIslandMap();
-    const civId = this.gameState.getPlayerCivilizationId();
+    const islandMap = this.islandState.getIslandMap();
+    const civId = this.islandState.getPlayerCivilizationId();
     
     if (islandMap && civId) {
       this.civilizationPoints = calculateCivilizationPoints(islandMap, civId);
@@ -83,11 +83,11 @@ export class CivilizationState {
 
   /**
    * Sérialise l'état en une chaîne JSON.
-   * Sérialise GameState et les points de civilisation.
+   * Sérialise IslandState et les points de civilisation.
    */
   serialize(): string {
     const obj = {
-      gameState: this.gameState.serialize(),
+      islandState: this.islandState.serialize(),
       civilizationPoints: this.civilizationPoints,
     };
     return JSON.stringify(obj);
@@ -98,9 +98,9 @@ export class CivilizationState {
    */
   static deserialize(json: string): CivilizationState {
     const obj = JSON.parse(json);
-    const gameState = GameState.deserialize(obj.gameState);
-    const gameClock = gameState.getGameClock();
-    const civState = new CivilizationState(gameState, gameClock);
+    const islandState = IslandState.deserialize(obj.islandState);
+    const gameClock = islandState.getGameClock();
+    const civState = new CivilizationState(islandState, gameClock);
     
     // Restaurer les points de civilisation s'ils existent
     if (obj.civilizationPoints !== undefined) {

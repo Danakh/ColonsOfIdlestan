@@ -11,7 +11,7 @@ import { CityLevel } from '../../src/model/city/CityLevel';
 import { BuildingType } from '../../src/model/city/BuildingType';
 import { ResourceType } from '../../src/model/map/ResourceType';
 import { GameClock } from '../../src/model/game/GameClock';
-import { GameState } from '../../src/model/game/GameState';
+import { IslandState } from '../../src/model/game/IslandState';
 import { PlayerResources } from '../../src/model/game/PlayerResources';
 import { writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
@@ -27,19 +27,19 @@ export interface ScenarioWithCapital {
   islandMap: IslandMap;
   civId: CivilizationId;
   playerResources: PlayerResources;
-  gameState: GameState;
+  islandState: IslandState;
 }
 
 /**
  * Utilitaire de test (couche model uniquement).
- * Make7HexesMap crée un GameState avec une carte de 7 hexagones :
+ * Make7HexesMap crée un IslandState avec une carte de 7 hexagones :
  * - Centre (0,0) : Brick (argile)
  * - 6 voisins : 5 types de ressources avec Wood en double (Wood, Wood, Wheat, Sheep, Ore)
  * - Une civilisation avec une ville au nord de (0,0), niveau Colony (1), avec un hôtel de ville
  * - GameClock initialisé à 123 s
  * - Hexagones d'eau tout autour des 7 hexagones principaux
  */
-export function Make7HexesMap(): GameState {
+export function Make7HexesMap(): IslandState {
   const center = new HexCoord(0, 0);
   const mainHexes = [
     center,
@@ -109,7 +109,7 @@ export function Make7HexesMap(): GameState {
   const gameClock = new GameClock();
   gameClock.updateTime(123);
 
-  const gs = new GameState(new PlayerResources(), civId, gameClock);
+  const gs = new IslandState(new PlayerResources(), civId, gameClock);
   gs.setIslandMap(islandMap);
   gs.setCivilizations([civId]);
   gs.setSeed(null);
@@ -117,11 +117,11 @@ export function Make7HexesMap(): GameState {
 }
 
 /**
- * Enregistre un GameState sur le disque dur dans le dossier saves à la racine du projet.
- * @param gameState L'état de jeu à enregistrer
+ * Enregistre un IslandState sur le disque dur dans le dossier saves à la racine du projet.
+ * @param islandState L'état de jeu à enregistrer
  * @param filename Le nom du fichier (sans extension, .json sera ajouté automatiquement)
  */
-export function saveGameState(gameState: GameState, filename: string): void {
+export function saveIslandState(islandState: IslandState, filename: string): void {
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = dirname(__filename);
   // Remonter depuis tests/utils vers la racine du projet
@@ -135,7 +135,7 @@ export function saveGameState(gameState: GameState, filename: string): void {
   const filePath = join(savesDir, `${filename}.json`);
   
   // Sérialiser et enregistrer
-  const serialized = gameState.serialize();
+  const serialized = islandState.serialize();
   writeFileSync(filePath, serialized, 'utf-8');
 }
 
@@ -151,7 +151,7 @@ export function saveGameState(gameState: GameState, filename: string): void {
  * - Des ressources suffisantes pour satisfaire les conditions
  * 
  * @param seed Le seed pour la génération
- * @returns Un objet contenant la map, civId, playerResources, et gameState
+ * @returns Un objet contenant la map, civId, playerResources, et islandState
  */
 export function createScenarioWithCapitalAndResources(seed: number): ScenarioWithCapital {
   // Créer une base simple avec plusieurs hexagones
@@ -204,13 +204,13 @@ export function createScenarioWithCapitalAndResources(seed: number): ScenarioWit
   }
 
   // Créer l'état de jeu et les ressources
-  const gameState = new GameState(new PlayerResources(), civId, new GameClock());
-  gameState.setIslandMap(islandMap);
-  gameState.setCivilizations([civId]);
-  gameState.setSeed(seed);
+  const islandState = new IslandState(new PlayerResources(), civId, new GameClock());
+  islandState.setIslandMap(islandMap);
+  islandState.setCivilizations([civId]);
+  islandState.setSeed(seed);
 
   // Ajouter des ressources généreuses
-  const playerResources = gameState.getPlayerResources();
+  const playerResources = islandState.getPlayerResources();
   playerResources.addResource(ResourceType.Ore, 100);
   playerResources.addResource(ResourceType.Wood, 100);
   playerResources.addResource(ResourceType.Brick, 100);
@@ -221,6 +221,6 @@ export function createScenarioWithCapitalAndResources(seed: number): ScenarioWit
     islandMap,
     civId,
     playerResources,
-    gameState
+    islandState
   };
 }

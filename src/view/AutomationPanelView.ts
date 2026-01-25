@@ -50,7 +50,7 @@ export interface AutomationPanelDependencies {
   getIslandMap: () => IslandMap | null;
   /** Fonction pour obtenir l'ID de la civilisation du joueur */
   getPlayerCivilizationId: () => import('../model/map/CivilizationId').CivilizationId;
-  /** Fonction pour obtenir la civilisation depuis le GameState */
+  /** Fonction pour obtenir la civilisation depuis le IslandState */
   getCivilization: (civId: import('../model/map/CivilizationId').CivilizationId) => Civilization;
   /** Fonction pour mettre à jour l'affichage des ressources */
   updateResourcesDisplay: () => void;

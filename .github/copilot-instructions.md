@@ -14,12 +14,12 @@ The codebase strictly separates concerns into three layers:
 - **Pure data structures** with no side effects
 - **Serializable**: Each model has `serialize()`/`deserialize()` methods (e.g., [src/model/hex/HexCoord.ts](src/model/hex/HexCoord.ts), [src/model/map/IslandMap.ts](src/model/map/IslandMap.ts))
 - **Immutable-friendly**: Most properties use `readonly` and getter methods
-- Domain entities: `HexCoord`, `Hex`, `HexGrid`, `IslandMap`, `City`, `Building`, `PlayerResources`, `GameState`, `GameClock`, `ResourceType`, `HexType`
+- Domain entities: `HexCoord`, `Hex`, `HexGrid`, `IslandMap`, `City`, `Building`, `PlayerResources`, `IslandState`, `GameClock`, `ResourceType`, `HexType`
 - No references to Controllers or Views
 
 ### Controller (`src/controller/`)
 - **Implements game logic and state mutations**
-- Entry: [src/controller/MainGameController.ts](src/controller/MainGameController.ts) - exposes GameState and update methods
+- Entry: [src/controller/MainGameController.ts](src/controller/MainGameController.ts) - exposes IslandState and update methods
 - Specialized controllers:
   - [ResourceHarvestController.ts](src/controller/ResourceHarvestController.ts) - harvest logic
   - [BuildingController.ts](src/controller/BuildingController.ts) - city building
@@ -63,10 +63,10 @@ Example: `hex.coord.neighborMain(MainHexDirection.E)` → neighbor to the East.
 
 ## Game State & Serialization Pattern
 
-[GameState.ts](src/model/game/GameState.ts) is the root of all game data:
+[IslandState.ts](src/model/game/IslandState.ts) is the root of all game data:
 - Holds `IslandMap`, `PlayerResources`, `GameClock`, civilizations, and `seed`
 - All child objects implement `serialize()` → JSON and `static deserialize(data)` → Object
-- Tests use `GameStateGenerator` (in tests/utils/) to create test scenarios with seeded maps
+- Tests use `IslandStateGenerator` (in tests/utils/) to create test scenarios with seeded maps
 
 **When modifying models**: Always add/update both `serialize()` and `deserialize()` methods to maintain save/load compatibility.
 
@@ -89,7 +89,7 @@ npm run test:run   # Single run (CI mode)
 Test files mirror source structure: `src/model/Foo.ts` → `tests/model/Foo.test.ts`
 
 Test utilities in [tests/utils/](tests/utils/):
-- `GameStateGenerator.ts` - creates test scenarios with seeded maps
+- `IslandStateGenerator.ts` - creates test scenarios with seeded maps
 - `GameAutoPlayer.ts` - simulates player actions for integration tests
 - `GameProgressionTest.ts` - chains tests of game progression
 
@@ -130,9 +130,9 @@ Reason: Type-safe iteration over enum values.
 
 ### Testing New Code
 - Write tests in `tests/` mirroring source structure
-- Use `beforeEach` to initialize fresh GameState via `MainGame().newGame(seed)`
-- Access game state through `game.getController().getGameState()` and specialized getters
-- For integration tests, use `GameAutoPlayer` or `GameStateGenerator` utilities
+- Use `beforeEach` to initialize fresh IslandState via `MainGame().newGame(seed)`
+- Access game state through `game.getController().getIslandState()` and specialized getters
+- For integration tests, use `GameAutoPlayer` or `IslandStateGenerator` utilities
 
 ## Key Files Quick Reference
 
@@ -141,12 +141,12 @@ Reason: Type-safe iteration over enum values.
 | [src/main.ts](src/main.ts) | Entry point; wires up UI and event listeners |
 | [src/application/MainGame.ts](src/application/MainGame.ts) | Game lifecycle orchestrator |
 | [src/controller/MainGameController.ts](src/controller/MainGameController.ts) | Main state accessor |
-| [src/model/game/GameState.ts](src/model/game/GameState.ts) | Root game data |
+| [src/model/game/IslandState.ts](src/model/game/IslandState.ts) | Root game data |
 | [src/model/hex/HexCoord.ts](src/model/hex/HexCoord.ts) | Axial hex coordinates |
 | [src/model/map/IslandMap.ts](src/model/map/IslandMap.ts) | Hex grid + cities + roads |
 | [src/view/HexMapRenderer.ts](src/view/HexMapRenderer.ts) | Canvas rendering engine |
 | [src/controller/MapGenerator.ts](src/controller/MapGenerator.ts) | Procedural generation with seeded RNG |
-| [tests/utils/GameStateGenerator.ts](tests/utils/GameStateGenerator.ts) | Test scenario factory |
+| [tests/utils/IslandStateGenerator.ts](tests/utils/IslandStateGenerator.ts) | Test scenario factory |
 
 ## Debugging Tips
 

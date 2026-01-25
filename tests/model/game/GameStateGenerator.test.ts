@@ -1,15 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { Make7HexesMap } from '../../utils/GameStateGenerator';
+import { Make7HexesMap } from '../../utils/IslandStateGenerator';
 import { HexCoord } from '../../../src/model/hex/HexCoord';
 import { HexDirection, ALL_HEX_DIRECTIONS } from '../../../src/model/hex/HexDirection';
 import { SecondaryHexDirection } from '../../../src/model/hex/SecondaryHexDirection';
 import { HexType } from '../../../src/model/map/HexType';
 import { CityLevel } from '../../../src/model/city/CityLevel';
 import { BuildingType } from '../../../src/model/city/BuildingType';
-import { GameState } from '../../../src/model/game/GameState';
+import { IslandState } from '../../../src/model/game/IslandState';
 
-/** Vérifie qu'un GameState correspond à la structure Map7Hexes (7 hex principaux + hexagones d'eau tout autour, centre Brick, 6 voisins, 1 ville Colony + TownHall, GameClock à 123s). */
-function assertMap7Hexes(gs: GameState): void {
+/** Vérifie qu'un IslandState correspond à la structure Map7Hexes (7 hex principaux + hexagones d'eau tout autour, centre Brick, 6 voisins, 1 ville Colony + TownHall, GameClock à 123s). */
+function assertMap7Hexes(gs: IslandState): void {
   const map = gs.getIslandMap();
   expect(map).not.toBeNull();
   if (!map) throw new Error('Carte nulle');
@@ -67,7 +67,7 @@ function assertMap7Hexes(gs: GameState): void {
   expect(gs.getGameClock().getCurrentTime()).toBe(123);
 }
 
-describe('GameStateGenerator', () => {
+describe('IslandStateGenerator', () => {
   describe('Make7HexesMap', () => {
     it('crée une carte de 7 hexagones principaux avec hexagones d\'eau tout autour, (0,0) central en Brick, 6 voisins (5 ressources, bois en double), une civ, ville niveau 1 avec hôtel de ville, GameClock à 123s', () => {
       const gs = Make7HexesMap();
@@ -77,7 +77,7 @@ describe('GameStateGenerator', () => {
     it('sauve la carte Map7Hexes, la charge et vérifie que la map est identique', () => {
       const gs = Make7HexesMap();
       const serialized = gs.serialize();
-      const loaded = GameState.deserialize(serialized);
+      const loaded = IslandState.deserialize(serialized);
       assertMap7Hexes(loaded);
     });
   });

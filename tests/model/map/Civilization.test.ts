@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Civilization } from '../../../src/model/map/Civilization';
 import { CivilizationId } from '../../../src/model/map/CivilizationId';
-import { Make7HexesMap } from '../../utils/GameStateGenerator';
+import { Make7HexesMap } from '../../utils/IslandStateGenerator';
 import { Edge } from '../../../src/model/hex/Edge';
 import { HexCoord } from '../../../src/model/hex/HexCoord';
 import { HexDirection } from '../../../src/model/hex/HexDirection';

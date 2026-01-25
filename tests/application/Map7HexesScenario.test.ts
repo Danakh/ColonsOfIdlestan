@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Make7HexesMap, saveGameState } from '../utils/GameStateGenerator';
+import { Make7HexesMap, saveIslandState } from '../utils/IslandStateGenerator';
 import { Make7HexesMapWithPortAndCapital } from '../utils/GameProgressionTest';
 import { HexCoord } from '../../src/model/hex/HexCoord';
 import { HexDirection } from '../../src/model/hex/HexDirection';
@@ -8,7 +8,7 @@ import { Edge } from '../../src/model/hex/Edge';
 import { BuildingType } from '../../src/model/city/BuildingType';
 import { CityLevel } from '../../src/model/city/CityLevel';
 import { ResourceType } from '../../src/model/map/ResourceType';
-import { GameState } from '../../src/model/game/GameState';
+import { IslandState } from '../../src/model/game/IslandState';
 import { ResourceHarvestController } from '../../src/controller/ResourceHarvestController';
 import { BuildingController } from '../../src/controller/BuildingController';
 import { RoadController } from '../../src/controller/RoadController';
@@ -30,7 +30,7 @@ describe('Map7HexesScenario', () => {
     const gs = Make7HexesMap();
     
     // Enregistrer l'état initial
-    saveGameState(gs, 'Map7HexesScenario-start');
+    saveIslandState(gs, 'Map7HexesScenario-start');
     
     const map = gs.getIslandMap()!;
     const civId = gs.getPlayerCivilizationId();
@@ -58,7 +58,7 @@ describe('Map7HexesScenario', () => {
     expect(city.hasBuilding(BuildingType.Brickworks)).toBe(true);
     
     // Enregistrer l'état final
-    saveGameState(gs, 'Map7HexesScenario-end');
+    saveIslandState(gs, 'Map7HexesScenario-end');
   });
 
   it('TradeController.canTrade - Market débloque le commerce', () => {

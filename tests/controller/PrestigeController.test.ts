@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createScenarioWithCapitalAndResources } from '../utils/GameStateGenerator';
+import { createScenarioWithCapitalAndResources } from '../utils/IslandStateGenerator';
 import { PrestigeController } from '../../src/controller/PrestigeController';
 import { BuildingType } from '../../src/model/city/BuildingType';
 import { CityLevel } from '../../src/model/city/CityLevel';
