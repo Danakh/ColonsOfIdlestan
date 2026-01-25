@@ -162,6 +162,42 @@ main {
     position: relative; /* Pour positionner le panneau en absolu */
 }
 
+.game-tabs {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    z-index: 30;
+}
+
+.game-tabs.hidden {
+    display: none;
+}
+
+.game-tab {
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    border: 2px solid rgba(102, 126, 234, 0.5);
+    background: rgba(255, 255, 255, 0.9);
+    color: #4a4a4a;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    transition: all 0.2s ease;
+}
+
+.game-tab:hover {
+    background: #f3f5ff;
+    border-color: #667eea;
+    color: #332f63;
+}
+
+.game-tab.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    border-color: transparent;
+}
+
 .game-layout {
     flex: 1;
     display: flex;
@@ -913,5 +949,21 @@ footer {
     font-size: 0.9rem;
     margin: 0;
     padding: 0;
+}
+
+.civilization-upgrade-total {
+    margin: 0 1em 0.25em 1em;
+    color: #4a4a4a;
+    font-size: 0.95rem;
+}
+
+.civilization-upgrade-hint {
+    margin: 0 1em 0.75em 1em;
+    color: #777;
+    font-size: 0.9rem;
+}
+
+.civilization-upgrade-hint.hidden {
+    display: none;
 }
 

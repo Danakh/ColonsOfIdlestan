@@ -42,6 +42,7 @@ function main(): void {
 
   // Variable pour stocker le gain de prestige en attente de confirmation
   let pendingPrestigeGain: number = 0;
+  let currentUpgradePanelMode: 'prestige' | 'consultation' | null = null;
 
   // Récupérer les éléments DOM
   const canvas = document.getElementById('map-canvas') as HTMLCanvasElement;
@@ -52,6 +53,9 @@ function main(): void {
   const importBtn = document.getElementById('import-btn') as HTMLButtonElement;
   const cheatBtn = document.getElementById('cheat-btn') as HTMLButtonElement;
   const showHexCoordsBtn = document.getElementById('show-hex-coords-btn') as HTMLButtonElement;
+  const gameTabs = document.getElementById('game-tabs') as HTMLElement | null;
+  const classicTabBtn = document.getElementById('tab-classic') as HTMLButtonElement | null;
+  const prestigeTabBtn = document.getElementById('tab-prestige') as HTMLButtonElement | null;
   // Créer la vue du panneau de ville
   const cityPanelView = new CityPanelView('city-panel');
 
@@ -100,6 +104,10 @@ function main(): void {
 
   if (!showHexCoordsBtn) {
     throw new Error('Bouton afficher coordonnées hexs introuvable');
+  }
+
+  if (!gameTabs || !classicTabBtn || !prestigeTabBtn) {
+    throw new Error('Onglets de navigation du jeu introuvables');
   }
 
   // Créer le jeu principal
@@ -232,6 +240,130 @@ function main(): void {
   let lastAnimationFrame: number | null = null;
   let gameStartTime: number | null = null;
 
+  function setActiveTab(mode: 'classic' | 'prestige'): void {
+    if (mode === 'classic') {
+      classicTabBtn.classList.add('active');
+      classicTabBtn.setAttribute('aria-pressed', 'true');
+      prestigeTabBtn.classList.remove('active');
+      prestigeTabBtn.setAttribute('aria-pressed', 'false');
+    } else {
+      prestigeTabBtn.classList.add('active');
+      prestigeTabBtn.setAttribute('aria-pressed', 'true');
+      classicTabBtn.classList.remove('active');
+      classicTabBtn.setAttribute('aria-pressed', 'false');
+    }
+  }
+
+  function updatePrestigeTabsVisibility(): void {
+    const unlocked = game.getController().getCivilizationState().hasPrestige();
+    gameTabs.classList.toggle('hidden', !unlocked);
+    prestigeTabBtn.disabled = !unlocked;
+  }
+
+  function unlockPrestigeAccess(): void {
+    if (!prestigeUnlocked) {
+      prestigeUnlocked = true;
+      localStorage.setItem(PRESTIGE_UNLOCK_KEY, 'true');
+    }
+    updatePrestigeTabsVisibility();
+  }
+
+  function buildPrestigeUpgrades(): CivilizationUpgrade[] {
+    const civId = game.getPlayerCivilizationId();
+    const civ = game.getIslandState().getCivilization(civId);
+    return [
+      {
+        id: 'resource-harvest-x1.5',
+        label: 'Récolte +50%',
+        description: 'Augmente le gain de ressources de 50% pour la prochaine partie.',
+        cost: 5,
+        onPurchase: () => {
+          const current = civ.getResourceGainLevel();
+          civ.setResourceGainLevel(current + 5);
+        },
+      },
+      {
+        id: 'civilization-points-x1.25',
+        label: 'Points de civilisation +25%',
+        description: 'Augmente les points de civilisation gagnés de 25% pour la prochaine partie.',
+        cost: 7,
+        onPurchase: () => {
+          const current = civ.getCivPointGainLevel();
+          civ.setCivPointGainLevel(current + 3);
+        },
+      },
+      {
+        id: 'builders-guild-unlock',
+        label: 'Débloquer Guilde des batisseurs',
+        description: 'Rend disponible la Guilde des batisseurs dès le départ de la partie suivante.',
+        cost: 10,
+        onPurchase: () => {
+          console.log('Déblocage Guilde des batisseurs pour la prochaine partie');
+        },
+      },
+    ];
+  }
+
+  const handleUpgradePurchased = (upgradeId: string, remainingPoints: number): void => {
+    console.log(`Amélioration achetée: ${upgradeId}, Points restants: ${remainingPoints}`);
+  };
+
+  const closePrestigeUpgradePanel = (): void => {
+    civilizationUpgradePanel.hide();
+    currentUpgradePanelMode = null;
+    setActiveTab('classic');
+
+    game.newGame();
+    gameStartTime = null;
+
+    autoSave();
+
+    cityPanelView.setPlayerCivilizationId(game.getPlayerCivilizationId());
+
+    const newIslandMap = game.getIslandMap();
+    if (newIslandMap) {
+      const civId = game.getPlayerCivilizationId();
+      renderer.render(newIslandMap, civId);
+      updateResourcesDisplay();
+      cityPanelView.refreshNow();
+      cityPanelView.updateFooter();
+    }
+
+    updatePrestigeTabsVisibility();
+  };
+
+  const closeConsultationPanel = (): void => {
+    civilizationUpgradePanel.hide();
+    currentUpgradePanelMode = null;
+    setActiveTab('classic');
+  };
+
+  const showPrestigeUpgradePanel = (
+    mode: 'prestige' | 'consultation',
+    availablePoints: number,
+    subtitle?: string,
+  ): void => {
+    currentUpgradePanelMode = mode;
+    civilizationUpgradePanel.setUpgrades(buildPrestigeUpgrades());
+    const civState = game.getController().getCivilizationState();
+    civilizationUpgradePanel.setCallbacks({
+      onClose: mode === 'prestige' ? closePrestigeUpgradePanel : closeConsultationPanel,
+      onUpgradePurchased: handleUpgradePurchased,
+    });
+    civilizationUpgradePanel.show(availablePoints, {
+      totalPrestigePoints: civState.getPrestigePointsTotal(),
+      readOnly: mode === 'consultation',
+      closeLabel: mode === 'prestige' ? 'Fermer et Relancer la Partie' : 'Fermer',
+      subtitle,
+    });
+    setActiveTab('prestige');
+  };
+
+  const openPrestigeConsultationPanel = (): void => {
+    const subtitle = 'Aucun point en attente. Gagnez un nouveau Prestige pour débloquer des points.';
+    showPrestigeUpgradePanel('consultation', 0, subtitle);
+  };
+
   // Charger automatiquement la sauvegarde si elle existe, sinon créer une nouvelle partie
   const loaded = autoLoad();
   if (!loaded) {
@@ -257,6 +389,28 @@ function main(): void {
   cityPanelView.refreshNow();
   // Mettre à jour les boutons du footer
   cityPanelView.updateFooter();
+
+  setActiveTab('classic');
+  updatePrestigeTabsVisibility();
+
+  classicTabBtn.addEventListener('click', () => {
+    if (currentUpgradePanelMode === 'prestige') {
+      closePrestigeUpgradePanel();
+      return;
+    }
+    if (currentUpgradePanelMode === 'consultation') {
+      closeConsultationPanel();
+    } else {
+      setActiveTab('classic');
+    }
+  });
+
+  prestigeTabBtn.addEventListener('click', () => {
+    if (prestigeTabBtn.disabled) {
+      return;
+    }
+    openPrestigeConsultationPanel();
+  });
 
   // Configurer les callbacks du panneau de ville
   cityPanelView.setCallbacks({
@@ -476,98 +630,29 @@ function main(): void {
   // Configurer les callbacks du panneau de confirmation de prestige
   prestigeConfirmationPanel.setCallbacks({
     onConfirm: () => {
-      // Appliquer le gain de prestige en attente
       if (pendingPrestigeGain > 0) {
         const civState = game.getController().getCivilizationState();
         civState.addPrestigePoints(pendingPrestigeGain);
-        const civId = game.getPlayerCivilizationId();
-        const civ = game.getIslandState().getCivilization(civId);
-        
-        // Afficher le panneau d'amélioration de civilisation
-        const upgrades: CivilizationUpgrade[] = [
-          {
-            id: 'resource-harvest-x1.5',
-            label: 'Récolte +50%',
-            description: 'Augmente le gain de ressources de 50% pour la prochaine partie.',
-            cost: 5,
-            onPurchase: () => {
-              // Augmenter le niveau de récolte de ressources (0.1 par niveau)
-              // Pour 1.5x: 1 + 0.1 * niveau = 1.5, donc niveau = 5
-              const current = civ.getResourceGainLevel();
-              civ.setResourceGainLevel(current + 5);
-            },
-          },
-          {
-            id: 'civilization-points-x1.25',
-            label: 'Points de civilisation +25%',
-            description: 'Augmente les points de civilisation gagnés de 25% pour la prochaine partie.',
-            cost: 7,
-            onPurchase: () => {
-              // Augmenter le niveau de points de civilisation (0.1 par niveau)
-              // Pour 1.25x: 1 + 0.1 * niveau = 1.25, donc niveau = 2.5 → 2 (un peu moins) ou 3 (un peu plus)
-              const current = civ.getCivPointGainLevel();
-              civ.setCivPointGainLevel(current + 3);
-            },
-          },
-          {
-            id: 'builders-guild-unlock',
-            label: 'Débloquer Guilde des batisseurs',
-            description: 'Rend disponible la Guilde des batisseurs dès le départ de la partie suivante.',
-            cost: 10,
-            onPurchase: () => {
-              // Sera appliqué au newGame
-              console.log('Déblocage Guilde des batisseurs pour la prochaine partie');
-            },
-          },
-        ];
-        
-        civilizationUpgradePanel.setUpgrades(upgrades);
-        civilizationUpgradePanel.show(pendingPrestigeGain);
+        updatePrestigeTabsVisibility();
+        showPrestigeUpgradePanel('prestige', pendingPrestigeGain);
         pendingPrestigeGain = 0;
       }
     },
     onCancel: () => {
-      // Annuler le prestige et restaurer l'affichage
       pendingPrestigeGain = 0;
       const currentIslandMap = game.getIslandMap();
       const civId = game.getPlayerCivilizationId();
       if (currentIslandMap && civId) {
         renderer.render(currentIslandMap, civId);
       }
+      setActiveTab('classic');
     },
   });
 
-  // Configurer les callbacks du panneau d'amélioration de civilisation
+  // Configurer les callbacks du panneau d'amélioration de civilisation (par défaut)
   civilizationUpgradePanel.setCallbacks({
-    onClose: () => {
-      // Fermer le panneau et relancer une nouvelle partie
-      civilizationUpgradePanel.hide();
-      
-      // Créer une nouvelle partie
-      game.newGame();
-      gameStartTime = null;
-      
-      // Sauvegarder immédiatement après la nouvelle partie
-      autoSave();
-      
-      // Mettre à jour la civilisation du joueur dans le panneau de ville
-      cityPanelView.setPlayerCivilizationId(game.getPlayerCivilizationId());
-      
-      // Mettre à jour l'affichage
-      const newIslandMap = game.getIslandMap();
-      if (newIslandMap) {
-        const civId = game.getPlayerCivilizationId();
-        renderer.render(newIslandMap, civId);
-        updateResourcesDisplay();
-        cityPanelView.refreshNow();
-        cityPanelView.updateFooter();
-      }
-    },
-    onUpgradePurchased: (upgradeId: string, remainingPoints: number) => {
-      // Callback optionnel appelé quand on achète une amélioration
-      // On peut ici ajouter des effets visuels ou des logs
-      console.log(`Amélioration achetée: ${upgradeId}, Points restants: ${remainingPoints}`);
-    },
+    onClose: closePrestigeUpgradePanel,
+    onUpgradePurchased: handleUpgradePurchased,
   });
 
 

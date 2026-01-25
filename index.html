@@ -30,6 +30,10 @@
             </div>
         </header>
         <main>
+            <div id="game-tabs" class="game-tabs hidden" aria-label="Onglets de vue">
+                <button id="tab-classic" class="game-tab active" aria-pressed="true">Jeu</button>
+                <button id="tab-prestige" class="game-tab" aria-pressed="false">Prestige</button>
+            </div>
             <div class="game-layout">
                 <div id="map-container" class="map-container">
                     <canvas id="map-canvas"></canvas>
@@ -126,6 +130,8 @@
                     <p style="color: #333; margin: 0 0 0.5em 0;"><strong>Points disponibles:</strong></p>
                     <p id="civilization-upgrade-points" style="color: #d4a574; font-size: 1.5em; font-weight: bold; margin: 0;">0</p>
                 </div>
+                <p id="civilization-upgrade-total" class="civilization-upgrade-total">Prestige cumulé : 0</p>
+                <p id="civilization-upgrade-hint" class="civilization-upgrade-hint hidden">Gagnez un Prestige pour obtenir des points à dépenser.</p>
                 <p style="margin: 1em; color: #666;">Choisissez les améliorations à débloquer pour votre prochaine partie.</p>
                 <ul id="civilization-upgrades-list" class="civilization-upgrades-list"></ul>
                 <div class="trade-actions">

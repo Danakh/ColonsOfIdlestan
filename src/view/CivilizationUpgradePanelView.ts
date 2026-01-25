@@ -20,6 +20,17 @@ export interface CivilizationUpgradePanelCallbacks {
   onUpgradePurchased?: (upgradeId: string, remainingPoints: number) => void;
 }
 
+export interface CivilizationUpgradePanelShowOptions {
+  /** Points de prestige cumulés (affichage secondaire) */
+  totalPrestigePoints?: number;
+  /** Mode lecture seule pour consultation */
+  readOnly?: boolean;
+  /** Libellé du bouton de fermeture */
+  closeLabel?: string;
+  /** Sous-titre optionnel (hint) */
+  subtitle?: string;
+}
+
 /**
  * Panneau pour dépenser les points de civilisation gagnés au prestige.
  * C'est l'écran principal qui remplace le jeu en attente de confirmation du prestige.
@@ -33,17 +44,25 @@ export class CivilizationUpgradePanelView {
   private panel: HTMLElement;
   private closeBtn: HTMLButtonElement | null = null;
   private pointsDisplay: HTMLElement | null = null;
+  private totalPointsDisplay: HTMLElement | null = null;
+  private hintDisplay: HTMLElement | null = null;
   private upgradesList: HTMLElement | null = null;
   
   private callbacks: CivilizationUpgradePanelCallbacks = {};
   private isVisible: boolean = false;
   private availablePoints: number = 0;
   private upgrades: CivilizationUpgrade[] = [];
+  private totalPrestigePoints: number = 0;
+  private isReadOnly: boolean = false;
+  private closeLabel: string = 'Fermer et Relancer la Partie';
+  private subtitle: string | null = null;
 
   constructor(panelId: string = 'civilization-upgrade-panel') {
     const panelEl = document.getElementById(panelId);
     const closeBtnEl = document.getElementById('civilization-upgrade-close-btn') as HTMLButtonElement;
     const pointsDisplayEl = document.getElementById('civilization-upgrade-points');
+    const totalPointsDisplayEl = document.getElementById('civilization-upgrade-total');
+    const hintDisplayEl = document.getElementById('civilization-upgrade-hint');
     const upgradesListEl = document.getElementById('civilization-upgrades-list');
 
     if (!panelEl) {
@@ -53,6 +72,8 @@ export class CivilizationUpgradePanelView {
     this.panel = panelEl;
     this.closeBtn = closeBtnEl || null;
     this.pointsDisplay = pointsDisplayEl || null;
+    this.totalPointsDisplay = totalPointsDisplayEl || null;
+    this.hintDisplay = hintDisplayEl || null;
     this.upgradesList = upgradesListEl || null;
 
     this.setupEventListeners();
@@ -101,8 +122,12 @@ export class CivilizationUpgradePanelView {
    * Affiche le panneau avec les points disponibles.
    * @param availablePoints Points de civilisation disponibles
    */
-  show(availablePoints: number): void {
+  show(availablePoints: number, options?: CivilizationUpgradePanelShowOptions): void {
     this.availablePoints = availablePoints;
+    this.totalPrestigePoints = options?.totalPrestigePoints ?? availablePoints;
+    this.isReadOnly = options?.readOnly ?? false;
+    this.closeLabel = options?.closeLabel ?? 'Fermer et Relancer la Partie';
+    this.subtitle = options?.subtitle ?? null;
     this.panel.classList.remove('hidden');
     this.isVisible = true;
     this.updateDisplay();
@@ -123,6 +148,23 @@ export class CivilizationUpgradePanelView {
     // Mettre à jour l'affichage des points
     if (this.pointsDisplay) {
       this.pointsDisplay.textContent = this.availablePoints.toString();
+    }
+
+    if (this.totalPointsDisplay) {
+      this.totalPointsDisplay.textContent = `Prestige cumulé : ${this.totalPrestigePoints}`;
+    }
+
+    if (this.hintDisplay) {
+      if (this.isReadOnly) {
+        this.hintDisplay.textContent = this.subtitle ?? 'Gagnez un Prestige pour obtenir des points à dépenser.';
+        this.hintDisplay.classList.remove('hidden');
+      } else {
+        this.hintDisplay.classList.add('hidden');
+      }
+    }
+
+    if (this.closeBtn) {
+      this.closeBtn.textContent = this.closeLabel;
     }
 
     // Mettre à jour la liste des améliorations
@@ -150,7 +192,7 @@ export class CivilizationUpgradePanelView {
         buyBtn.textContent = 'Acheter';
         
         // Désactiver le bouton si le joueur n'a pas assez de points
-        const canAfford = this.availablePoints >= upgrade.cost;
+        const canAfford = !this.isReadOnly && this.availablePoints >= upgrade.cost;
         if (!canAfford) {
           buyBtn.disabled = true;
         }
