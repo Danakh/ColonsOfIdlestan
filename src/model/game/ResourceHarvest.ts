@@ -150,7 +150,8 @@ export class ResourceHarvest {
     islandMap: IslandMap,
     civId: CivilizationId,
     playerResources: PlayerResources,
-    cityVertex?: Vertex
+    cityVertex?: Vertex,
+    resourceMultiplier?: number
   ): { gain: number; cityVertex: Vertex; resourceType: ResourceType | null; capacityReached: boolean } {
     // Si un vertex est fourni, vérifier qu'il est valide et adjacent à l'hex
     let actualCityVertex: Vertex | null = null;
@@ -229,9 +230,11 @@ export class ResourceHarvest {
       );
     }
 
-    // Calculer le gain
-    const gain = this.calculateGain(hexType);
-    
+    // Calculer le gain de base
+    const baseGain = this.calculateGain(hexType);
+    const multiplier = resourceMultiplier ?? 1;
+    const gain = Math.floor(baseGain * multiplier);
+
     if (gain > 0) {
       // Calculer la capacité d'inventaire maximale
       const maxCapacity = calculateInventoryCapacity(islandMap, civId);

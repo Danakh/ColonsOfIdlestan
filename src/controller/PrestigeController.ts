@@ -80,7 +80,8 @@ export class PrestigeController {
    */
   static activatePrestige(
     civId: CivilizationId,
-    map: IslandMap
+    map: IslandMap,
+    civPointMultiplier?: number
   ): PrestigeActionResult {
     // Vérifier les conditions
     if (!this.canActivatePrestige(civId, map)) {
@@ -92,7 +93,9 @@ export class PrestigeController {
     }
 
     // Points de prestige = points de civilisation
-    const prestigePoints = calculateCivilizationPoints(map, civId);
+    const basePoints = calculateCivilizationPoints(map, civId);
+    const multiplier = civPointMultiplier ?? 1;
+    const prestigePoints = Math.floor(basePoints * multiplier);
 
     return {
       success: true,

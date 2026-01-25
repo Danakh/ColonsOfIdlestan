@@ -304,11 +304,15 @@ function main(): void {
           }
 
           // Activer l'action Prestige
-          const result = PrestigeController.activatePrestige(civId, currentIslandMap);
+          // Appliquer le multiplicateur de points de civilisation depuis la civilisation
+          const civObj = game.getIslandState().getCivilization(civId);
+          const civPointMultiplier = civObj.getCivPointGainMultiplier();
+          const result = PrestigeController.activatePrestige(civId, currentIslandMap, civPointMultiplier);
           
           if (result.success && result.civilizationPointsGained !== undefined) {
-            // Les points de civilisation sont ajoutés au CivilizationState
-            // (à implémenter lors de la migration vers CivilizationState)
+            // Ajouter les points obtenus au CivilizationState
+            const civState = game.getController().getCivilizationState();
+            civState.setCivilizationPoints(civState.getCivilizationPoints() + result.civilizationPointsGained);
             alert(result.message);
             updateResourcesDisplay();
             cityPanelView.refreshNow();
@@ -551,7 +555,10 @@ function main(): void {
     const playerResources = game.getPlayerResources();
 
     // Récolter la ressource via le contrôleur (qui gère la limitation de taux)
-    const result = ResourceHarvestController.harvest(hexCoord, civId, currentIslandMap, playerResources);
+    // Appliquer le multiplicateur de gain de ressource propre à la civilisation
+    const civObj = game.getIslandState().getCivilization(civId);
+    const resourceMultiplier = civObj.getResourceGainMultiplier();
+    const result = ResourceHarvestController.harvest(hexCoord, civId, currentIslandMap, playerResources, { resourceMultiplier });
     
     if (result.success && result.cityVertex) {
       // Déclencher l'effet visuel de récolte (manuel, donc avec effet de réduction)

@@ -10,6 +10,9 @@ export interface CivilizationSerialized {
   autoOutpostConstruction?: boolean;
   autoCityUpgrade?: boolean;
   autoProductionBuildingConstruction?: boolean;
+  resourceGainLevel?: number;
+  civPointGainLevel?: number;
+  constructionTimeLevel?: number;
 }
 
 /**
@@ -24,6 +27,9 @@ export class Civilization {
   private _autoOutpostConstruction: boolean = false;
   private _autoCityUpgrade: boolean = false;
   private _autoProductionBuildingConstruction: boolean = false;
+  private _resourceGainLevel: number = 0; // 0..100
+  private _civPointGainLevel: number = 0; // 0..10
+  private _constructionTimeLevel: number = 0; // 0..10
 
   /**
    * Crée une nouvelle civilisation.
@@ -128,6 +134,15 @@ export class Civilization {
     if (this._autoProductionBuildingConstruction) {
       result.autoProductionBuildingConstruction = this._autoProductionBuildingConstruction;
     }
+    if (this._resourceGainLevel && this._resourceGainLevel > 0) {
+      result.resourceGainLevel = this._resourceGainLevel;
+    }
+    if (this._civPointGainLevel && this._civPointGainLevel > 0) {
+      result.civPointGainLevel = this._civPointGainLevel;
+    }
+    if (this._constructionTimeLevel && this._constructionTimeLevel > 0) {
+      result.constructionTimeLevel = this._constructionTimeLevel;
+    }
     return result;
   }
 
@@ -147,6 +162,16 @@ export class Civilization {
     }
     if (data.autoProductionBuildingConstruction) {
       civ.setAutoProductionBuildingConstruction(true);
+    }
+    // Upgrades: backwards-compatible defaults
+    if (data.resourceGainLevel !== undefined && data.resourceGainLevel !== null) {
+      civ._resourceGainLevel = data.resourceGainLevel;
+    }
+    if (data.civPointGainLevel !== undefined && data.civPointGainLevel !== null) {
+      civ._civPointGainLevel = data.civPointGainLevel;
+    }
+    if (data.constructionTimeLevel !== undefined && data.constructionTimeLevel !== null) {
+      civ._constructionTimeLevel = data.constructionTimeLevel;
     }
     return civ;
   }
@@ -187,5 +212,55 @@ export class Civilization {
   getBuildingCount(islandMap: IslandMap): number {
     const cities = islandMap.getCitiesForCivilization(this.id);
     return cities.reduce((total, city) => total + city.getBuildingCount(), 0);
+  }
+
+  // --- Civilization upgrades API ---
+  getResourceGainLevel(): number {
+    return this._resourceGainLevel;
+  }
+
+  setResourceGainLevel(level: number): void {
+    this._resourceGainLevel = Math.max(0, Math.min(100, Math.floor(level)));
+  }
+
+  incrementResourceGainLevel(): void {
+    this.setResourceGainLevel(this._resourceGainLevel + 1);
+  }
+
+  getResourceGainMultiplier(): number {
+    return 1 + 0.1 * this._resourceGainLevel;
+  }
+
+  getCivPointGainLevel(): number {
+    return this._civPointGainLevel;
+  }
+
+  setCivPointGainLevel(level: number): void {
+    this._civPointGainLevel = Math.max(0, Math.min(10, Math.floor(level)));
+  }
+
+  incrementCivPointGainLevel(): void {
+    this.setCivPointGainLevel(this._civPointGainLevel + 1);
+  }
+
+  getCivPointGainMultiplier(): number {
+    return 1 + 0.1 * this._civPointGainLevel;
+  }
+
+  getConstructionTimeLevel(): number {
+    return this._constructionTimeLevel;
+  }
+
+  setConstructionTimeLevel(level: number): void {
+    this._constructionTimeLevel = Math.max(0, Math.min(10, Math.floor(level)));
+  }
+
+  incrementConstructionTimeLevel(): void {
+    this.setConstructionTimeLevel(this._constructionTimeLevel + 1);
+  }
+
+  // Placeholder: no effect yet
+  getConstructionTimeMultiplier(): number {
+    return 1;
   }
 }

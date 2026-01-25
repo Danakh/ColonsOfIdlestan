@@ -64,7 +64,7 @@ export class ResourceHarvestController {
     civId: CivilizationId,
     map: IslandMap,
     resources: PlayerResources,
-    options?: { gameClock?: GameClock }
+    options?: { gameClock?: GameClock; resourceMultiplier?: number }
   ): HarvestResult {
     const hexKey = hexCoord.hashCode();
     const lastHarvestTime = ResourceHarvestController.hexCooldowns.get(hexKey);
@@ -93,7 +93,14 @@ export class ResourceHarvestController {
     }
 
     // Effectuer la récolte et obtenir la ville
-    const harvestResult = ResourceHarvest.harvest(hexCoord, map, civId, resources);
+    const harvestResult = ResourceHarvest.harvest(
+      hexCoord,
+      map,
+      civId,
+      resources,
+      undefined,
+      options?.resourceMultiplier
+    );
 
     // Si la capacité maximale a été atteinte et qu'une ressource a été récoltée, notifier TradeController
     if (harvestResult.capacityReached && harvestResult.resourceType !== null) {
