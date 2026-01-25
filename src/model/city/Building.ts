@@ -171,17 +171,15 @@ export class Building {
     if (this.type !== BuildingType.Seaport) {
       throw new Error(`Seul le port maritime peut être spécialisé.`);
     }
-    // Permettre la spécialisation au niveau 2 (normal) ou au niveau 3 (pour désérialisation)
-    if (this._level !== 2 && this._level !== 3) {
-      throw new Error(`Le port doit être au niveau 2 ou 3 pour être spécialisé.`);
+    // Permettre la spécialisation au niveau 2 (normal) ou au niveau 3+ (désérialisation ou changement tardif)
+    if (this._level < 2) {
+      throw new Error(`Le port doit être au niveau 2 ou plus pour être spécialisé.`);
     }
-    // Au niveau 3, permettre seulement si la spécialisation n'est pas déjà définie (désérialisation)
-    if (this._level === 3 && this._specialization !== undefined) {
-      // Si la spécialisation est déjà définie et différente, c'est une erreur
+    // À partir du niveau 3, autoriser uniquement si aucune spécialisation existante ou si identique
+    if (this._level >= 3 && this._specialization !== undefined) {
       if (this._specialization !== resource) {
-        throw new Error(`Le port niveau 3 a déjà une spécialisation (${this._specialization}).`);
+        throw new Error(`Le port niveau ${this._level} a déjà une spécialisation (${this._specialization}).`);
       }
-      // Si c'est la même, on peut ignorer silencieusement
       return;
     }
     this._specialization = resource;

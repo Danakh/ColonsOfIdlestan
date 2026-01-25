@@ -168,7 +168,7 @@ export class TradeController {
     for (const city of cities) {
       const seaport = city.getBuilding(BuildingType.Seaport);
       // Le port peut être niveau 2 ou 3 avec spécialisation
-      if (seaport && (seaport.level === 2 || seaport.level === 3)) {
+      if (seaport && seaport.level >= 2) {
         const specialization = seaport.getSpecialization();
         if (specialization !== undefined) {
           return specialization;
@@ -201,7 +201,7 @@ export class TradeController {
       
       const seaport = city.getBuilding(BuildingType.Seaport);
       // Le port peut être niveau 2 ou 3 avec spécialisation
-      if (seaport && (seaport.level === 2 || seaport.level === 3)) {
+      if (seaport && seaport.level >= 2) {
         const specialization = seaport.getSpecialization();
         if (specialization !== undefined) {
           usedSpecializations.add(specialization);

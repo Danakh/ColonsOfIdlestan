@@ -275,6 +275,27 @@ export class CityPanelView {
       }
     });
 
+    // Gérer les changements de checkbox pour l'auto-trade
+    this.cityBuildingsList.addEventListener('change', (e) => {
+      const target = e.target as HTMLElement;
+      
+      if (target.classList.contains('building-auto-trade-checkbox')) {
+        const checkbox = target as HTMLInputElement;
+        const buildingAction = checkbox.dataset.buildingAction as BuildingAction;
+        const buildingType = checkbox.dataset.buildingType as BuildingType;
+        if (!buildingAction || !buildingType) {
+          return;
+        }
+
+        // Émettre un événement personnalisé avec l'état de la checkbox
+        const event = new CustomEvent('buildingAction', {
+          detail: { buildingAction, buildingType, checked: checkbox.checked },
+          bubbles: true,
+        });
+        this.cityPanel.dispatchEvent(event);
+      }
+    });
+
     // Bouton Commerce global (footer du panneau)
     if (this.tradeBtn) {
       this.tradeBtn.addEventListener('click', () => {
@@ -610,7 +631,7 @@ export class CityPanelView {
 
         // Bouton Spécialisation si Seaport niveau 2 sans spécialisation
         const building = city.getBuilding(buildingType);
-        if (buildingType === BuildingType.Seaport && building && building.level === 2) {
+        if (buildingType === BuildingType.Seaport && building && building.level >= 2) {
           const specialization = building.getSpecialization();
           if (specialization === undefined) {
             const specializationBtn = document.createElement('button');
@@ -765,7 +786,7 @@ export class CityPanelView {
 
       // Bouton Spécialisation: créer s'il n'existe pas, masquer si déjà spécialisé, afficher si Seaport niveau 2 sans spécialisation
       let specializationBtn = li.querySelector('button.building-action-btn[data-building-action="Specialization"]') as HTMLButtonElement | null;
-      if (buildingType === BuildingType.Seaport && building && building.level === 2) {
+      if (buildingType === BuildingType.Seaport && building && building.level >= 2) {
         const specialization = building.getSpecialization();
         if (specialization === undefined) {
           // Le bouton doit être visible, créer s'il n'existe pas

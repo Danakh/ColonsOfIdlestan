@@ -4,6 +4,10 @@ import { ResourceSprites } from './ResourceSprites';
 import { TradeController } from '../controller/TradeController';
 import { IslandMap } from '../model/map/IslandMap';
 import { CivilizationId } from '../model/map/CivilizationId';
+import { BuildingType } from '../model/city/BuildingType';
+import { City } from '../model/city/City';
+import { Vertex } from '../model/hex/Vertex';
+import { Building } from '../model/city/Building';
 
 /**
  * Callbacks pour les actions du panneau de commerce.
@@ -13,6 +17,8 @@ export interface TradePanelCallbacks {
   onTrade?: (offered: Map<ResourceType, number>, requested: Map<ResourceType, number>) => void;
   /** Callback appelé lorsque l'utilisateur annule */
   onCancel?: () => void;
+  /** Callback appelé lorsqu'un port change son état d'auto-trade */
+  onPortAutoTradeChange?: (city: City, vertex: Vertex, enabled: boolean) => void;
 }
 
 /**
@@ -23,6 +29,7 @@ export class TradePanelView {
   private tradePanel: HTMLElement;
   private offeredList: HTMLUListElement;
   private requestedList: HTMLUListElement;
+  private portsList: HTMLUListElement;
   private cancelBtn: HTMLButtonElement;
   private confirmBtn: HTMLButtonElement;
   private offeredTitle: HTMLElement;
@@ -58,6 +65,7 @@ export class TradePanelView {
     const panel = document.getElementById(tradePanelId);
     const offeredListEl = document.getElementById('trade-offered-list') as HTMLUListElement;
     const requestedListEl = document.getElementById('trade-requested-list') as HTMLUListElement;
+    const portsListEl = document.getElementById('trade-ports-list') as HTMLUListElement;
     const cancelBtnEl = document.getElementById('trade-cancel-btn') as HTMLButtonElement;
     const confirmBtnEl = document.getElementById('trade-confirm-btn') as HTMLButtonElement;
     const offeredTitleEl = document.querySelector('.trade-column:first-child h3') as HTMLElement;
@@ -71,6 +79,9 @@ export class TradePanelView {
     }
     if (!requestedListEl) {
       throw new Error('Élément avec l\'id "trade-requested-list" introuvable');
+    }
+    if (!portsListEl) {
+      throw new Error('Élément avec l\'id "trade-ports-list" introuvable');
     }
     if (!cancelBtnEl) {
       throw new Error('Élément avec l\'id "trade-cancel-btn" introuvable');
@@ -88,6 +99,7 @@ export class TradePanelView {
     this.tradePanel = panel;
     this.offeredList = offeredListEl;
     this.requestedList = requestedListEl;
+    this.portsList = portsListEl;
     this.cancelBtn = cancelBtnEl;
     this.confirmBtn = confirmBtnEl;
     this.offeredTitle = offeredTitleEl;
@@ -186,6 +198,9 @@ export class TradePanelView {
     if (!this.playerResources) {
       return;
     }
+
+    // Mettre à jour la liste des ports
+    this.updatePortsList();
 
     // Mettre à jour la liste des ressources offertes (gauche)
     this.updateResourceList(this.offeredList, this.offeredResources, true);
@@ -480,5 +495,71 @@ export class TradePanelView {
     // Le bouton est désactivé si les batches ne correspondent pas, si le commerce n'est pas disponible,
     // ou si le joueur n'a pas assez de ressources
     this.confirmBtn.disabled = !batchesMatch || !canTrade || !hasEnoughResources;
+  }
+
+  /**
+   * Met à jour la liste des ports niveau 3 avec leurs cases à cocher pour l'auto-trade.
+   * Crée une case à cocher pour chaque ressource dans l'ordre, alignée avec les ressources dans "Vous donnez".
+   */
+  private updatePortsList(): void {
+    this.portsList.innerHTML = '';
+
+    if (!this.islandMap || !this.civId) {
+      // Créer des items vides pour chaque ressource pour maintenir l'alignement
+      for (const resourceType of this.resourceOrder) {
+        const item = document.createElement('li');
+        item.className = 'trade-port-item';
+        this.portsList.appendChild(item);
+      }
+      return;
+    }
+
+    // Récupérer toutes les villes de la civilisation avec des ports niveau 3
+    const cities = this.islandMap.getCitiesByCivilization(this.civId);
+    const portsByResource: Map<ResourceType, { city: City; vertex: Vertex; seaport: Building }> = new Map();
+
+    for (const city of cities) {
+      const seaport = city.getBuilding(BuildingType.Seaport);
+      if (seaport && seaport.level === 3) {
+        const specialization = seaport.getSpecialization();
+        if (specialization) {
+          // Si plusieurs ports ont la même spécialisation, on garde le premier
+          if (!portsByResource.has(specialization)) {
+            portsByResource.set(specialization, { city, vertex: city.vertex, seaport });
+          }
+        }
+      }
+    }
+
+    // Créer une case à cocher pour chaque ressource dans l'ordre
+    for (const resourceType of this.resourceOrder) {
+      const item = document.createElement('li');
+      item.className = 'trade-port-item';
+
+      const portInfo = portsByResource.get(resourceType);
+      
+      if (portInfo) {
+        // Créer une case à cocher pour ce port
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = `port-auto-trade-${portInfo.vertex.hashCode()}`;
+        checkbox.className = 'trade-port-checkbox';
+        checkbox.checked = portInfo.seaport.isAutoTradeEnabled();
+        checkbox.dataset.vertexHash = portInfo.vertex.hashCode();
+        checkbox.dataset.resourceType = resourceType;
+
+        // Gestionnaire de changement
+        checkbox.addEventListener('change', () => {
+          if (this.callbacks.onPortAutoTradeChange) {
+            this.callbacks.onPortAutoTradeChange(portInfo.city, portInfo.vertex, checkbox.checked);
+          }
+        });
+
+        item.appendChild(checkbox);
+      }
+      // Si pas de port pour cette ressource, item vide pour maintenir l'alignement
+
+      this.portsList.appendChild(item);
+    }
   }
 }
