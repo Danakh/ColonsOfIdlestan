@@ -2,6 +2,8 @@
 // Contient un GodState unique (pas de slots)
 
 import { GodState } from './GodState';
+import { CivilizationState } from './CivilizationState';
+import { IslandState } from './IslandState';
 
 export class PlayerSave {
   private readonly godState: GodState;
@@ -24,11 +26,13 @@ export class PlayerSave {
     if (!data || typeof data !== 'object') {
       throw new Error('Données de sauvegarde invalides: structure inattendue');
     }
-    if (!('godState' in data)) {
-      throw new Error('Données de sauvegarde invalides: champ godState manquant');
+
+    // Format nouveau: PlayerSave -> GodState -> CivilizationState -> IslandState
+    if ('godState' in data) {
+      const godState = GodState.deserialize((data as any).godState);
+      return new PlayerSave(godState);
     }
 
-    const godState = GodState.deserialize((data as any).godState);
-    return new PlayerSave(godState);
+    throw new Error('Données de sauvegarde invalides: format non reconnu');
   }
 }

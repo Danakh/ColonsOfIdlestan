@@ -353,7 +353,7 @@ function main(): void {
             
             // Afficher le panneau de confirmation de prestige
             const civState = game.getController().getCivilizationState();
-            const currentPoints = civState.getTotalPrestigePoints();
+            const currentPoints = civState.getPrestigePointsTotal();
             prestigeConfirmationPanel.show(currentPoints, result.civilizationPointsGained);
           } else {
             alert(result.message);

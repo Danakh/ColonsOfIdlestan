@@ -13,6 +13,9 @@ import { ResourceType } from '../../src/model/map/ResourceType';
 import { GameClock } from '../../src/model/game/GameClock';
 import { IslandState } from '../../src/model/game/IslandState';
 import { PlayerResources } from '../../src/model/game/PlayerResources';
+import { CivilizationState } from '../../src/model/game/CivilizationState';
+import { GodState } from '../../src/model/game/GodState';
+import { PlayerSave } from '../../src/model/game/PlayerSave';
 import { writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
@@ -134,8 +137,11 @@ export function saveIslandState(islandState: IslandState, filename: string): voi
   // Créer le chemin complet du fichier
   const filePath = join(savesDir, `${filename}.json`);
   
-  // Sérialiser et enregistrer
-  const serialized = islandState.serialize();
+  // Sérialiser via PlayerSave (format complet GodState/CivilizationState)
+  const civState = new CivilizationState(islandState, islandState.getGameClock());
+  const godState = new GodState(0, civState);
+  const playerSave = new PlayerSave(godState);
+  const serialized = JSON.stringify(playerSave.serialize());
   writeFileSync(filePath, serialized, 'utf-8');
 }
 
