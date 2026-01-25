@@ -1,4 +1,4 @@
-import { GameMap } from '../map/GameMap';
+import { IslandMap } from '../map/IslandMap';
 import { CivilizationId } from '../map/CivilizationId';
 import { CityLevel } from '../city/CityLevel';
 import { BuildingType } from '../city/BuildingType';
@@ -22,7 +22,7 @@ import { BuildingType } from '../city/BuildingType';
  * @returns La capacité maximale d'inventaire par ressource
  */
 export function calculateInventoryCapacity(
-  map: GameMap,
+  map: IslandMap,
   civId: CivilizationId
 ): number {
   const cities = map.getCitiesByCivilization(civId);

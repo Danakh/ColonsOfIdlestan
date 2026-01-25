@@ -1,6 +1,6 @@
 import { HexCoord } from '../model/hex/HexCoord';
 import { Vertex } from '../model/hex/Vertex';
-import { GameMap } from '../model/map/GameMap';
+import { IslandMap } from '../model/map/IslandMap';
 import { CivilizationId } from '../model/map/CivilizationId';
 import { PlayerResources } from '../model/game/PlayerResources';
 import { ResourceHarvest } from '../model/game/ResourceHarvest';
@@ -62,7 +62,7 @@ export class ResourceHarvestController {
   static harvest(
     hexCoord: HexCoord,
     civId: CivilizationId,
-    map: GameMap,
+    map: IslandMap,
     resources: PlayerResources,
     options?: { gameClock?: GameClock }
   ): HarvestResult {

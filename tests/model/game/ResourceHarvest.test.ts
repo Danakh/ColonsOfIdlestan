@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { ResourceHarvest } from '../../../src/model/game/ResourceHarvest';
 import { PlayerResources } from '../../../src/model/game/PlayerResources';
-import { GameMap } from '../../../src/model/map/GameMap';
+import { IslandMap } from '../../../src/model/map/IslandMap';
 import { ResourceType } from '../../../src/model/map/ResourceType';
 import { HexType } from '../../../src/model/map/HexType';
 import { CivilizationId } from '../../../src/model/map/CivilizationId';
@@ -42,7 +42,7 @@ describe('ResourceHarvest', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -75,7 +75,7 @@ describe('ResourceHarvest', () => {
         new Hex(northeast),
         new Hex(isolated),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -99,7 +99,7 @@ describe('ResourceHarvest', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId1 = CivilizationId.create('civ1');
       const civId2 = CivilizationId.create('civ2');
       map.registerCivilization(civId1);
@@ -127,7 +127,7 @@ describe('ResourceHarvest', () => {
         new Hex(northeast),
         new Hex(southeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -155,7 +155,7 @@ describe('ResourceHarvest', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -171,7 +171,7 @@ describe('ResourceHarvest', () => {
     it('devrait retourner false si l\'hexagone n\'existe pas dans la grille', () => {
       const center = new HexCoord(0, 0);
       const grid = new HexGrid([new Hex(center)]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -182,7 +182,7 @@ describe('ResourceHarvest', () => {
     it('devrait retourner false si l\'hexagone n\'est pas visible', () => {
       const center = new HexCoord(0, 0);
       const grid = new HexGrid([new Hex(center)]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -204,7 +204,7 @@ describe('ResourceHarvest', () => {
         new Hex(northeast),
         new Hex(isolated),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -221,7 +221,7 @@ describe('ResourceHarvest', () => {
         new Hex(isolated),
         new Hex(isolatedNorth),
       ]);
-      const map2 = new GameMap(grid2);
+      const map2 = new IslandMap(grid2);
       map2.registerCivilization(civId);
       map2.addCity(vertex, civId);
       map2.setHexType(isolated, HexType.Wood);
@@ -242,7 +242,7 @@ describe('ResourceHarvest', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -268,7 +268,7 @@ describe('ResourceHarvest', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -301,7 +301,7 @@ describe('ResourceHarvest', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -329,7 +329,7 @@ describe('ResourceHarvest', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -359,7 +359,7 @@ describe('ResourceHarvest', () => {
         new Hex(northeast),
         new Hex(southeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -386,7 +386,7 @@ describe('ResourceHarvest', () => {
     it('devrait lancer une erreur si l\'hexagone ne peut pas être récolté', () => {
       const center = new HexCoord(0, 0);
       const grid = new HexGrid([new Hex(center)]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -408,7 +408,7 @@ describe('ResourceHarvest', () => {
         new Hex(isolated),
         new Hex(isolatedNorth),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -422,7 +422,7 @@ describe('ResourceHarvest', () => {
         new Hex(isolated),
         new Hex(isolatedNorth),
       ]);
-      const map2 = new GameMap(grid2);
+      const map2 = new IslandMap(grid2);
       map2.registerCivilization(civId);
       const vertex = Vertex.create(center, north, northeast);
       map2.addCity(vertex, civId);
@@ -449,7 +449,7 @@ describe('ResourceHarvest', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -474,7 +474,7 @@ describe('ResourceHarvest', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -502,7 +502,7 @@ describe('ResourceHarvest', () => {
         new Hex(northeast),
         new Hex(southeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -546,7 +546,7 @@ describe('ResourceHarvest', () => {
         new Hex(distantNorth),
         new Hex(distantNortheast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -577,7 +577,7 @@ describe('ResourceHarvest', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -610,7 +610,7 @@ describe('ResourceHarvest', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 

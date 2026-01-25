@@ -1,5 +1,5 @@
 import { GameState } from '../model/game/GameState';
-import { GameMap } from '../model/map/GameMap';
+import { IslandMap } from '../model/map/IslandMap';
 import { PlayerResources } from '../model/game/PlayerResources';
 import { CivilizationId } from '../model/map/CivilizationId';
 import { GameClock } from '../model/game/GameClock';
@@ -35,8 +35,8 @@ export class MainGameController {
     return this.godState.getGodPoints();
   }
 
-  getGameMap(): GameMap | null {
-    return this.getGameState().getGameMap();
+  getIslandMap(): IslandMap | null {
+    return this.getGameState().getIslandMap();
   }
 
   getPlayerResources(): PlayerResources {

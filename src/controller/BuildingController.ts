@@ -1,7 +1,7 @@
 import { BuildingType, getBuildingCost, getRequiredHexType } from '../model/city/BuildingType';
 import { City } from '../model/city/City';
 import { CityLevel } from '../model/city/CityLevel';
-import { GameMap } from '../model/map/GameMap';
+import { IslandMap } from '../model/map/IslandMap';
 import { Vertex } from '../model/hex/Vertex';
 import { PlayerResources } from '../model/game/PlayerResources';
 import { ResourceType } from '../model/map/ResourceType';
@@ -39,7 +39,7 @@ export class BuildingController {
   static canUpgrade(
     buildingType: BuildingType,
     city: City,
-    map: GameMap,
+    map: IslandMap,
     resources: PlayerResources
   ): boolean {
     const building = city.getBuilding(buildingType);
@@ -78,7 +78,7 @@ export class BuildingController {
   static upgradeBuilding(
     buildingType: BuildingType,
     city: City,
-    map: GameMap,
+    map: IslandMap,
     resources: PlayerResources
   ): void {
     const building = city.getBuilding(buildingType);
@@ -126,7 +126,7 @@ export class BuildingController {
   static canBuild(
     buildingType: BuildingType,
     city: City,
-    map: GameMap,
+    map: IslandMap,
     vertex: Vertex,
     resources: PlayerResources
   ): boolean {
@@ -159,7 +159,7 @@ export class BuildingController {
    * @param map - La carte de jeu
    * @returns true si au moins un hex adjacent a le type requis
    */
-  private static hasAdjacentHexOfType(vertex: Vertex, hexType: HexType, map: GameMap): boolean {
+  private static hasAdjacentHexOfType(vertex: Vertex, hexType: HexType, map: IslandMap): boolean {
     // Obtenir les 3 hexagones qui forment le vertex
     const hexes = vertex.getHexes();
 
@@ -194,7 +194,7 @@ export class BuildingController {
   static buildBuilding(
     buildingType: BuildingType,
     city: City,
-    map: GameMap,
+    map: IslandMap,
     vertex: Vertex,
     resources: PlayerResources
   ): void {
@@ -239,7 +239,7 @@ export class BuildingController {
    */
   static getBuildableBuildingsWithStatus(
     city: City,
-    map: GameMap,
+    map: IslandMap,
     vertex: Vertex,
     resources: PlayerResources
   ): BuildableBuildingStatus[] {

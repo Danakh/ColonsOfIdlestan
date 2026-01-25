@@ -12,9 +12,9 @@ The codebase strictly separates concerns into three layers:
 
 ### Model (`src/model/`)
 - **Pure data structures** with no side effects
-- **Serializable**: Each model has `serialize()`/`deserialize()` methods (e.g., [src/model/hex/HexCoord.ts](src/model/hex/HexCoord.ts), [src/model/map/GameMap.ts](src/model/map/GameMap.ts))
+- **Serializable**: Each model has `serialize()`/`deserialize()` methods (e.g., [src/model/hex/HexCoord.ts](src/model/hex/HexCoord.ts), [src/model/map/IslandMap.ts](src/model/map/IslandMap.ts))
 - **Immutable-friendly**: Most properties use `readonly` and getter methods
-- Domain entities: `HexCoord`, `Hex`, `HexGrid`, `GameMap`, `City`, `Building`, `PlayerResources`, `GameState`, `GameClock`, `ResourceType`, `HexType`
+- Domain entities: `HexCoord`, `Hex`, `HexGrid`, `IslandMap`, `City`, `Building`, `PlayerResources`, `GameState`, `GameClock`, `ResourceType`, `HexType`
 - No references to Controllers or Views
 
 ### Controller (`src/controller/`)
@@ -64,7 +64,7 @@ Example: `hex.coord.neighborMain(MainHexDirection.E)` → neighbor to the East.
 ## Game State & Serialization Pattern
 
 [GameState.ts](src/model/game/GameState.ts) is the root of all game data:
-- Holds `GameMap`, `PlayerResources`, `GameClock`, civilizations, and `seed`
+- Holds `IslandMap`, `PlayerResources`, `GameClock`, civilizations, and `seed`
 - All child objects implement `serialize()` → JSON and `static deserialize(data)` → Object
 - Tests use `GameStateGenerator` (in tests/utils/) to create test scenarios with seeded maps
 
@@ -143,7 +143,7 @@ Reason: Type-safe iteration over enum values.
 | [src/controller/MainGameController.ts](src/controller/MainGameController.ts) | Main state accessor |
 | [src/model/game/GameState.ts](src/model/game/GameState.ts) | Root game data |
 | [src/model/hex/HexCoord.ts](src/model/hex/HexCoord.ts) | Axial hex coordinates |
-| [src/model/map/GameMap.ts](src/model/map/GameMap.ts) | Hex grid + cities + roads |
+| [src/model/map/IslandMap.ts](src/model/map/IslandMap.ts) | Hex grid + cities + roads |
 | [src/view/HexMapRenderer.ts](src/view/HexMapRenderer.ts) | Canvas rendering engine |
 | [src/controller/MapGenerator.ts](src/controller/MapGenerator.ts) | Procedural generation with seeded RNG |
 | [tests/utils/GameStateGenerator.ts](tests/utils/GameStateGenerator.ts) | Test scenario factory |

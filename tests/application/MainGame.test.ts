@@ -15,14 +15,14 @@ describe('MainGame - Récolte par clic', () => {
   });
 
   it('devrait récolter les ressources en cliquant sur les hexagones adjacents à une ville', () => {
-    const gameMap = game.getGameMap();
-    if (!gameMap) {
+    const islandMap = game.getIslandMap();
+    if (!islandMap) {
       throw new Error('La carte de jeu n\'a pas été générée');
     }
 
     const playerResources = game.getPlayerResources();
     const civId = game.getPlayerCivilizationId();
-    const grid = gameMap.getGrid();
+    const grid = islandMap.getGrid();
     const allHexes = grid.getAllHexes();
 
     // Vérifier que l'inventaire est initialement vide
@@ -37,7 +37,7 @@ describe('MainGame - Récolte par clic', () => {
     const nonHarvestableHexes: HexCoord[] = [];
 
     for (const hex of allHexes) {
-      const canHarvest = ResourceHarvest.canHarvest(hex.coord, gameMap, civId);
+      const canHarvest = ResourceHarvest.canHarvest(hex.coord, islandMap, civId);
       if (canHarvest) {
         harvestableHexes.push(hex.coord);
       } else {
@@ -58,17 +58,17 @@ describe('MainGame - Récolte par clic', () => {
 
     // Simuler un clic sur chaque hexagone récoltable
     for (const hexCoord of harvestableHexes) {
-      const hexType = gameMap.getHexType(hexCoord);
+      const hexType = islandMap.getHexType(hexCoord);
       if (!hexType) {
         continue;
       }
 
       // Vérifier que la récolte est possible
-      expect(ResourceHarvest.canHarvest(hexCoord, gameMap, civId)).toBe(true);
+      expect(ResourceHarvest.canHarvest(hexCoord, islandMap, civId)).toBe(true);
 
       // Simuler la récolte
       try {
-        ResourceHarvest.harvest(hexCoord, gameMap, civId, playerResources);
+        ResourceHarvest.harvest(hexCoord, islandMap, civId, playerResources);
       } catch (error) {
         // Si la récolte échoue, c'est une erreur de test
         throw new Error(`La récolte devrait réussir pour l'hexagone ${hexCoord.toString()}: ${error}`);
@@ -90,24 +90,24 @@ describe('MainGame - Récolte par clic', () => {
 
     // Vérifier que les hexagones non récoltables ne peuvent pas être récoltés
     for (const hexCoord of nonHarvestableHexes) {
-      expect(ResourceHarvest.canHarvest(hexCoord, gameMap, civId)).toBe(false);
+      expect(ResourceHarvest.canHarvest(hexCoord, islandMap, civId)).toBe(false);
       
       // Tenter de récolter devrait échouer
       expect(() => {
-        ResourceHarvest.harvest(hexCoord, gameMap, civId, playerResources);
+        ResourceHarvest.harvest(hexCoord, islandMap, civId, playerResources);
       }).toThrow();
     }
   });
 
   it('devrait identifier correctement les types de ressources récoltées', () => {
-    const gameMap = game.getGameMap();
-    if (!gameMap) {
+    const islandMap = game.getIslandMap();
+    if (!islandMap) {
       throw new Error('La carte de jeu n\'a pas été générée');
     }
 
     const playerResources = game.getPlayerResources();
     const civId = game.getPlayerCivilizationId();
-    const grid = gameMap.getGrid();
+    const grid = islandMap.getGrid();
     const allHexes = grid.getAllHexes();
 
     // Compter les hexagones par type de ressource récoltable
@@ -120,8 +120,8 @@ describe('MainGame - Récolte par clic', () => {
 
     // Simuler des clics sur tous les hexagones récoltables
     for (const hex of allHexes) {
-      if (ResourceHarvest.canHarvest(hex.coord, gameMap, civId)) {
-        const hexType = gameMap.getHexType(hex.coord);
+      if (ResourceHarvest.canHarvest(hex.coord, islandMap, civId)) {
+        const hexType = islandMap.getHexType(hex.coord);
         if (!hexType) {
           continue;
         }
@@ -133,7 +133,7 @@ describe('MainGame - Récolte par clic', () => {
           resourceTypeCounts.set(resourceType, currentCount + 1);
 
           // Récolter la ressource
-          ResourceHarvest.harvest(hex.coord, gameMap, civId, playerResources);
+          ResourceHarvest.harvest(hex.coord, islandMap, civId, playerResources);
         }
       }
     }
@@ -146,14 +146,14 @@ describe('MainGame - Récolte par clic', () => {
   });
 
   it('devrait récolter du Bois en cliquant sur l\'hexagone Bois adjacent à la ville initiale', () => {
-    const gameMap = game.getGameMap();
-    if (!gameMap) {
+    const islandMap = game.getIslandMap();
+    if (!islandMap) {
       throw new Error('La carte de jeu n\'a pas été générée');
     }
 
     const playerResources = game.getPlayerResources();
     const civId = game.getPlayerCivilizationId();
-    const grid = gameMap.getGrid();
+    const grid = islandMap.getGrid();
     const allHexes = grid.getAllHexes();
 
     // Vérifier que l'inventaire est initialement vide
@@ -162,8 +162,8 @@ describe('MainGame - Récolte par clic', () => {
     // Trouver l'hexagone Bois qui est adjacent à la ville initiale
     let woodHexCoord: HexCoord | null = null;
     for (const hex of allHexes) {
-      const hexType = gameMap.getHexType(hex.coord);
-      if (hexType === HexType.Wood && ResourceHarvest.canHarvest(hex.coord, gameMap, civId)) {
+      const hexType = islandMap.getHexType(hex.coord);
+      if (hexType === HexType.Wood && ResourceHarvest.canHarvest(hex.coord, islandMap, civId)) {
         woodHexCoord = hex.coord;
         break;
       }
@@ -176,10 +176,10 @@ describe('MainGame - Récolte par clic', () => {
     }
 
     // Vérifier que la récolte est possible
-    expect(ResourceHarvest.canHarvest(woodHexCoord, gameMap, civId)).toBe(true);
+    expect(ResourceHarvest.canHarvest(woodHexCoord, islandMap, civId)).toBe(true);
 
     // Simuler le clic sur l'hexagone Bois
-    ResourceHarvest.harvest(woodHexCoord, gameMap, civId, playerResources);
+    ResourceHarvest.harvest(woodHexCoord, islandMap, civId, playerResources);
 
     // Vérifier que du Bois a été ajouté à l'inventaire
     expect(playerResources.getResource(ResourceType.Wood)).toBe(1);
@@ -190,14 +190,14 @@ describe('MainGame - Récolte par clic', () => {
   });
 
   it('devrait récolter de l\'Argile en cliquant sur l\'hexagone Argile adjacent à la ville initiale', () => {
-    const gameMap = game.getGameMap();
-    if (!gameMap) {
+    const islandMap = game.getIslandMap();
+    if (!islandMap) {
       throw new Error('La carte de jeu n\'a pas été générée');
     }
 
     const playerResources = game.getPlayerResources();
     const civId = game.getPlayerCivilizationId();
-    const grid = gameMap.getGrid();
+    const grid = islandMap.getGrid();
     const allHexes = grid.getAllHexes();
 
     // Vérifier que l'inventaire est initialement vide
@@ -206,8 +206,8 @@ describe('MainGame - Récolte par clic', () => {
     // Trouver l'hexagone Argile (Brick) qui est adjacent à la ville initiale
     let brickHexCoord: HexCoord | null = null;
     for (const hex of allHexes) {
-      const hexType = gameMap.getHexType(hex.coord);
-      if (hexType === HexType.Brick && ResourceHarvest.canHarvest(hex.coord, gameMap, civId)) {
+      const hexType = islandMap.getHexType(hex.coord);
+      if (hexType === HexType.Brick && ResourceHarvest.canHarvest(hex.coord, islandMap, civId)) {
         brickHexCoord = hex.coord;
         break;
       }
@@ -220,10 +220,10 @@ describe('MainGame - Récolte par clic', () => {
     }
 
     // Vérifier que la récolte est possible
-    expect(ResourceHarvest.canHarvest(brickHexCoord, gameMap, civId)).toBe(true);
+    expect(ResourceHarvest.canHarvest(brickHexCoord, islandMap, civId)).toBe(true);
 
     // Simuler le clic sur l'hexagone Argile
-    ResourceHarvest.harvest(brickHexCoord, gameMap, civId, playerResources);
+    ResourceHarvest.harvest(brickHexCoord, islandMap, civId, playerResources);
 
     // Vérifier que de l'Argile a été ajoutée à l'inventaire
     expect(playerResources.getResource(ResourceType.Wood)).toBe(0);
@@ -234,24 +234,24 @@ describe('MainGame - Récolte par clic', () => {
   });
 
   it('ne devrait pas récolter les hexagones Desert ou Water', () => {
-    const gameMap = game.getGameMap();
-    if (!gameMap) {
+    const islandMap = game.getIslandMap();
+    if (!islandMap) {
       throw new Error('La carte de jeu n\'a pas été générée');
     }
 
     const playerResources = game.getPlayerResources();
     const civId = game.getPlayerCivilizationId();
-    const grid = gameMap.getGrid();
+    const grid = islandMap.getGrid();
     const allHexes = grid.getAllHexes();
 
     // Vérifier que les hexagones Desert et Water ne sont pas récoltables
     for (const hex of allHexes) {
-      const hexType = gameMap.getHexType(hex.coord);
+      const hexType = islandMap.getHexType(hex.coord);
       
       if (hexType === HexType.Desert || hexType === HexType.Water) {
         // Ces hexagones ne devraient pas être récoltables même s'ils sont adjacents à une ville
         // (bien que Desert pourrait être récoltable s'il est adjacent, mais il ne donne pas de ressource)
-        const canHarvest = ResourceHarvest.canHarvest(hex.coord, gameMap, civId);
+        const canHarvest = ResourceHarvest.canHarvest(hex.coord, islandMap, civId);
         
         // Même si canHarvest retourne false pour d'autres raisons (non adjacent, non visible),
         // on vérifie que le type de ressource ne peut pas être récolté
@@ -261,7 +261,7 @@ describe('MainGame - Récolte par clic', () => {
         if (canHarvest) {
           // Si pour une raison quelconque canHarvest retourne true, la récolte devrait échouer
           expect(() => {
-            ResourceHarvest.harvest(hex.coord, gameMap, civId, playerResources);
+            ResourceHarvest.harvest(hex.coord, islandMap, civId, playerResources);
           }).toThrow();
         }
       }

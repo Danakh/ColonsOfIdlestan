@@ -19,7 +19,7 @@ import { ResourceType } from './ResourceType';
  * 
  * Gère également la propriété des villes et routes par différentes civilisations.
  */
-export class GameMap {
+export class IslandMap {
   private readonly hexTypeMap: Map<string, HexType>;
   private readonly cityMap: Map<string, City>;
   private readonly roads: Set<string>;
@@ -906,7 +906,7 @@ export class GameMap {
     }
   }
 
-  /** Format sérialisé de la carte (pour GameMap.serialize). */
+  /** Format sérialisé de la carte (pour IslandMap.serialize). */
   serialize(): {
     grid: { hexes: [number, number][] };
     hexTypes: Record<string, string>;
@@ -939,9 +939,9 @@ export class GameMap {
       cities: CitySerialized[];
       roads: { edge: [[number, number], [number, number]]; owner: string }[];
     }
-  ): GameMap {
+  ): IslandMap {
     const grid = HexGrid.deserialize(data.grid);
-    const map = new GameMap(grid);
+    const map = new IslandMap(grid);
     for (const [key, type] of Object.entries(data.hexTypes)) {
       const [q, r] = key.split(',').map(Number);
       map.setHexType(HexCoord.deserialize([q, r]), type as HexType);

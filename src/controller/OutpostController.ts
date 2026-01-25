@@ -1,5 +1,5 @@
 import { Vertex } from '../model/hex/Vertex';
-import { GameMap } from '../model/map/GameMap';
+import { IslandMap } from '../model/map/IslandMap';
 import { CivilizationId } from '../model/map/CivilizationId';
 import { ResourceType } from '../model/map/ResourceType';
 import { PlayerResources } from '../model/game/PlayerResources';
@@ -34,7 +34,7 @@ export class OutpostController {
   static canBuildOutpost(
     vertex: Vertex,
     civId: CivilizationId,
-    map: GameMap
+    map: IslandMap
   ): boolean {
     // Vérifier que la civilisation est enregistrée
     if (!map.isCivilizationRegistered(civId)) {
@@ -109,7 +109,7 @@ export class OutpostController {
   static buildOutpost(
     vertex: Vertex,
     civId: CivilizationId,
-    map: GameMap,
+    map: IslandMap,
     resources: PlayerResources
   ): void {
     // Vérifier que la construction est possible

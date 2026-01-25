@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { calculateInventoryCapacity } from '../../../src/model/game/InventoryCapacity';
-import { GameMap } from '../../../src/model/map/GameMap';
+import { IslandMap } from '../../../src/model/map/IslandMap';
 import { CivilizationId } from '../../../src/model/map/CivilizationId';
 import { HexGrid } from '../../../src/model/hex/HexGrid';
 import { Hex } from '../../../src/model/hex/Hex';
@@ -25,7 +25,7 @@ describe('InventoryCapacity', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -46,7 +46,7 @@ describe('InventoryCapacity', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -67,7 +67,7 @@ describe('InventoryCapacity', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -88,7 +88,7 @@ describe('InventoryCapacity', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -109,7 +109,7 @@ describe('InventoryCapacity', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -130,7 +130,7 @@ describe('InventoryCapacity', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -162,7 +162,7 @@ describe('InventoryCapacity', () => {
         new Hex(northeast),
         new Hex(southeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -201,7 +201,7 @@ describe('InventoryCapacity', () => {
         new Hex(northeast),
         new Hex(southeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -217,7 +217,7 @@ describe('InventoryCapacity', () => {
     it('devrait retourner 10 si aucune ville n\'existe', () => {
       const center = new HexCoord(0, 0);
       const grid = new HexGrid([new Hex(center)]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 

@@ -1,6 +1,6 @@
 import { PlayerResources } from '../model/game/PlayerResources';
 import { ResourceType } from '../model/map/ResourceType';
-import { GameMap } from '../model/map/GameMap';
+import { IslandMap } from '../model/map/IslandMap';
 import { CivilizationId } from '../model/map/CivilizationId';
 import { calculateInventoryCapacity } from '../model/game/InventoryCapacity';
 import { calculateCivilizationPoints, hasLibrary } from '../model/game/CivilizationPoints';
@@ -57,16 +57,16 @@ export class InventoryView {
   /**
    * Met à jour l'affichage des ressources du joueur.
    * @param playerResources - Les ressources du joueur
-   * @param gameMap - La carte de jeu (peut être null si pas encore initialisée)
+   * @param islandMap - La carte de jeu (peut être null si pas encore initialisée)
    * @param civId - L'identifiant de la civilisation du joueur
    */
   updateDisplay(
     playerResources: PlayerResources,
-    gameMap: GameMap | null,
+    islandMap: IslandMap | null,
     civId: CivilizationId
   ): void {
     // Calculer la capacité maximale d'inventaire
-    const maxCapacity = gameMap ? calculateInventoryCapacity(gameMap, civId) : 10;
+    const maxCapacity = islandMap ? calculateInventoryCapacity(islandMap, civId) : 10;
 
     // Vider la liste
     this.resourcesListElement.innerHTML = '';
@@ -79,8 +79,8 @@ export class InventoryView {
     }
 
     // Afficher les points de civilisation seulement si une bibliothèque existe
-    if (gameMap && hasLibrary(gameMap, civId)) {
-      const points = calculateCivilizationPoints(gameMap, civId);
+    if (islandMap && hasLibrary(islandMap, civId)) {
+      const points = calculateCivilizationPoints(islandMap, civId);
       const pointsElement = this.createCivilizationPointsElement(points);
       this.resourcesListElement.appendChild(pointsElement);
     }

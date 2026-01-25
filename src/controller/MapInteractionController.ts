@@ -1,7 +1,7 @@
 import { HexCoord } from '../model/hex/HexCoord';
 import { Edge } from '../model/hex/Edge';
 import { Vertex } from '../model/hex/Vertex';
-import { GameMap } from '../model/map/GameMap';
+import { IslandMap } from '../model/map/IslandMap';
 import { CivilizationId } from '../model/map/CivilizationId';
 import { HexMapRenderer, RenderConfig } from '../view/HexMapRenderer';
 
@@ -18,7 +18,7 @@ export class MapInteractionController {
   private selectedVertex: Vertex | null = null;
   private hoveredVertex: Vertex | null = null;
   private hoveredEdge: Edge | null = null;
-  private currentGameMap: GameMap | null = null;
+  private currentIslandMap: IslandMap | null = null;
   private currentCivilizationId: CivilizationId | null = null;
 
   private onHexClickCallback: ((hexCoord: HexCoord) => void) | null = null;
@@ -54,8 +54,8 @@ export class MapInteractionController {
   /**
    * Définit la carte de jeu actuelle.
    */
-  setGameMap(gameMap: GameMap): void {
-    this.currentGameMap = gameMap;
+  setIslandMap(islandMap: IslandMap): void {
+    this.currentIslandMap = islandMap;
   }
 
   /**
@@ -129,12 +129,12 @@ export class MapInteractionController {
    */
   pixelToHexCoord(pixelX: number, pixelY: number): HexCoord | null {
     const config = this.getRenderConfig();
-    if (!config || !this.currentGameMap) {
+    if (!config || !this.currentIslandMap) {
       return null;
     }
 
     const { hexSize, offsetX, offsetY } = config;
-    const grid = this.currentGameMap.getGrid();
+    const grid = this.currentIslandMap.getGrid();
 
     const x = pixelX - offsetX;
     const y = pixelY - offsetY;
@@ -185,12 +185,12 @@ export class MapInteractionController {
    */
   pixelToVertex(pixelX: number, pixelY: number): Vertex | null {
     const config = this.getRenderConfig();
-    if (!config || !this.currentGameMap) {
+    if (!config || !this.currentIslandMap) {
       return null;
     }
 
-    const gameMap = this.currentGameMap;
-    const grid = gameMap.getGrid();
+    const islandMap = this.currentIslandMap;
+    const grid = islandMap.getGrid();
     const allVertices = grid.getAllVertices();
 
     let closestVertex: Vertex | null = null;
@@ -198,7 +198,7 @@ export class MapInteractionController {
     const maxDistance = 12;
 
     for (const vertex of allVertices) {
-      if (!gameMap.hasCity(vertex)) {
+      if (!islandMap.hasCity(vertex)) {
         continue;
       }
 
@@ -221,12 +221,12 @@ export class MapInteractionController {
    */
   pixelToEdge(pixelX: number, pixelY: number): Edge | null {
     const config = this.getRenderConfig();
-    if (!config || !this.currentGameMap) {
+    if (!config || !this.currentIslandMap) {
       return null;
     }
 
-    const gameMap = this.currentGameMap;
-    const grid = gameMap.getGrid();
+    const islandMap = this.currentIslandMap;
+    const grid = islandMap.getGrid();
     const allEdges = grid.getAllEdges();
 
     let closestEdge: Edge | null = null;
@@ -234,7 +234,7 @@ export class MapInteractionController {
     const maxDistance = 8;
 
     for (const edge of allEdges) {
-      const vertices = gameMap.getVerticesForEdge(edge);
+      const vertices = islandMap.getVerticesForEdge(edge);
       if (vertices.length < 2) {
         continue;
       }
@@ -309,7 +309,7 @@ export class MapInteractionController {
    */
   private handleMouseMove = (event: MouseEvent): void => {
     const config = this.getRenderConfig();
-    if (!config || !this.currentGameMap) {
+    if (!config || !this.currentIslandMap) {
       return;
     }
 
@@ -338,7 +338,7 @@ export class MapInteractionController {
         const edge = this.pixelToEdge(pixelX, pixelY);
 
         if (edge) {
-          const buildableRoads = this.currentGameMap.getBuildableRoadsForCivilization(this.currentCivilizationId);
+          const buildableRoads = this.currentIslandMap.getBuildableRoadsForCivilization(this.currentCivilizationId);
           const isBuildable = buildableRoads.some(buildableEdge => buildableEdge.equals(edge));
 
           if (isBuildable) {
@@ -405,7 +405,7 @@ export class MapInteractionController {
 
     // PRIORITÉ 1: Vérifier d'abord si on a cliqué sur une ville
     const vertex = this.pixelToVertex(pixelX, pixelY);
-    if (vertex && this.currentGameMap && this.currentGameMap.hasCity(vertex)) {
+    if (vertex && this.currentIslandMap && this.currentIslandMap.hasCity(vertex)) {
       // Sélectionner/désélectionner la ville
       if (this.selectedVertex && this.selectedVertex.equals(vertex)) {
         this.selectedVertex = null;

@@ -3,7 +3,7 @@ import { CityLevel } from '../model/city/CityLevel';
 import { BuildingType, getBuildingTypeName, getBuildingAction, BUILDING_ACTION_NAMES, BuildingAction, getAllBuildingTypes } from '../model/city/BuildingType';
 import { ResourceType } from '../model/map/ResourceType';
 import { Vertex } from '../model/hex/Vertex';
-import { GameMap } from '../model/map/GameMap';
+import { IslandMap } from '../model/map/IslandMap';
 import { CivilizationId } from '../model/map/CivilizationId';
 import { PlayerResources } from '../model/game/PlayerResources';
 import { BuildingController } from '../controller/BuildingController';
@@ -16,7 +16,7 @@ import { Console } from 'console';
  */
 export interface CityPanelCallbacks {
   /** Callback appelé lorsqu'un bâtiment doit être construit */
-  onBuildBuilding?: (buildingType: BuildingType, city: City, gameMap: GameMap, vertex: Vertex) => void;
+  onBuildBuilding?: (buildingType: BuildingType, city: City, islandMap: IslandMap, vertex: Vertex) => void;
   /** Callback appelé lors d'une action sur un bâtiment construit */
   onBuildingAction?: (action: BuildingAction, buildingType: BuildingType, city: City) => void;
   /** Callback appelé après chaque mise à jour du panneau (pour mettre à jour d'autres panneaux dépendants) */
@@ -28,7 +28,7 @@ export interface CityPanelCallbacks {
  * Évite de dupliquer la logique "selectedVertex + city + resources" dans main.ts.
  */
 export interface CityPanelStateProvider {
-  getGameMap: () => GameMap | null;
+  getIslandMap: () => IslandMap | null;
   getPlayerResources: () => PlayerResources;
 }
 
@@ -156,14 +156,14 @@ export class CityPanelView {
     }
 
     const selectedVertex = this.renderer.getSelectedVertex();
-    const gameMap = this.stateProvider.getGameMap();
+    const islandMap = this.stateProvider.getIslandMap();
     const city =
-      selectedVertex && gameMap && gameMap.hasCity(selectedVertex)
-        ? gameMap.getCity(selectedVertex) || null
+      selectedVertex && islandMap && islandMap.hasCity(selectedVertex)
+        ? islandMap.getCity(selectedVertex) || null
         : null;
     const playerResources = this.stateProvider.getPlayerResources();
 
-    this.update(selectedVertex, gameMap, city, playerResources);
+    this.update(selectedVertex, islandMap, city, playerResources);
     
     // Notifier les callbacks après la mise à jour
     if (this.callbacks.onPanelUpdated) {
@@ -187,10 +187,10 @@ export class CityPanelView {
     if (!this.stateProvider) {
       return;
     }
-    const gameMap = this.stateProvider.getGameMap();
-    if (gameMap) {
-      this.updateTradeFooter(gameMap);
-      this.updateAutomationFooter(gameMap);
+    const islandMap = this.stateProvider.getIslandMap();
+    if (islandMap) {
+      this.updateTradeFooter(islandMap);
+      this.updateAutomationFooter(islandMap);
     }
   }
 
@@ -205,12 +205,12 @@ export class CityPanelView {
    * Traite un événement de construction de bâtiment.
    * @param buildingType - Le type de bâtiment à construire
    * @param city - La ville
-   * @param gameMap - La carte de jeu
+   * @param islandMap - La carte de jeu
    * @param vertex - Le sommet de la ville
    */
-  handleBuildBuilding(buildingType: BuildingType, city: City, gameMap: GameMap, vertex: Vertex): void {
+  handleBuildBuilding(buildingType: BuildingType, city: City, islandMap: IslandMap, vertex: Vertex): void {
     if (this.callbacks.onBuildBuilding) {
-      this.callbacks.onBuildBuilding(buildingType, city, gameMap, vertex);
+      this.callbacks.onBuildBuilding(buildingType, city, islandMap, vertex);
     }
   }
 
@@ -293,14 +293,14 @@ export class CityPanelView {
   /**
    * Met à jour le bouton Commerce global (footer). Retourne true si l'état a changé.
    */
-  private updateTradeFooter(gameMap: GameMap | null): boolean {
+  private updateTradeFooter(islandMap: IslandMap | null): boolean {
     if (!this.tradeBtn) {
       return false;
     }
 
-    const canTrade = Boolean(gameMap && this.playerCivId && TradeController.canTrade(this.playerCivId, gameMap));
-    const rate = (canTrade && gameMap && this.playerCivId)
-      ? TradeController.getTradeRateForCivilization(this.playerCivId, gameMap)
+    const canTrade = Boolean(islandMap && this.playerCivId && TradeController.canTrade(this.playerCivId, islandMap));
+    const rate = (canTrade && islandMap && this.playerCivId)
+      ? TradeController.getTradeRateForCivilization(this.playerCivId, islandMap)
       : null;
 
     // Mettre à jour le bouton du footer
@@ -323,15 +323,15 @@ export class CityPanelView {
   /**
    * Met à jour le bouton Automatisation global (footer). Retourne true si l'état a changé.
    */
-  private updateAutomationFooter(gameMap: GameMap | null): boolean {
+  private updateAutomationFooter(islandMap: IslandMap | null): boolean {
     if (!this.automationBtn) {
       return false;
     }
 
-    const canAutomate = Boolean(gameMap && this.playerCivId && this.hasAutomationBuilding(this.playerCivId, gameMap));
+    const canAutomate = Boolean(islandMap && this.playerCivId && this.hasAutomationBuilding(this.playerCivId, islandMap));
     const automationKey = canAutomate ? '1' : '0';
     
-    const cities = (gameMap && this.playerCivId) ? gameMap.getCitiesByCivilization(this.playerCivId) : [];
+    const cities = (islandMap && this.playerCivId) ? islandMap.getCitiesByCivilization(this.playerCivId) : [];
     const hasGuild = cities.some(c => c.hasBuilding(BuildingType.BuildersGuild));
 
     // Mettre à jour le bouton du footer
@@ -352,7 +352,7 @@ export class CityPanelView {
   /**
    * Vérifie si une civilisation a accès à l'automatisation (Guilde des batisseurs).
    */
-  private hasAutomationBuilding(civId: CivilizationId, map: GameMap): boolean {
+  private hasAutomationBuilding(civId: CivilizationId, map: IslandMap): boolean {
     const cities = map.getCitiesByCivilization(civId);
     for (const city of cities) {
       if (city.hasBuilding(BuildingType.BuildersGuild)) {
@@ -379,11 +379,11 @@ export class CityPanelView {
       return null;
     }
     const selectedVertex = this.renderer.getSelectedVertex();
-    const gameMap = this.stateProvider.getGameMap();
-    if (!selectedVertex || !gameMap || !gameMap.hasCity(selectedVertex)) {
+    const islandMap = this.stateProvider.getIslandMap();
+    if (!selectedVertex || !islandMap || !islandMap.hasCity(selectedVertex)) {
       return null;
     }
-    return gameMap.getCity(selectedVertex) || null;
+    return islandMap.getCity(selectedVertex) || null;
   }
 
   /**
@@ -392,7 +392,7 @@ export class CityPanelView {
    */
   update(
     selectedVertex: Vertex | null,
-    gameMap: GameMap | null,
+    islandMap: IslandMap | null,
     city: City | null,
     playerResources: PlayerResources
   ): void {
@@ -401,7 +401,7 @@ export class CityPanelView {
     let tradeChanged = false;
     let automationChanged = false;
 
-    if (!selectedVertex || !gameMap || !city) {
+    if (!selectedVertex || !islandMap || !city) {
       // Sidebar fixe : afficher un état "aucune sélection" au lieu de masquer.
       if (this.lastNoSelectionRendered && !tradeChanged && !automationChanged) {
         return;
@@ -514,11 +514,11 @@ export class CityPanelView {
 
     if (structureChanged) {
       // Recrée la structure HTML de la liste (li + spans + boutons)
-      this.renderBuildingsListStructure(city, gameMap, selectedVertex, playerResources);
+      this.renderBuildingsListStructure(city, islandMap, selectedVertex, playerResources);
     }
 
     // Mise à jour incrémentale (ne remplace pas les boutons existants)
-    this.updateBuildingsListDynamic(city, gameMap, selectedVertex, playerResources);
+    this.updateBuildingsListDynamic(city, islandMap, selectedVertex, playerResources);
     
     // Notifier les callbacks après la mise à jour
     if (this.callbacks.onPanelUpdated) {
@@ -530,7 +530,7 @@ export class CityPanelView {
    * Construit la structure HTML de la liste des bâtiments.
    * À appeler uniquement quand la ville change ou que la structure change (bâtiment construit, niveau de ville, etc.).
    */
-  private renderBuildingsListStructure(city: City, gameMap: GameMap, vertex: Vertex, playerResources: PlayerResources): void {
+  private renderBuildingsListStructure(city: City, islandMap: IslandMap, vertex: Vertex, playerResources: PlayerResources): void {
     // Note: le titre/état dynamique est géré dans updateBuildingsListDynamic
     this.cityBuildingsList.innerHTML = '';
 
@@ -540,7 +540,7 @@ export class CityPanelView {
 
     // Obtenir les bâtiments constructibles avec leur statut pour vérifier si on peut les construire
     const buildableBuildingsMap = new Map<BuildingType, { canBuild: boolean; blockedByBuildingLimit: boolean; cost: Map<ResourceType, number> }>();
-    const buildableBuildings = BuildingController.getBuildableBuildingsWithStatus(city, gameMap, vertex, playerResources);
+    const buildableBuildings = BuildingController.getBuildableBuildingsWithStatus(city, islandMap, vertex, playerResources);
     for (const status of buildableBuildings) {
       buildableBuildingsMap.set(status.buildingType, { canBuild: status.canBuild, blockedByBuildingLimit: status.blockedByBuildingLimit, cost: status.cost });
     }
@@ -662,14 +662,14 @@ export class CityPanelView {
    * Met à jour uniquement les parties dynamiques du panneau (sans reconstruire le DOM).
    * Objectif: conserver les mêmes boutons/éléments pour éviter de casser les mouseover.
    */
-  private updateBuildingsListDynamic(city: City, gameMap: GameMap, vertex: Vertex, playerResources: PlayerResources): void {
+  private updateBuildingsListDynamic(city: City, islandMap: IslandMap, vertex: Vertex, playerResources: PlayerResources): void {
     // Titre avec le nombre de bâtiments construits / maximum
     const buildingCount = city.getBuildingCount();
     const maxBuildings = city.getMaxBuildings();
     this.cityBuildingsTitle.textContent = `Bâtiments ${buildingCount}/${maxBuildings}`;
 
     const builtBuildings = new Set(city.getBuildings());
-    const buildableBuildings = BuildingController.getBuildableBuildingsWithStatus(city, gameMap, vertex, playerResources);
+    const buildableBuildings = BuildingController.getBuildableBuildingsWithStatus(city, islandMap, vertex, playerResources);
     const buildableBuildingsMap = new Map<BuildingType, { canBuild: boolean; blockedByBuildingLimit: boolean; cost: Map<ResourceType, number> }>();
     for (const status of buildableBuildings) {
       buildableBuildingsMap.set(status.buildingType, { canBuild: status.canBuild, blockedByBuildingLimit: status.blockedByBuildingLimit, cost: status.cost });
@@ -759,7 +759,7 @@ export class CityPanelView {
         if (!canUpgrade) {
           upgradeBtn.disabled = true;
         } else {
-          upgradeBtn.disabled = !BuildingController.canUpgrade(buildingType, city, gameMap, playerResources);
+          upgradeBtn.disabled = !BuildingController.canUpgrade(buildingType, city, islandMap, playerResources);
         }
       }
 

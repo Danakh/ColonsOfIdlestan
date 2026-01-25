@@ -2,7 +2,7 @@ import { HexCoord } from '../hex/HexCoord';
 import { Vertex } from '../hex/Vertex';
 import { ResourceType } from '../map/ResourceType';
 import { HexType } from '../map/HexType';
-import { GameMap } from '../map/GameMap';
+import { IslandMap } from '../map/IslandMap';
 import { CivilizationId } from '../map/CivilizationId';
 import { PlayerResources } from './PlayerResources';
 import { calculateInventoryCapacity } from './InventoryCapacity';
@@ -12,7 +12,7 @@ import { calculateInventoryCapacity } from './InventoryCapacity';
  * 
  * Un hexagone est récoltable si :
  * - Il est adjacent à une ville du joueur (la ville est sur un vertex qui contient cet hexagone)
- * - Il est visible (déterminé par GameMap.isHexVisible)
+ * - Il est visible (déterminé par IslandMap.isHexVisible)
  * - Il contient une ressource récoltable (pas Desert ni Water)
  */
 export class ResourceHarvest {
@@ -54,40 +54,40 @@ export class ResourceHarvest {
    * Vérifie si un hexagone est adjacent à une ville du joueur.
    * Un hexagone est adjacent à une ville si la ville est sur un vertex qui contient cet hexagone.
    * @param hexCoord - La coordonnée de l'hexagone
-   * @param gameMap - La carte de jeu
+   * @param islandMap - La carte de jeu
    * @param civId - L'identifiant de la civilisation du joueur
    * @returns true si l'hexagone est adjacent à au moins une ville du joueur
    */
   static isAdjacentToPlayerCity(
     hexCoord: HexCoord,
-    gameMap: GameMap,
+    islandMap: IslandMap,
     civId: CivilizationId
   ): boolean {
-    return this.getAdjacentPlayerCity(hexCoord, gameMap, civId) !== null;
+    return this.getAdjacentPlayerCity(hexCoord, islandMap, civId) !== null;
   }
 
   /**
    * Retourne la première ville du joueur adjacente à un hexagone.
    * Un hexagone est adjacent à une ville si la ville est sur un vertex qui contient cet hexagone.
    * @param hexCoord - La coordonnée de l'hexagone
-   * @param gameMap - La carte de jeu
+   * @param islandMap - La carte de jeu
    * @param civId - L'identifiant de la civilisation du joueur
    * @returns Le vertex avec la ville adjacente, ou null si aucune ville adjacente
    */
   static getAdjacentPlayerCity(
     hexCoord: HexCoord,
-    gameMap: GameMap,
+    islandMap: IslandMap,
     civId: CivilizationId
   ): Vertex | null {
-    const grid = gameMap.getGrid();
+    const grid = islandMap.getGrid();
     
     // Obtenir tous les vertices qui touchent cet hexagone
     const vertices = grid.getVerticesForHex(hexCoord);
     
     // Retourner la première ville appartenant au joueur
     for (const vertex of vertices) {
-      if (gameMap.hasCity(vertex)) {
-        const owner = gameMap.getCityOwner(vertex);
+      if (islandMap.hasCity(vertex)) {
+        const owner = islandMap.getCityOwner(vertex);
         if (owner && owner.equals(civId)) {
           return vertex;
         }
@@ -100,33 +100,33 @@ export class ResourceHarvest {
   /**
    * Vérifie si un hexagone peut être récolté par le joueur.
    * @param hexCoord - La coordonnée de l'hexagone
-   * @param gameMap - La carte de jeu
+   * @param islandMap - La carte de jeu
    * @param civId - L'identifiant de la civilisation du joueur
    * @returns true si l'hexagone est récoltable
    */
   static canHarvest(
     hexCoord: HexCoord,
-    gameMap: GameMap,
+    islandMap: IslandMap,
     civId: CivilizationId
   ): boolean {
     // Vérifier que l'hexagone existe dans la grille
-    const grid = gameMap.getGrid();
+    const grid = islandMap.getGrid();
     if (!grid.hasHex(hexCoord)) {
       return false;
     }
 
     // Vérifier que l'hexagone est visible
-    if (!gameMap.isHexVisible(hexCoord)) {
+    if (!islandMap.isHexVisible(hexCoord)) {
       return false;
     }
 
     // Vérifier que l'hexagone est adjacent à une ville du joueur
-    if (!this.isAdjacentToPlayerCity(hexCoord, gameMap, civId)) {
+    if (!this.isAdjacentToPlayerCity(hexCoord, islandMap, civId)) {
       return false;
     }
 
     // Vérifier que l'hexagone contient une ressource récoltable
-    const hexType = gameMap.getHexType(hexCoord);
+    const hexType = islandMap.getHexType(hexCoord);
     if (!hexType) {
       return false;
     }
@@ -138,7 +138,7 @@ export class ResourceHarvest {
   /**
    * Récolte les ressources d'un hexagone et les ajoute à l'inventaire du joueur.
    * @param hexCoord - La coordonnée de l'hexagone à récolter
-   * @param gameMap - La carte de jeu
+   * @param islandMap - La carte de jeu
    * @param civId - L'identifiant de la civilisation du joueur
    * @param playerResources - L'inventaire du joueur
    * @param cityVertex - Optionnel: le vertex de la ville qui récolte. Si fourni, cette ville sera utilisée au lieu de chercher automatiquement.
@@ -147,7 +147,7 @@ export class ResourceHarvest {
    */
   static harvest(
     hexCoord: HexCoord,
-    gameMap: GameMap,
+    islandMap: IslandMap,
     civId: CivilizationId,
     playerResources: PlayerResources,
     cityVertex?: Vertex
@@ -167,13 +167,13 @@ export class ResourceHarvest {
       }
       
       // Vérifier que le vertex a une ville appartenant à la civilisation
-      if (!gameMap.hasCity(cityVertex)) {
+      if (!islandMap.hasCity(cityVertex)) {
         throw new Error(
           `Aucune ville trouvée sur le vertex fourni pour l'hexagone à ${hexCoord.toString()}.`
         );
       }
       
-      const owner = gameMap.getCityOwner(cityVertex);
+      const owner = islandMap.getCityOwner(cityVertex);
       if (!owner || !owner.equals(civId)) {
         throw new Error(
           `La ville sur le vertex fourni n'appartient pas à la civilisation pour l'hexagone à ${hexCoord.toString()}.`
@@ -184,14 +184,14 @@ export class ResourceHarvest {
     } else {
       // Comportement par défaut: chercher la première ville adjacente
       // Vérifier que la récolte est possible
-      if (!this.canHarvest(hexCoord, gameMap, civId)) {
+      if (!this.canHarvest(hexCoord, islandMap, civId)) {
         throw new Error(
           `L'hexagone à ${hexCoord.toString()} ne peut pas être récolté.`
         );
       }
 
       // Obtenir la ville adjacente qui permet la récolte
-      actualCityVertex = this.getAdjacentPlayerCity(hexCoord, gameMap, civId);
+      actualCityVertex = this.getAdjacentPlayerCity(hexCoord, islandMap, civId);
       if (!actualCityVertex) {
         throw new Error(
           `Aucune ville adjacente trouvée pour l'hexagone à ${hexCoord.toString()}.`
@@ -200,21 +200,21 @@ export class ResourceHarvest {
     }
     
     // Vérifier que l'hex est visible et récoltable
-    const grid = gameMap.getGrid();
+    const grid = islandMap.getGrid();
     if (!grid.hasHex(hexCoord)) {
       throw new Error(
         `L'hexagone à ${hexCoord.toString()} n'existe pas dans la grille.`
       );
     }
 
-    if (!gameMap.isHexVisible(hexCoord)) {
+    if (!islandMap.isHexVisible(hexCoord)) {
       throw new Error(
         `L'hexagone à ${hexCoord.toString()} n'est pas visible.`
       );
     }
 
     // Obtenir le type d'hexagone
-    const hexType = gameMap.getHexType(hexCoord);
+    const hexType = islandMap.getHexType(hexCoord);
     if (!hexType) {
       throw new Error(
         `Aucun type d'hexagone trouvé sur l'hexagone à ${hexCoord.toString()}.`
@@ -234,7 +234,7 @@ export class ResourceHarvest {
     
     if (gain > 0) {
       // Calculer la capacité d'inventaire maximale
-      const maxCapacity = calculateInventoryCapacity(gameMap, civId);
+      const maxCapacity = calculateInventoryCapacity(islandMap, civId);
       
       // Ajouter la ressource à l'inventaire avec limitation de capacité
       const actualGain = playerResources.addResourceCapped(resourceType, gain, maxCapacity);

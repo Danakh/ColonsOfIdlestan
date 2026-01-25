@@ -1,4 +1,4 @@
-import { GameMap } from '../model/map/GameMap';
+import { IslandMap } from '../model/map/IslandMap';
 import { CivilizationId } from '../model/map/CivilizationId';
 import { PlayerResources } from '../model/game/PlayerResources';
 import { ResourceType } from '../model/map/ResourceType';
@@ -29,7 +29,7 @@ export class TradeController {
    * @param map - La carte de jeu
    * @returns true si la civilisation a au moins un port maritime ou un marché
    */
-  static canTrade(civId: CivilizationId, map: GameMap): boolean {
+  static canTrade(civId: CivilizationId, map: IslandMap): boolean {
     const cities = map.getCitiesByCivilization(civId);
     for (const city of cities) {
       if (city.hasBuilding(BuildingType.Seaport) || city.hasBuilding(BuildingType.Market)) {
@@ -54,7 +54,7 @@ export class TradeController {
     fromResource: ResourceType,
     toResource: ResourceType,
     civId: CivilizationId,
-    map: GameMap,
+    map: IslandMap,
     resources: PlayerResources
   ): boolean {
     // Vérifier l'accès au commerce
@@ -97,7 +97,7 @@ export class TradeController {
     fromResource: ResourceType,
     toResource: ResourceType,
     civId: CivilizationId,
-    map: GameMap,
+    map: IslandMap,
     resources: PlayerResources
   ): void {
     // Vérifier que l'échange est possible
@@ -163,7 +163,7 @@ export class TradeController {
    * @param map - La carte de jeu
    * @returns La ressource spécialisée, ou null si aucune spécialisation
    */
-  static getSpecializedResource(civId: CivilizationId, map: GameMap): ResourceType | null {
+  static getSpecializedResource(civId: CivilizationId, map: IslandMap): ResourceType | null {
     const cities = map.getCitiesByCivilization(civId);
     for (const city of cities) {
       const seaport = city.getBuilding(BuildingType.Seaport);
@@ -187,7 +187,7 @@ export class TradeController {
    */
   static getUsedSpecializations(
     civId: CivilizationId,
-    map: GameMap,
+    map: IslandMap,
     excludeCity: City | null = null
   ): Set<ResourceType> {
     const usedSpecializations = new Set<ResourceType>();
@@ -218,7 +218,7 @@ export class TradeController {
    * @param map - La carte de jeu
    * @returns Le nombre de ressources à donner pour recevoir 1 (3 ou 4)
    */
-  static getTradeRateForCivilization(civId: CivilizationId, map: GameMap): number {
+  static getTradeRateForCivilization(civId: CivilizationId, map: IslandMap): number {
     const cities = map.getCitiesByCivilization(civId);
     for (const city of cities) {
       if (city.hasBuilding(BuildingType.Seaport)) return this.TRADE_RATE_SEAPORT;
@@ -236,7 +236,7 @@ export class TradeController {
    * @param resource - La ressource à échanger
    * @returns Le nombre de ressources à donner pour recevoir 1 (2, 3 ou 4)
    */
-  static getTradeRateForResource(civId: CivilizationId, map: GameMap, resource: ResourceType): number {
+  static getTradeRateForResource(civId: CivilizationId, map: IslandMap, resource: ResourceType): number {
     const specializedResource = this.getSpecializedResource(civId, map);
     if (specializedResource === resource) {
       return this.TRADE_RATE_SEAPORT_SPECIALIZED;
@@ -260,7 +260,7 @@ export class TradeController {
     offeredResources: Map<ResourceType, number>,
     requestedResources: Map<ResourceType, number>,
     civId: CivilizationId,
-    map: GameMap,
+    map: IslandMap,
     playerResources: PlayerResources
   ): void {
     // Vérifier l'accès au commerce
@@ -389,7 +389,7 @@ export class TradeController {
   static handleAutoTrade(
     harvestedResource: ResourceType,
     civId: CivilizationId,
-    map: GameMap,
+    map: IslandMap,
     resources: PlayerResources
   ): void {
     // Vérifier que le commerce est possible

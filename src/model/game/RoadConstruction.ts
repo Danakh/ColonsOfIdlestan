@@ -1,5 +1,5 @@
 import { Edge } from '../hex/Edge';
-import { GameMap } from '../map/GameMap';
+import { IslandMap } from '../map/IslandMap';
 import { CivilizationId } from '../map/CivilizationId';
 import { ResourceType } from '../map/ResourceType';
 import { PlayerResources } from './PlayerResources';
@@ -26,7 +26,7 @@ export class RoadConstruction {
    * @param map - La carte de jeu
    * @returns true si l'edge peut être construit
    */
-  static canBuildRoad(edge: Edge, civId: CivilizationId, map: GameMap): boolean {
+  static canBuildRoad(edge: Edge, civId: CivilizationId, map: IslandMap): boolean {
     // Vérifier que la civilisation est enregistrée
     if (!map.isCivilizationRegistered(civId)) {
       return false;
@@ -97,7 +97,7 @@ export class RoadConstruction {
    * @param map - La carte de jeu
    * @returns Un tableau des edges adjacents à cette arête
    */
-  private static getAdjacentEdges(edge: Edge, map: GameMap): Edge[] {
+  private static getAdjacentEdges(edge: Edge, map: IslandMap): Edge[] {
     const adjacentEdges: Edge[] = [];
     const vertices = map.getVerticesForEdge(edge);
 

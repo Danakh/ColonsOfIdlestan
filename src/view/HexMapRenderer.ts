@@ -1,4 +1,4 @@
-import { GameMap } from '../model/map/GameMap';
+import { IslandMap } from '../model/map/IslandMap';
 import { Hex } from '../model/hex/Hex';
 import { HexCoord } from '../model/hex/HexCoord';
 import { Vertex } from '../model/hex/Vertex';
@@ -64,14 +64,14 @@ const HEX_TYPE_COLORS: Record<HexType, string> = {
 };
 
 /**
- * Renderer pour afficher une GameMap sur un canvas HTML5.
+ * Renderer pour afficher une IslandMap sur un canvas HTML5.
  */
 export class HexMapRenderer {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private showCoordinates: boolean = false;
   private currentConfig: RenderConfig | null = null;
-  private currentGameMap: GameMap | null = null;
+  private currentIslandMap: IslandMap | null = null;
   private onHexClickCallback: ((hexCoord: HexCoord) => void) | null = null;
   private onEdgeClickCallback: ((edge: Edge) => void) | null = null;
   private onVertexClickCallback: ((vertex: Vertex) => void) | null = null;
@@ -270,17 +270,17 @@ export class HexMapRenderer {
 
   /**
    * Dessine la carte complète sur le canvas.
-   * @param gameMap - La carte à dessiner
+   * @param islandMap - La carte à dessiner
    * @param civId - Optionnel: la civilisation pour laquelle dessiner les routes constructibles
    */
-  render(gameMap: GameMap, civId?: CivilizationId): void {
+  render(islandMap: IslandMap, civId?: CivilizationId): void {
     // Stocker la civilisation actuelle pour la détection de survol
     this.currentCivilizationId = civId || null;
     // Effacer le canvas
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     // Calculer les dimensions de la carte
-    const grid = gameMap.getGrid();
+    const grid = islandMap.getGrid();
     const allHexes = grid.getAllHexes();
 
     if (allHexes.length === 0) {
@@ -288,7 +288,7 @@ export class HexMapRenderer {
     }
 
     // Filtrer uniquement les hexagones visibles
-    const visibleHexes = allHexes.filter(hex => gameMap.isHexVisible(hex.coord));
+    const visibleHexes = allHexes.filter(hex => islandMap.isHexVisible(hex.coord));
 
     if (visibleHexes.length === 0) {
       // Si aucun hexagone n'est visible, ne rien dessiner
@@ -327,11 +327,11 @@ export class HexMapRenderer {
 
     // Stocker la configuration et la carte pour la détection de clic
     this.currentConfig = config;
-    this.currentGameMap = gameMap;
+    this.currentIslandMap = islandMap;
 
     // Dessiner uniquement les hexagones visibles
     for (const hex of visibleHexes) {
-      this.drawHex(hex, gameMap, config, civId);
+      this.drawHex(hex, islandMap, config, civId);
     }
 
     // Dessiner les coordonnées si activé (uniquement pour les hexagones visibles)
@@ -342,37 +342,37 @@ export class HexMapRenderer {
     }
 
     // Dessiner les routes construites (avant les villes pour qu'elles passent sous)
-    this.drawRoads(gameMap, config);
+    this.drawRoads(islandMap, config);
 
     // Dessiner les routes constructibles si une civilisation est fournie (avant les villes)
     if (civId) {
-      this.drawBuildableRoads(gameMap, config, civId);
+      this.drawBuildableRoads(islandMap, config, civId);
     }
 
     // Dessiner les avant-postes constructibles si une civilisation est fournie (avant les villes)
     if (civId) {
-      this.drawBuildableOutposts(gameMap, config, civId);
+      this.drawBuildableOutposts(islandMap, config, civId);
     }
 
     // Dessiner les villes sur leurs sommets (en dernier pour qu'elles soient par-dessus les routes)
-    this.drawCities(gameMap, config);
+    this.drawCities(islandMap, config);
 
     // Dessiner les particules de ressources animées (par-dessus tout le reste)
     this.drawResourceParticles();
     
     // Vérifier s'il y a des cooldowns actifs et programmer un nouveau rendu si nécessaire
-    this.scheduleCooldownAnimation(gameMap);
+    this.scheduleCooldownAnimation(islandMap);
   }
 
   /**
    * Vérifie s'il y a des cooldowns actifs sur la carte et programme un nouveau rendu si nécessaire.
    * Cette méthode continue à programmer des frames jusqu'à ce qu'il n'y ait plus de cooldowns actifs.
    */
-  private scheduleCooldownAnimation(gameMap: GameMap): void {
+  private scheduleCooldownAnimation(islandMap: IslandMap): void {
     // Vérifier s'il y a des cooldowns actifs
-    const grid = gameMap.getGrid();
+    const grid = islandMap.getGrid();
     const allHexes = grid.getAllHexes();
-    const visibleHexes = allHexes.filter(hex => gameMap.isHexVisible(hex.coord));
+    const visibleHexes = allHexes.filter(hex => islandMap.isHexVisible(hex.coord));
     
     const hasActiveCooldown = visibleHexes.some(hex => {
       const remainingCooldown = ResourceHarvestController.getRemainingCooldown(hex.coord);
@@ -385,21 +385,21 @@ export class HexMapRenderer {
       if (this.cooldownAnimationFrameId === null) {
         const animate = () => {
           // Vérifier à nouveau s'il y a encore des cooldowns actifs en recalculant les hexagones visibles
-          if (!this.currentGameMap) {
+          if (!this.currentIslandMap) {
             this.cooldownAnimationFrameId = null;
             return;
           }
           
-          const currentGrid = this.currentGameMap.getGrid();
+          const currentGrid = this.currentIslandMap.getGrid();
           const currentAllHexes = currentGrid.getAllHexes();
-          const currentVisibleHexes = currentAllHexes.filter(hex => this.currentGameMap!.isHexVisible(hex.coord));
+          const currentVisibleHexes = currentAllHexes.filter(hex => this.currentIslandMap!.isHexVisible(hex.coord));
           
           // Toujours re-rendre avant de vérifier si on continue, pour mettre à jour les timers
           if (this.currentCivilizationId !== null) {
             if (this.renderCallback) {
               this.renderCallback();
             } else {
-              this.render(this.currentGameMap, this.currentCivilizationId);
+              this.render(this.currentIslandMap, this.currentCivilizationId);
             }
           }
           
@@ -527,7 +527,7 @@ export class HexMapRenderer {
    * @param cityVertex - Le vertex (ville) vers lequel la particule doit voler
    */
   triggerResourceHarvestAnimation(hexCoord: HexCoord, resourceType: ResourceType, cityVertex: Vertex): void {
-    if (!this.currentConfig || !this.currentGameMap) {
+    if (!this.currentConfig || !this.currentIslandMap) {
       return;
     }
 
@@ -568,7 +568,7 @@ export class HexMapRenderer {
    * @param resourceType - Le type de ressource produite
    */
   triggerMarketProductionAnimation(cityVertex: Vertex, resourceType: ResourceType): void {
-    if (!this.currentConfig || !this.currentGameMap) {
+    if (!this.currentConfig || !this.currentIslandMap) {
       return;
     }
 
@@ -706,7 +706,7 @@ export class HexMapRenderer {
   /**
    * Dessine un hexagone sur le canvas.
    */
-  private drawHex(hex: Hex, gameMap: GameMap, config: RenderConfig, civId?: CivilizationId): void {
+  private drawHex(hex: Hex, islandMap: IslandMap, config: RenderConfig, civId?: CivilizationId): void {
     const { hexSize, offsetX, offsetY } = config;
     const coord = hex.coord;
 
@@ -726,7 +726,7 @@ export class HexMapRenderer {
     const y = offsetY + (3 / 2) * coord.r * hexSize;
 
     // Obtenir le type d'hexagone
-    const hexType = gameMap.getHexType(coord) || HexType.Desert;
+    const hexType = islandMap.getHexType(coord) || HexType.Desert;
     const color = HEX_TYPE_COLORS[hexType] || '#CCCCCC';
 
     // Dessiner l'hexagone avec une rotation de 30° (pointy-top)
@@ -783,14 +783,14 @@ export class HexMapRenderer {
     
     // Dessiner un cadenas si l'hex est terrestre mais non récoltable
     if (civId && hexType !== HexType.Water) {
-      const isHarvestable = ResourceHarvest.canHarvest(coord, gameMap, civId);
+      const isHarvestable = ResourceHarvest.canHarvest(coord, islandMap, civId);
       if (!isHarvestable) {
         this.drawLockIcon(x, y, currentHexSize);
       }
     }
 
     // Dessiner le texte "auto" si l'hex est récolté automatiquement
-    if (civId && BuildingProductionController.isHexAutoHarvested(coord, civId, gameMap)) {
+    if (civId && BuildingProductionController.isHexAutoHarvested(coord, civId, islandMap)) {
       this.drawAutoIcon(x, y, currentHexSize);
     }
   }
@@ -941,16 +941,16 @@ export class HexMapRenderer {
   /**
    * Dessine les villes sur leurs sommets.
    */
-  private drawCities(gameMap: GameMap, config: RenderConfig): void {
-    const grid = gameMap.getGrid();
+  private drawCities(islandMap: IslandMap, config: RenderConfig): void {
+    const grid = islandMap.getGrid();
     const allHexes = grid.getAllHexes();
 
     
     const allVertices = grid.getAllVertices();
     for (const vertex of allVertices) {
       const vertexKey = vertex.hashCode();
-      if (gameMap.hasCity(vertex)) {
-        const city = gameMap.getCity(vertex);
+      if (islandMap.hasCity(vertex)) {
+        const city = islandMap.getCity(vertex);
         const isHovered = this.hoveredVertex !== null && this.hoveredVertex.equals(vertex);
         const isSelected = this.selectedVertex !== null && this.selectedVertex.equals(vertex);
         if (city) {
@@ -1079,19 +1079,19 @@ export class HexMapRenderer {
   /**
    * Dessine les routes construites sur la carte.
    */
-  private drawRoads(gameMap: GameMap, config: RenderConfig): void {
-    const grid = gameMap.getGrid();
+  private drawRoads(islandMap: IslandMap, config: RenderConfig): void {
+    const grid = islandMap.getGrid();
     const allEdges = grid.getAllEdges();
 
     // Utiliser un Set pour éviter de dessiner deux fois la même route
     const drawnEdges = new Set<string>();
 
     for (const edge of allEdges) {
-      if (gameMap.hasRoad(edge)) {
+      if (islandMap.hasRoad(edge)) {
         const edgeKey = edge.hashCode();
         if (!drawnEdges.has(edgeKey)) {
           drawnEdges.add(edgeKey);
-          this.drawRoad(edge, config, false, gameMap); // false = trait plein
+          this.drawRoad(edge, config, false, islandMap); // false = trait plein
         }
       }
     }
@@ -1101,15 +1101,15 @@ export class HexMapRenderer {
    * Dessine les routes constructibles pour une civilisation.
    */
   private drawBuildableRoads(
-    gameMap: GameMap,
+    islandMap: IslandMap,
     config: RenderConfig,
     civId: CivilizationId
   ): void {
-    const buildableRoads = gameMap.getBuildableRoadsForCivilization(civId);
+    const buildableRoads = islandMap.getBuildableRoadsForCivilization(civId);
 
     for (const edge of buildableRoads) {
       const isHighlighted = this.hoveredEdge !== null && this.hoveredEdge.equals(edge);
-      this.drawRoad(edge, config, true, gameMap, isHighlighted); // true = trait pointillé
+      this.drawRoad(edge, config, true, islandMap, isHighlighted); // true = trait pointillé
     }
   }
 
@@ -1117,11 +1117,11 @@ export class HexMapRenderer {
    * Dessine les avant-postes constructibles pour une civilisation.
    */
   private drawBuildableOutposts(
-    gameMap: GameMap,
+    islandMap: IslandMap,
     config: RenderConfig,
     civId: CivilizationId
   ): void {
-    const buildableVertices = gameMap.getBuildableOutpostVertices(civId);
+    const buildableVertices = islandMap.getBuildableOutpostVertices(civId);
 
     for (const vertex of buildableVertices) {
       const isHighlighted = this.hoveredOutpostVertex !== null && this.hoveredOutpostVertex.equals(vertex);
@@ -1182,12 +1182,12 @@ export class HexMapRenderer {
    * @param isDashed - true pour un trait pointillé (route constructible), false pour un trait plein (route construite)
    * @param isHighlighted - true pour mettre en surbrillance (route survolée)
    */
-  private drawRoad(edge: Edge, config: RenderConfig, isDashed: boolean, gameMap: GameMap, isHighlighted: boolean = false): void {
+  private drawRoad(edge: Edge, config: RenderConfig, isDashed: boolean, islandMap: IslandMap, isHighlighted: boolean = false): void {
     const { hexSize, offsetX, offsetY } = config;
     const [hex1, hex2] = edge.getHexes();
 
     // Obtenir les vertices de l'edge (un edge a deux vertices)
-    const vertices = gameMap.getVerticesForEdge(edge);
+    const vertices = islandMap.getVerticesForEdge(edge);
     
     if (vertices.length < 2) {
       // Fallback: utiliser les coins calculés à partir de la direction
@@ -1404,12 +1404,12 @@ export class HexMapRenderer {
    * @returns Les coordonnées hexagonales correspondantes, ou null si hors carte
    */
   pixelToHexCoord(pixelX: number, pixelY: number): HexCoord | null {
-    if (!this.currentConfig || !this.currentGameMap) {
+    if (!this.currentConfig || !this.currentIslandMap) {
       return null;
     }
 
     const { hexSize, offsetX, offsetY } = this.currentConfig;
-    const grid = this.currentGameMap.getGrid();
+    const grid = this.currentIslandMap.getGrid();
 
     // Convertir les coordonnées pixel en coordonnées hexagonales
     // Formule inverse de: 
@@ -1489,12 +1489,12 @@ export class HexMapRenderer {
    * @returns Le vertex avec une ville le plus proche du point cliqué, ou null si aucun vertex n'est assez proche
    */
   pixelToVertex(pixelX: number, pixelY: number): Vertex | null {
-    if (!this.currentConfig || !this.currentGameMap) {
+    if (!this.currentConfig || !this.currentIslandMap) {
       return null;
     }
 
-    const gameMap = this.currentGameMap;
-    const grid = gameMap.getGrid();
+    const islandMap = this.currentIslandMap;
+    const grid = islandMap.getGrid();
     const allVertices = grid.getAllVertices();
 
     let closestVertex: Vertex | null = null;
@@ -1503,7 +1503,7 @@ export class HexMapRenderer {
 
     for (const vertex of allVertices) {
       // Ne vérifier que les vertices qui ont une ville
-      if (!gameMap.hasCity(vertex)) {
+      if (!islandMap.hasCity(vertex)) {
         continue;
       }
 
@@ -1533,12 +1533,12 @@ export class HexMapRenderer {
    * @returns Le sommet le plus proche du point cliqué, ou null si aucun sommet n'est assez proche
    */
   pixelToVertexAny(pixelX: number, pixelY: number, maxDistance: number = 32): Vertex | null {
-    if (!this.currentConfig || !this.currentGameMap) {
+    if (!this.currentConfig || !this.currentIslandMap) {
       return null;
     }
 
-    const gameMap = this.currentGameMap;
-    const grid = gameMap.getGrid();
+    const islandMap = this.currentIslandMap;
+    const grid = islandMap.getGrid();
     const allVertices = grid.getAllVertices();
 
     let closestVertex: Vertex | null = null;
@@ -1576,12 +1576,12 @@ export class HexMapRenderer {
    * @returns L'arête la plus proche du point cliqué, ou null si aucune arête n'est assez proche
    */
   pixelToEdge(pixelX: number, pixelY: number): Edge | null {
-    if (!this.currentConfig || !this.currentGameMap) {
+    if (!this.currentConfig || !this.currentIslandMap) {
       return null;
     }
 
-    const gameMap = this.currentGameMap;
-    const grid = gameMap.getGrid();
+    const islandMap = this.currentIslandMap;
+    const grid = islandMap.getGrid();
     const allEdges = grid.getAllEdges();
 
     let closestEdge: Edge | null = null;
@@ -1590,7 +1590,7 @@ export class HexMapRenderer {
 
     for (const edge of allEdges) {
       // Obtenir les vertices de l'edge
-      const vertices = gameMap.getVerticesForEdge(edge);
+      const vertices = islandMap.getVerticesForEdge(edge);
       
       if (vertices.length < 2) {
         continue;
@@ -1722,7 +1722,7 @@ export class HexMapRenderer {
    * Met à jour le tooltip avec les informations de coût d'une route constructible.
    */
   private updateTooltip(edge: Edge, event: MouseEvent): void {
-    if (!this.tooltipElement || !this.currentGameMap || !this.currentCivilizationId) {
+    if (!this.tooltipElement || !this.currentIslandMap || !this.currentCivilizationId) {
       return;
     }
 
@@ -1730,7 +1730,7 @@ export class HexMapRenderer {
     this.tooltipOutpostVertex = null;
 
     // Calculer la distance
-    const distance = this.currentGameMap.calculateBuildableRoadDistance(edge, this.currentCivilizationId);
+    const distance = this.currentIslandMap.calculateBuildableRoadDistance(edge, this.currentCivilizationId);
     if (distance === undefined) {
       this.hideTooltip();
       return;
@@ -1756,7 +1756,7 @@ export class HexMapRenderer {
    * Met à jour le tooltip avec les informations de coût d'un avant-poste constructible.
    */
   private updateOutpostTooltip(vertex: Vertex, event: MouseEvent): void {
-    if (!this.tooltipElement || !this.currentGameMap || !this.currentCivilizationId) {
+    if (!this.tooltipElement || !this.currentIslandMap || !this.currentCivilizationId) {
       return;
     }
 
@@ -1764,7 +1764,7 @@ export class HexMapRenderer {
     this.tooltipEdge = null;
 
     // Calculer le coût
-    const cityCount = this.currentGameMap.getCityCount();
+    const cityCount = this.currentIslandMap.getCityCount();
     const cost = OutpostController.getBuildableOutpostCost(cityCount);
     const woodCost = cost.get(ResourceType.Wood) || 0;
     const brickCost = cost.get(ResourceType.Brick) || 0;
@@ -1798,7 +1798,7 @@ export class HexMapRenderer {
    * Gestionnaire de mouvement de souris pour mettre en surbrillance les routes constructibles et les villes.
    */
   private handleMouseMove = (event: MouseEvent): void => {
-    if (!this.currentConfig || !this.currentGameMap) {
+    if (!this.currentConfig || !this.currentIslandMap) {
       return;
     }
 
@@ -1815,7 +1815,7 @@ export class HexMapRenderer {
 
     // PRIORITÉ 1: Vérifier d'abord si on survole une ville existante
     const vertex = this.pixelToVertex(pixelX, pixelY);
-    if (vertex && this.currentGameMap && this.currentGameMap.hasCity(vertex)) {
+    if (vertex && this.currentIslandMap && this.currentIslandMap.hasCity(vertex)) {
       // On survole une ville existante
       if (!this.hoveredVertex || !this.hoveredVertex.equals(vertex)) {
         this.hoveredVertex = vertex;
@@ -1835,8 +1835,8 @@ export class HexMapRenderer {
       if (this.currentCivilizationId) {
         // Utiliser pixelToVertexAny pour trouver tous les vertices
         const vertex = this.pixelToVertexAny(pixelX, pixelY, 16);
-        if (vertex && !this.currentGameMap.hasCity(vertex)) {
-          const buildableOutposts = this.currentGameMap.getBuildableOutpostVertices(this.currentCivilizationId);
+        if (vertex && !this.currentIslandMap.hasCity(vertex)) {
+          const buildableOutposts = this.currentIslandMap.getBuildableOutpostVertices(this.currentCivilizationId);
           const isBuildableOutpost = buildableOutposts.some(buildableVertex => buildableVertex.equals(vertex));
           
           if (isBuildableOutpost) {
@@ -1860,7 +1860,7 @@ export class HexMapRenderer {
             const edge = this.pixelToEdge(pixelX, pixelY);
             
             if (edge) {
-              const buildableRoads = this.currentGameMap.getBuildableRoadsForCivilization(this.currentCivilizationId);
+              const buildableRoads = this.currentIslandMap.getBuildableRoadsForCivilization(this.currentCivilizationId);
               const isBuildable = buildableRoads.some(buildableEdge => buildableEdge.equals(edge));
               
               if (isBuildable) {
@@ -1894,7 +1894,7 @@ export class HexMapRenderer {
           const edge = this.pixelToEdge(pixelX, pixelY);
           
           if (edge) {
-            const buildableRoads = this.currentGameMap.getBuildableRoadsForCivilization(this.currentCivilizationId);
+            const buildableRoads = this.currentIslandMap.getBuildableRoadsForCivilization(this.currentCivilizationId);
             const isBuildable = buildableRoads.some(buildableEdge => buildableEdge.equals(edge));
             
             if (isBuildable) {
@@ -1936,7 +1936,7 @@ export class HexMapRenderer {
         const edge = this.pixelToEdge(pixelX, pixelY);
         
         if (edge) {
-          const buildableRoads = this.currentGameMap.getBuildableRoadsForCivilization(this.currentCivilizationId);
+          const buildableRoads = this.currentIslandMap.getBuildableRoadsForCivilization(this.currentCivilizationId);
           const isBuildable = buildableRoads.some(buildableEdge => buildableEdge.equals(edge));
           
           if (isBuildable) {
@@ -2027,7 +2027,7 @@ export class HexMapRenderer {
 
     // PRIORITÉ 1: Vérifier d'abord si on a cliqué sur une ville (vertex avec ville)
     const vertex = this.pixelToVertex(pixelX, pixelY);
-    if (vertex && this.currentGameMap && this.currentGameMap.hasCity(vertex)) {
+    if (vertex && this.currentIslandMap && this.currentIslandMap.hasCity(vertex)) {
       const previousSelection = this.selectedVertex;
       // Sélectionner/désélectionner la ville
       if (this.selectedVertex && this.selectedVertex.equals(vertex)) {
@@ -2065,10 +2065,10 @@ export class HexMapRenderer {
       // Utiliser pixelToVertexAny pour trouver tous les vertices, pas seulement ceux avec une ville
       // Utiliser une distance maximale de 16 pixels (2x le rayon de base de 8)
       const vertexOutpost = this.pixelToVertexAny(pixelX, pixelY, 16);
-      if (vertexOutpost && this.currentGameMap) {
+      if (vertexOutpost && this.currentIslandMap) {
         // Vérifier que ce vertex n'a pas déjà une ville
-        if (!this.currentGameMap.hasCity(vertexOutpost)) {
-          const buildableOutposts = this.currentGameMap.getBuildableOutpostVertices(this.currentCivilizationId);
+        if (!this.currentIslandMap.hasCity(vertexOutpost)) {
+          const buildableOutposts = this.currentIslandMap.getBuildableOutpostVertices(this.currentCivilizationId);
           const isBuildableOutpost = buildableOutposts.some(buildableVertex => buildableVertex.equals(vertexOutpost));
           
           if (isBuildableOutpost) {
@@ -2094,9 +2094,9 @@ export class HexMapRenderer {
     let hexClicked = false;
     if (this.onHexClickCallback) {
       const hexCoord = this.pixelToHexCoord(pixelX, pixelY);
-      if (hexCoord && this.currentGameMap && this.currentCivilizationId) {
+      if (hexCoord && this.currentIslandMap && this.currentCivilizationId) {
         // Bloquer les clics sur les hexes automatiquement récoltés
-        if (!BuildingProductionController.isHexAutoHarvested(hexCoord, this.currentCivilizationId, this.currentGameMap)) {
+        if (!BuildingProductionController.isHexAutoHarvested(hexCoord, this.currentCivilizationId, this.currentIslandMap)) {
           this.onHexClickCallback(hexCoord);
           hexClicked = true;
         }

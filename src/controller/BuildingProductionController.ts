@@ -1,4 +1,4 @@
-import { GameMap } from '../model/map/GameMap';
+import { IslandMap } from '../model/map/IslandMap';
 import { CivilizationId } from '../model/map/CivilizationId';
 import { PlayerResources } from '../model/game/PlayerResources';
 import { GameClock } from '../model/game/GameClock';
@@ -72,7 +72,7 @@ export class BuildingProductionController {
    */
   static processAutomaticProduction(
     civId: CivilizationId,
-    map: GameMap,
+    map: IslandMap,
     resources: PlayerResources,
     gameClock: GameClock
   ): BuildingProductionResult[] {
@@ -103,7 +103,7 @@ export class BuildingProductionController {
   private static processCityProduction(
     city: City,
     civId: CivilizationId,
-    map: GameMap,
+    map: IslandMap,
     resources: PlayerResources,
     gameClock: GameClock
   ): BuildingProductionResult[] {
@@ -249,7 +249,7 @@ export class BuildingProductionController {
   private static getAdjacentHexesOfType(
     vertex: Vertex,
     hexType: HexType,
-    map: GameMap
+    map: IslandMap
   ): HexCoord[] {
     const matchingHexes: HexCoord[] = [];
     
@@ -283,7 +283,7 @@ export class BuildingProductionController {
    * @param map - La carte de jeu
    * @returns true si l'hex est automatiquement récolté
    */
-  static isHexAutoHarvested(hexCoord: HexCoord, civId: CivilizationId, map: GameMap): boolean {
+  static isHexAutoHarvested(hexCoord: HexCoord, civId: CivilizationId, map: IslandMap): boolean {
     // Obtenir le type de l'hex
     const hexType = map.getHexType(hexCoord);
     if (!hexType) {

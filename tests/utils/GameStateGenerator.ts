@@ -4,7 +4,7 @@ import { HexDirection, ALL_HEX_DIRECTIONS } from '../../src/model/hex/HexDirecti
 import { HexGrid } from '../../src/model/hex/HexGrid';
 import { Vertex } from '../../src/model/hex/Vertex';
 import { Edge } from '../../src/model/hex/Edge';
-import { GameMap } from '../../src/model/map/GameMap';
+import { IslandMap } from '../../src/model/map/IslandMap';
 import { HexType } from '../../src/model/map/HexType';
 import { CivilizationId } from '../../src/model/map/CivilizationId';
 import { CityLevel } from '../../src/model/city/CityLevel';
@@ -24,7 +24,7 @@ import { calculateCivilizationPoints } from '../../src/model/game/CivilizationPo
  * Interface pour le retour de createScenarioWithCapitalAndResources.
  */
 export interface ScenarioWithCapital {
-  gameMap: GameMap;
+  islandMap: IslandMap;
   civId: CivilizationId;
   playerResources: PlayerResources;
   gameState: GameState;
@@ -77,32 +77,32 @@ export function Make7HexesMap(): GameState {
   ];
   
   const grid = new HexGrid(hexes);
-  const gameMap = new GameMap(grid);
+  const islandMap = new IslandMap(grid);
 
   // Centre : Brick (argile)
-  gameMap.setHexType(center, HexType.Brick);
+  islandMap.setHexType(center, HexType.Brick);
   // 6 voisins : 5 types avec bois en double → Wood, Wood, Wheat, Sheep, Ore (Ore en double pour 6 hexes)
-  gameMap.setHexType(center.neighbor(HexDirection.SW), HexType.Wood);
-  gameMap.setHexType(center.neighbor(HexDirection.NE), HexType.Wood);
-  gameMap.setHexType(center.neighbor(HexDirection.E), HexType.Wheat);
-  gameMap.setHexType(center.neighbor(HexDirection.SE), HexType.Sheep);
-  gameMap.setHexType(center.neighbor(HexDirection.NW), HexType.Ore);
-  gameMap.setHexType(center.neighbor(HexDirection.W), HexType.Ore);
+  islandMap.setHexType(center.neighbor(HexDirection.SW), HexType.Wood);
+  islandMap.setHexType(center.neighbor(HexDirection.NE), HexType.Wood);
+  islandMap.setHexType(center.neighbor(HexDirection.E), HexType.Wheat);
+  islandMap.setHexType(center.neighbor(HexDirection.SE), HexType.Sheep);
+  islandMap.setHexType(center.neighbor(HexDirection.NW), HexType.Ore);
+  islandMap.setHexType(center.neighbor(HexDirection.W), HexType.Ore);
   
   // Définir tous les hexagones d'eau comme Water
   for (const waterKey of waterHexCoords) {
     const [q, r] = waterKey.split(',').map(Number);
-    gameMap.setHexType(new HexCoord(q, r), HexType.Water);
+    islandMap.setHexType(new HexCoord(q, r), HexType.Water);
   }
 
   const civId = CivilizationId.create('test-civ');
-  gameMap.registerCivilization(civId);
+  islandMap.registerCivilization(civId);
 
   // Sommet au nord de (0,0) : (0,0), (0,-1), (-1,0)
   const cityVertex = center.vertex(SecondaryHexDirection.N);
-  gameMap.addCity(cityVertex, civId, CityLevel.Colony);
+  islandMap.addCity(cityVertex, civId, CityLevel.Colony);
 
-  const city = gameMap.getCity(cityVertex);
+  const city = islandMap.getCity(cityVertex);
   if (!city) throw new Error('Ville non trouvée après addCity');
   // Le TownHall est créé automatiquement quand la ville est ajoutée au niveau Colony (1)
 
@@ -110,7 +110,7 @@ export function Make7HexesMap(): GameState {
   gameClock.updateTime(123);
 
   const gs = new GameState(new PlayerResources(), civId, gameClock);
-  gs.setGameMap(gameMap);
+  gs.setIslandMap(islandMap);
   gs.setCivilizations([civId]);
   gs.setSeed(null);
   return gs;
@@ -170,13 +170,13 @@ export function createScenarioWithCapitalAndResources(seed: number): ScenarioWit
   
   const hexes = hexCoords.map(c => new Hex(c));
   const grid = new HexGrid(hexes);
-  const gameMap = new GameMap(grid);
+  const islandMap = new IslandMap(grid);
   const civId = CivilizationId.create('test-civ-prestige');
-  gameMap.registerCivilization(civId);
+  islandMap.registerCivilization(civId);
 
   // Ajouter une capitale (4 points) au centre
   const capitalVertex = center.vertex(SecondaryHexDirection.N);
-  gameMap.addCity(capitalVertex, civId, CityLevel.Capital);
+  islandMap.addCity(capitalVertex, civId, CityLevel.Capital);
 
   // Ajouter 10 villes Town (2 points chacune = 20 points)
   // Total: 4 (capital) + 20 (10 towns) = 24 points
@@ -194,9 +194,9 @@ export function createScenarioWithCapitalAndResources(seed: number): ScenarioWit
   ];
 
   for (const vertex of towns) {
-    if (!gameMap.hasCity(vertex)) {
+    if (!islandMap.hasCity(vertex)) {
       try {
-        gameMap.addCity(vertex, civId, CityLevel.Town);
+        islandMap.addCity(vertex, civId, CityLevel.Town);
       } catch (e) {
         // Ignorer les erreurs
       }
@@ -205,7 +205,7 @@ export function createScenarioWithCapitalAndResources(seed: number): ScenarioWit
 
   // Créer l'état de jeu et les ressources
   const gameState = new GameState(new PlayerResources(), civId, new GameClock());
-  gameState.setGameMap(gameMap);
+  gameState.setIslandMap(islandMap);
   gameState.setCivilizations([civId]);
   gameState.setSeed(seed);
 
@@ -218,7 +218,7 @@ export function createScenarioWithCapitalAndResources(seed: number): ScenarioWit
   playerResources.addResource(ResourceType.Sheep, 100);
 
   return {
-    gameMap,
+    islandMap,
     civId,
     playerResources,
     gameState

@@ -16,7 +16,7 @@ describe('PrestigeController', () => {
     it('devrait retourner false si pas de capitale', () => {
       game.newGame(42);
       const controller = game.getController();
-      const map = controller.getGameMap();
+      const map = controller.getIslandMap();
       const civId = controller.getPlayerCivilizationId();
 
       // Sans capitale, l'action Prestige ne doit pas être disponible
@@ -27,7 +27,7 @@ describe('PrestigeController', () => {
     it('devrait retourner false si pas assez de points de civilisation', () => {
       game.newGame(42);
       const controller = game.getController();
-      const map = controller.getGameMap();
+      const map = controller.getIslandMap();
       const civId = controller.getPlayerCivilizationId();
 
       // Créer une capitale
@@ -47,7 +47,7 @@ describe('PrestigeController', () => {
 
     it('devrait retourner true si capitale existe et 20+ points de civilisation', () => {
       const generatedState = createScenarioWithCapitalAndResources(42);
-      const map = generatedState.gameMap;
+      const map = generatedState.islandMap;
       const civId = generatedState.civId;
 
       const canActivate = PrestigeController.canActivatePrestige(civId, map);
@@ -58,7 +58,7 @@ describe('PrestigeController', () => {
   describe('getPrestigeRestrictionReason', () => {
     it('devrait retourner undefined si les conditions sont remplies', () => {
       const generatedState = createScenarioWithCapitalAndResources(42);
-      const map = generatedState.gameMap;
+      const map = generatedState.islandMap;
       const civId = generatedState.civId;
 
       const reason = PrestigeController.getPrestigeRestrictionReason(civId, map);
@@ -68,7 +68,7 @@ describe('PrestigeController', () => {
     it('devrait indiquer qu\'une capitale est requise', () => {
       game.newGame(42);
       const controller = game.getController();
-      const map = controller.getGameMap();
+      const map = controller.getIslandMap();
       const civId = controller.getPlayerCivilizationId();
 
       const reason = PrestigeController.getPrestigeRestrictionReason(civId, map!);
@@ -77,7 +77,7 @@ describe('PrestigeController', () => {
 
     it('devrait indiquer le manque de points de civilisation', () => {
       const generatedState = createScenarioWithCapitalAndResources(42);
-      const map = generatedState.gameMap;
+      const map = generatedState.islandMap;
       const civId = generatedState.civId;
 
       // Vérifier que canActivatePrestige retourne true (conditions remplies)
@@ -92,7 +92,7 @@ describe('PrestigeController', () => {
       // sans 20+ points - ce qui n'est possible que sur une nouvelle map
       game.newGame(42);
       const controller = game.getController();
-      const newMap = controller.getGameMap()!;
+      const newMap = controller.getIslandMap()!;
       const newCivId = controller.getPlayerCivilizationId();
 
       // Créer une capitale (4 points, besoin 16 supplémentaires)
@@ -117,7 +117,7 @@ describe('PrestigeController', () => {
   describe('activatePrestige', () => {
     it('devrait ajouter des points de civilisation lors du prestige', () => {
       const generatedState = createScenarioWithCapitalAndResources(42);
-      const map = generatedState.gameMap;
+      const map = generatedState.islandMap;
       const civId = generatedState.civId;
 
       const result = PrestigeController.activatePrestige(civId, map);
@@ -131,7 +131,7 @@ describe('PrestigeController', () => {
     it('devrait retourner false si les conditions ne sont pas remplies', () => {
       game.newGame(42);
       const controller = game.getController();
-      const map = controller.getGameMap();
+      const map = controller.getIslandMap();
       const civId = controller.getPlayerCivilizationId();
 
       const result = PrestigeController.activatePrestige(civId, map!);
@@ -142,7 +142,7 @@ describe('PrestigeController', () => {
 
     it('devrait inclure un bonus basé sur le nombre de ports', () => {
       const generatedState = createScenarioWithCapitalAndResources(42);
-      const map = generatedState.gameMap;
+      const map = generatedState.islandMap;
       const civId = generatedState.civId;
 
       // Compter les ports actuels

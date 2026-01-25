@@ -22,7 +22,7 @@ import { Edge } from './model/hex/Edge';
 import { Vertex } from './model/hex/Vertex';
 import { BuildingType, BuildingAction, getResourceProductionBuildings } from './model/city/BuildingType';
 import { City } from './model/city/City';
-import { GameMap } from './model/map/GameMap';
+import { IslandMap } from './model/map/IslandMap';
 import { APP_VERSION, APP_NAME } from './config/version';
 
 /**
@@ -102,7 +102,7 @@ function main(): void {
   // Configurer le renderer pour le panneau de ville
   cityPanelView.setRenderer(renderer);
   cityPanelView.bind(renderer, {
-    getGameMap: () => game.getGameMap(),
+    getIslandMap: () => game.getIslandMap(),
     getPlayerResources: () => game.getPlayerResources(),
   });
   
@@ -128,10 +128,10 @@ function main(): void {
   renderer.resize();
   window.addEventListener('resize', () => {
     renderer.resize();
-    const gameMap = game.getGameMap();
-    if (gameMap) {
+    const islandMap = game.getIslandMap();
+    if (islandMap) {
       const civId = game.getPlayerCivilizationId();
-      renderer.render(gameMap, civId);
+      renderer.render(islandMap, civId);
     }
   });
   
@@ -140,11 +140,11 @@ function main(): void {
    */
   function updateResourcesDisplay(): void {
     const playerResources = game.getPlayerResources();
-    const gameMap = game.getGameMap();
+    const islandMap = game.getIslandMap();
     const civId = game.getPlayerCivilizationId();
-    inventoryView.updateDisplay(playerResources, gameMap, civId);
+    inventoryView.updateDisplay(playerResources, islandMap, civId);
     // Mettre à jour les boutons du footer
-    if (gameMap) {
+    if (islandMap) {
       cityPanelView.updateFooter();
     }
   }
@@ -204,10 +204,10 @@ function main(): void {
     cityPanelView.setPlayerCivilizationId(game.getPlayerCivilizationId());
   }
   
-  const gameMap = game.getGameMap();
-  if (gameMap) {
+  const islandMap = game.getIslandMap();
+  if (islandMap) {
     const civId = game.getPlayerCivilizationId();
-    renderer.render(gameMap, civId);
+    renderer.render(islandMap, civId);
   }
   
   // Mettre à jour l'affichage après le chargement
@@ -222,11 +222,11 @@ function main(): void {
       // Mettre à jour le bouton d'automatisation quand le panneau de ville est mis à jour
       automationPanelView.updateAutomationButton(city);
     },
-    onBuildBuilding: (buildingType: BuildingType, city: City, gameMap: GameMap, vertex: Vertex) => {
+    onBuildBuilding: (buildingType: BuildingType, city: City, islandMap: IslandMap, vertex: Vertex) => {
       const playerResources = game.getPlayerResources();
       const gameClock = game.getGameClock();
       try {
-        BuildingController.buildBuilding(buildingType, city, gameMap, vertex, playerResources);
+        BuildingController.buildBuilding(buildingType, city, islandMap, vertex, playerResources);
         
         // Si c'est un bâtiment de ressource, initialiser son temps de production
         const resourceBuildings = getResourceProductionBuildings();
@@ -238,7 +238,7 @@ function main(): void {
         updateResourcesDisplay();
         cityPanelView.refreshNow();
         const civId = game.getPlayerCivilizationId();
-        renderer.render(gameMap, civId);
+        renderer.render(islandMap, civId);
       } catch (error) {
         console.error('Erreur lors de la construction du bâtiment:', error);
       }
@@ -247,22 +247,22 @@ function main(): void {
       try {
         if (action === BuildingAction.Upgrade) {
           const playerResources = game.getPlayerResources();
-          const currentGameMap = game.getGameMap();
-          if (!currentGameMap) {
+          const currentIslandMap = game.getIslandMap();
+          if (!currentIslandMap) {
             console.error('Carte de jeu non disponible');
             return;
           }
-          BuildingController.upgradeBuilding(buildingType, city, currentGameMap, playerResources);
+          BuildingController.upgradeBuilding(buildingType, city, currentIslandMap, playerResources);
           updateResourcesDisplay();
           cityPanelView.refreshNow();
           const civId = game.getPlayerCivilizationId();
-          renderer.render(currentGameMap, civId);
+          renderer.render(currentIslandMap, civId);
         } else if (action === BuildingAction.Trade) {
           // Mettre à jour le contexte de jeu pour le panneau de commerce
-          const currentGameMap = game.getGameMap();
-          if (currentGameMap) {
+          const currentIslandMap = game.getIslandMap();
+          if (currentIslandMap) {
             const civId = game.getPlayerCivilizationId();
-            tradePanelView.setGameContext(currentGameMap, civId);
+            tradePanelView.setGameContext(currentIslandMap, civId);
           }
           
           // Ouvrir le panneau de commerce
@@ -272,12 +272,12 @@ function main(): void {
         } else if (action === BuildingAction.Specialization) {
           // Ouvrir le panneau de spécialisation avec les ressources déjà utilisées
           const selectedVertex = renderer.getSelectedVertex();
-          const currentGameMap = game.getGameMap();
-          if (selectedVertex && currentGameMap && currentGameMap.hasCity(selectedVertex)) {
-            const city = currentGameMap.getCity(selectedVertex);
+          const currentIslandMap = game.getIslandMap();
+          if (selectedVertex && currentIslandMap && currentIslandMap.hasCity(selectedVertex)) {
+            const city = currentIslandMap.getCity(selectedVertex);
             const civId = game.getPlayerCivilizationId();
             if (city && civId) {
-              const blockedResources = TradeController.getUsedSpecializations(civId, currentGameMap, city);
+              const blockedResources = TradeController.getUsedSpecializations(civId, currentIslandMap, city);
               portSpecializationPanelView.show(blockedResources);
             } else {
               portSpecializationPanelView.show();
@@ -288,23 +288,23 @@ function main(): void {
           return; // Ne pas mettre à jour le panneau de ville ni re-rendre
         } else if (action === BuildingAction.Prestige) {
           // Activer l'action Prestige du port maritime niveau 4
-          const currentGameMap = game.getGameMap();
+          const currentIslandMap = game.getIslandMap();
           const civId = game.getPlayerCivilizationId();
 
-          if (!currentGameMap || !civId) {
+          if (!currentIslandMap || !civId) {
             console.error('Carte de jeu ou civilisation non disponible');
             return;
           }
 
           // Vérifier si l'action peut être activée
-          if (!PrestigeController.canActivatePrestige(civId, currentGameMap)) {
-            const reason = PrestigeController.getPrestigeRestrictionReason(civId, currentGameMap);
+          if (!PrestigeController.canActivatePrestige(civId, currentIslandMap)) {
+            const reason = PrestigeController.getPrestigeRestrictionReason(civId, currentIslandMap);
             alert(`Prestige non disponible: ${reason}`);
             return;
           }
 
           // Activer l'action Prestige
-          const result = PrestigeController.activatePrestige(civId, currentGameMap);
+          const result = PrestigeController.activatePrestige(civId, currentIslandMap);
           
           if (result.success && result.civilizationPointsGained !== undefined) {
             // Les points de civilisation sont ajoutés au CivilizationState
@@ -312,7 +312,7 @@ function main(): void {
             alert(result.message);
             updateResourcesDisplay();
             cityPanelView.refreshNow();
-            renderer.render(currentGameMap, civId);
+            renderer.render(currentIslandMap, civId);
             autoSave();
           } else {
             alert(result.message);
@@ -320,10 +320,10 @@ function main(): void {
           return;
         }
         cityPanelView.refreshNow();
-        const currentGameMap = game.getGameMap();
-        if (currentGameMap) {
+        const currentIslandMap = game.getIslandMap();
+        if (currentIslandMap) {
           const civId = game.getPlayerCivilizationId();
-          renderer.render(currentGameMap, civId);
+          renderer.render(currentIslandMap, civId);
         }
       } catch (error) {
         console.error(`Erreur lors de l'action ${action}:`, error);
@@ -334,8 +334,8 @@ function main(): void {
   // Configurer les callbacks du panneau de commerce
   tradePanelView.setCallbacks({
     onTrade: (offered: Map<ResourceType, number>, requested: Map<ResourceType, number>) => {
-      const currentGameMap = game.getGameMap();
-      if (!currentGameMap) {
+      const currentIslandMap = game.getIslandMap();
+      if (!currentIslandMap) {
         return;
       }
 
@@ -344,7 +344,7 @@ function main(): void {
 
       try {
         // Effectuer l'échange batch via le contrôleur
-        TradeController.performBatchTrade(offered, requested, civId, currentGameMap, playerResources);
+        TradeController.performBatchTrade(offered, requested, civId, currentIslandMap, playerResources);
 
         // Mettre à jour l'affichage des ressources
         updateResourcesDisplay();
@@ -367,11 +367,11 @@ function main(): void {
   portSpecializationPanelView.setCallbacks({
     onSelectResource: (resource: ResourceType) => {
       const selectedVertex = renderer.getSelectedVertex();
-      const currentGameMap = game.getGameMap();
-      if (!selectedVertex || !currentGameMap || !currentGameMap.hasCity(selectedVertex)) {
+      const currentIslandMap = game.getIslandMap();
+      if (!selectedVertex || !currentIslandMap || !currentIslandMap.hasCity(selectedVertex)) {
         return;
       }
-      const city = currentGameMap.getCity(selectedVertex);
+      const city = currentIslandMap.getCity(selectedVertex);
       if (!city) {
         return;
       }
@@ -379,7 +379,7 @@ function main(): void {
       // Vérifier que la ressource n'est pas déjà utilisée par un autre port
       const civId = game.getPlayerCivilizationId();
       if (civId) {
-        const blockedResources = TradeController.getUsedSpecializations(civId, currentGameMap, city);
+        const blockedResources = TradeController.getUsedSpecializations(civId, currentIslandMap, city);
         if (blockedResources.has(resource)) {
           alert(`Cette ressource est déjà spécialisée par un autre port de votre civilisation.`);
           return;
@@ -397,7 +397,7 @@ function main(): void {
           
           // Re-rendre la carte
           const civId = game.getPlayerCivilizationId();
-          renderer.render(currentGameMap, civId);
+          renderer.render(currentIslandMap, civId);
           
           // Sauvegarder le jeu
           autoSave();
@@ -418,13 +418,13 @@ function main(): void {
   // Configurer les callbacks du panneau d'automatisation
   automationPanelView.configureCallbacks({
     getSelectedVertex: () => renderer.getSelectedVertex(),
-    getGameMap: () => game.getGameMap(),
+    getIslandMap: () => game.getIslandMap(),
     getPlayerCivilizationId: () => game.getPlayerCivilizationId(),
     getCivilization: (civId) => game.getGameState().getCivilization(civId),
     updateResourcesDisplay: () => updateResourcesDisplay(),
     refreshCityPanel: () => cityPanelView.refreshNow(),
     getCurrentCity: () => cityPanelView.getCurrentCity(),
-    renderMap: (gameMap, civId) => renderer.render(gameMap, civId),
+    renderMap: (islandMap, civId) => renderer.render(islandMap, civId),
     autoSave: () => autoSave(),
   });
 
@@ -433,36 +433,36 @@ function main(): void {
   
   panelElement.addEventListener('buildBuilding', ((e: CustomEvent) => {
     const selectedVertex = renderer.getSelectedVertex();
-    const currentGameMap = game.getGameMap();
-    if (!selectedVertex || !currentGameMap || !currentGameMap.hasCity(selectedVertex)) {
+    const currentIslandMap = game.getIslandMap();
+    if (!selectedVertex || !currentIslandMap || !currentIslandMap.hasCity(selectedVertex)) {
       return;
     }
-    const city = currentGameMap.getCity(selectedVertex);
+    const city = currentIslandMap.getCity(selectedVertex);
     if (!city) {
       return;
     }
-    cityPanelView.handleBuildBuilding(e.detail.buildingType, city, currentGameMap, selectedVertex);
+    cityPanelView.handleBuildBuilding(e.detail.buildingType, city, currentIslandMap, selectedVertex);
   }) as EventListener);
 
   // Bouton Commerce global (footer du panneau de ville)
   panelElement.addEventListener('openTrade', (() => {
-    const currentGameMap = game.getGameMap();
-    if (!currentGameMap) {
+    const currentIslandMap = game.getIslandMap();
+    if (!currentIslandMap) {
       return;
     }
     const civId = game.getPlayerCivilizationId();
-    tradePanelView.setGameContext(currentGameMap, civId);
+    tradePanelView.setGameContext(currentIslandMap, civId);
     tradePanelView.show(game.getPlayerResources());
   }) as EventListener);
 
 
   panelElement.addEventListener('buildingAction', ((e: CustomEvent) => {
     const selectedVertex = renderer.getSelectedVertex();
-    const currentGameMap = game.getGameMap();
-    if (!selectedVertex || !currentGameMap || !currentGameMap.hasCity(selectedVertex)) {
+    const currentIslandMap = game.getIslandMap();
+    if (!selectedVertex || !currentIslandMap || !currentIslandMap.hasCity(selectedVertex)) {
       return;
     }
-    const city = currentGameMap.getCity(selectedVertex);
+    const city = currentIslandMap.getCity(selectedVertex);
     if (!city) {
       return;
     }
@@ -475,10 +475,10 @@ function main(): void {
 
   // Configurer le callback de rendu pour la surbrillance au survol et la mise à jour du panneau
   renderer.setRenderCallback(() => {
-    const currentGameMap = game.getGameMap();
-    if (currentGameMap) {
+    const currentIslandMap = game.getIslandMap();
+    if (currentIslandMap) {
       const civId = game.getPlayerCivilizationId();
-      renderer.render(currentGameMap, civId);
+      renderer.render(currentIslandMap, civId);
     }
   });
 
@@ -487,8 +487,8 @@ function main(): void {
 
   // Gérer le clic sur les vertices constructibles pour construire des avant-postes
   renderer.setOnOutpostVertexClick((vertex: Vertex) => {
-    const currentGameMap = game.getGameMap();
-    if (!currentGameMap) {
+    const currentIslandMap = game.getIslandMap();
+    if (!currentIslandMap) {
       return;
     }
 
@@ -497,14 +497,14 @@ function main(): void {
 
     try {
       // Construire l'avant-poste (le contrôleur vérifie les conditions et consomme les ressources)
-      OutpostController.buildOutpost(vertex, civId, currentGameMap, playerResources);
+      OutpostController.buildOutpost(vertex, civId, currentIslandMap, playerResources);
       
       // Mettre à jour l'affichage des ressources
       updateResourcesDisplay();
       cityPanelView.scheduleRefresh();
       
       // Re-rendre la carte pour afficher la nouvelle ville
-      renderer.render(currentGameMap, civId);
+      renderer.render(currentIslandMap, civId);
       
       // Mettre à jour le panneau de ville si une ville était sélectionnée
       cityPanelView.refreshNow();
@@ -516,8 +516,8 @@ function main(): void {
 
   // Gérer le clic sur les routes (edges) pour les construire
   renderer.setOnEdgeClick((edge: Edge) => {
-    const currentGameMap = game.getGameMap();
-    if (!currentGameMap) {
+    const currentIslandMap = game.getIslandMap();
+    if (!currentIslandMap) {
       return;
     }
 
@@ -526,14 +526,14 @@ function main(): void {
 
     try {
       // Construire la route (le contrôleur vérifie les conditions et consomme les ressources)
-      RoadController.buildRoad(edge, civId, currentGameMap, playerResources);
+      RoadController.buildRoad(edge, civId, currentIslandMap, playerResources);
       
       // Mettre à jour l'affichage des ressources
       updateResourcesDisplay();
       cityPanelView.scheduleRefresh();
       
       // Re-rendre la carte pour afficher la nouvelle route
-      renderer.render(currentGameMap, civId);
+      renderer.render(currentIslandMap, civId);
     } catch (error) {
       // Ignorer silencieusement les erreurs de construction
       // On pourrait afficher un message à l'utilisateur si nécessaire
@@ -542,8 +542,8 @@ function main(): void {
 
   // Gérer le clic sur les hexagones pour récolter les ressources
   renderer.setOnHexClick((hexCoord: HexCoord) => {
-    const currentGameMap = game.getGameMap();
-    if (!currentGameMap) {
+    const currentIslandMap = game.getIslandMap();
+    if (!currentIslandMap) {
       return;
     }
 
@@ -551,14 +551,14 @@ function main(): void {
     const playerResources = game.getPlayerResources();
 
     // Récolter la ressource via le contrôleur (qui gère la limitation de taux)
-    const result = ResourceHarvestController.harvest(hexCoord, civId, currentGameMap, playerResources);
+    const result = ResourceHarvestController.harvest(hexCoord, civId, currentIslandMap, playerResources);
     
     if (result.success && result.cityVertex) {
       // Déclencher l'effet visuel de récolte (manuel, donc avec effet de réduction)
       renderer.triggerHarvestEffect(hexCoord, false);
       
       // Obtenir le type de ressource récoltée pour l'animation
-      const hexType = currentGameMap.getHexType(hexCoord);
+      const hexType = currentIslandMap.getHexType(hexCoord);
       if (hexType) {
         const resourceType = ResourceHarvest.hexTypeToResourceType(hexType);
         if (resourceType) {
@@ -597,10 +597,10 @@ function main(): void {
     // Sauvegarder immédiatement après la régénération
     autoSave();
     
-    const newGameMap = game.getGameMap();
-    if (newGameMap) {
+    const newIslandMap = game.getIslandMap();
+    if (newIslandMap) {
       const civId = game.getPlayerCivilizationId();
-      renderer.render(newGameMap, civId);
+      renderer.render(newIslandMap, civId);
       updateResourcesDisplay(); // Réinitialiser l'affichage des ressources
       cityPanelView.refreshNow(); // Mettre à jour le panneau de la ville
     }
@@ -659,10 +659,10 @@ function main(): void {
           cityPanelView.setPlayerCivilizationId(game.getPlayerCivilizationId());
           
           // Mettre à jour l'affichage
-          const newGameMap = game.getGameMap();
-          if (newGameMap) {
+          const newIslandMap = game.getIslandMap();
+          if (newIslandMap) {
             const civId = game.getPlayerCivilizationId();
-            renderer.render(newGameMap, civId);
+            renderer.render(newIslandMap, civId);
             updateResourcesDisplay();
             cityPanelView.refreshNow();
             // Mettre à jour les boutons du footer avec la civilisation chargée
@@ -711,10 +711,10 @@ function main(): void {
     renderer.setShowCoordinates(showHexCoords);
     
     // Re-rendre la carte pour afficher/masquer les coordonnées
-    const gameMap = game.getGameMap();
-    if (gameMap) {
+    const islandMap = game.getIslandMap();
+    if (islandMap) {
       const civId = game.getPlayerCivilizationId();
-      renderer.render(gameMap, civId);
+      renderer.render(islandMap, civId);
     }
     
     // Fermer le menu après l'action
@@ -729,8 +729,8 @@ function main(): void {
    * Traite la production automatique des bâtiments et déclenche les animations.
    */
   function processAutomaticBuildingProduction(): void {
-    const currentGameMap = game.getGameMap();
-    if (!currentGameMap) {
+    const currentIslandMap = game.getIslandMap();
+    if (!currentIslandMap) {
       return;
     }
 
@@ -741,7 +741,7 @@ function main(): void {
     // Traiter la production automatique via le contrôleur
     const productionResults = BuildingProductionController.processAutomaticProduction(
       civId,
-      currentGameMap,
+      currentIslandMap,
       playerResources,
       gameClock
     );
@@ -803,19 +803,19 @@ function main(): void {
     processAutomaticBuildingProduction();
 
     // Traiter les automatisations
-    const currentGameMap = game.getGameMap();
-    if (currentGameMap) {
+    const currentIslandMap = game.getIslandMap();
+    if (currentIslandMap) {
       const civId = game.getPlayerCivilizationId();
       const playerResources = game.getPlayerResources();
       const civilization = game.getGameState().getCivilization(civId);
-      AutomationController.processAllAutomations(civId, civilization, currentGameMap, playerResources);
+      AutomationController.processAllAutomations(civId, civilization, currentIslandMap, playerResources);
       
       // Mettre à jour l'affichage si des automatisations ont été exécutées
       updateResourcesDisplay();
       cityPanelView.scheduleRefresh();
       
       // Re-rendre la carte si nécessaire
-      renderer.render(currentGameMap, civId);
+      renderer.render(currentIslandMap, civId);
     }
 
     // Continuer la boucle

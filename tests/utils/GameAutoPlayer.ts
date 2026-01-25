@@ -1,4 +1,4 @@
-import { GameMap } from '../../src/model/map/GameMap';
+import { IslandMap } from '../../src/model/map/IslandMap';
 import { CivilizationId } from '../../src/model/map/CivilizationId';
 import { PlayerResources } from '../../src/model/game/PlayerResources';
 import { GameClock } from '../../src/model/game/GameClock';
@@ -35,7 +35,7 @@ export class GameAutoPlayer {
    */
   static harvestAllHexesAroundCities(
     civId: CivilizationId,
-    map: GameMap,
+    map: IslandMap,
     resources: PlayerResources,
     gameClock?: GameClock
   ): number {
@@ -103,7 +103,7 @@ export class GameAutoPlayer {
   private static isResourceAutoProduced(
     resourceType: ResourceType,
     civId: CivilizationId,
-    map: GameMap
+    map: IslandMap
   ): boolean {
     // Convertir ResourceType en HexType
     const hexTypeMap: Record<ResourceType, HexType> = {
@@ -161,7 +161,7 @@ export class GameAutoPlayer {
   static tryTradeForResourceSet(
     targetResources: Map<ResourceType, number>,
     civId: CivilizationId,
-    map: GameMap,
+    map: IslandMap,
     resources: PlayerResources
   ): number {
     // Vérifier que le commerce est disponible
@@ -258,7 +258,7 @@ export class GameAutoPlayer {
    */
   public static advanceTimeAndHarvest(
     civId: CivilizationId,
-    map: GameMap,
+    map: IslandMap,
     resources: PlayerResources,
     gameClock: GameClock,
     targetResources?: Map<ResourceType, number>
@@ -300,7 +300,7 @@ export class GameAutoPlayer {
   static playUntilBuildingRoad(
     edge: Edge,
     civId: CivilizationId,
-    map: GameMap,
+    map: IslandMap,
     resources: PlayerResources,
     gameClock: GameClock,
     maxIterations: number = 1000
@@ -368,7 +368,7 @@ export class GameAutoPlayer {
   static playUntilOutpost(
     vertex: Vertex,
     civId: CivilizationId,
-    map: GameMap,
+    map: IslandMap,
     resources: PlayerResources,
     gameClock: GameClock,
     maxIterations: number = 1000
@@ -436,7 +436,7 @@ export class GameAutoPlayer {
     buildingType: BuildingType,
     vertex: Vertex,
     civId: CivilizationId,
-    map: GameMap,
+    map: IslandMap,
     resources: PlayerResources,
     gameClock: GameClock,
     maxIterations: number = 1000
@@ -509,7 +509,7 @@ export class GameAutoPlayer {
     buildingType: BuildingType,
     vertex: Vertex,
     civId: CivilizationId,
-    map: GameMap,
+    map: IslandMap,
     resources: PlayerResources,
     gameClock: GameClock,
     maxIterations: number = 1000

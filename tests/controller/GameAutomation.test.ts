@@ -10,7 +10,7 @@ import { GameAutoPlayer } from '../utils/GameAutoPlayer';
 import { AutomationController } from '../../src/controller/AutomationController';
 import { BuildingProductionController } from '../../src/controller/BuildingProductionController';
 import { ResourceHarvestController } from '../../src/controller/ResourceHarvestController';
-import { GameMap } from '../../src/model/map/GameMap';
+import { IslandMap } from '../../src/model/map/IslandMap';
 import { Edge } from '../../src/model/hex/Edge';
 import { OutpostController } from '../../src/controller/OutpostController';
 
@@ -22,8 +22,8 @@ describe('GameAutomation', () => {
   describe('Automations de la Guilde des batisseurs niveau 3', () => {
     it('devrait construire automatiquement des routes (niveau 1)', () => {
       const gs = Make7HexesMapWithPortAndCapital();
-      const gameMap = gs.getGameMap();
-      if (!gameMap) throw new Error('Carte non trouvée');
+      const islandMap = gs.getIslandMap();
+      if (!islandMap) throw new Error('Carte non trouvée');
 
       const civId = gs.getPlayerCivilizationId();
       const resources = gs.getPlayerResources();
@@ -32,7 +32,7 @@ describe('GameAutomation', () => {
 
       // Ville initiale (capitale)
       const capitalVertex = center.vertex(SecondaryHexDirection.N);
-      const capital = gameMap.getCity(capitalVertex);
+      const capital = islandMap.getCity(capitalVertex);
       if (!capital) throw new Error('Capitale non trouvée');
 
       // Construire la Guilde des batisseurs niveau 3
@@ -40,7 +40,7 @@ describe('GameAutomation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
@@ -49,7 +49,7 @@ describe('GameAutomation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
@@ -58,13 +58,13 @@ describe('GameAutomation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
 
       // Vérifier que la Guilde des batisseurs est au niveau 3
-      let currentCapital = gameMap.getCity(capitalVertex);
+      let currentCapital = islandMap.getCity(capitalVertex);
       if (!currentCapital) throw new Error('Capitale non trouvée');
       const buildersGuild = currentCapital.getBuilding(BuildingType.BuildersGuild);
       expect(buildersGuild?.level).toBe(3);
@@ -74,7 +74,7 @@ describe('GameAutomation', () => {
       civilization.setAutoRoadConstruction(true);
 
       // Compter le nombre de routes initiales
-      const initialRoadCount = civilization.getRoadCount(gameMap);
+      const initialRoadCount = civilization.getRoadCount(islandMap);
 
       // Faire dérouler la gameloop pour permettre à l'automation de fonctionner
       // On simule plusieurs ticks avec assez de ressources
@@ -84,13 +84,13 @@ describe('GameAutomation', () => {
 
       while (iterations < maxIterations && roadCount === initialRoadCount) {
         // Avancer le temps et récolter
-        GameAutoPlayer.advanceTimeAndHarvest(civId, gameMap, resources, gameClock);
+        GameAutoPlayer.advanceTimeAndHarvest(civId, islandMap, resources, gameClock);
         
         // Traiter les automations
-        AutomationController.processAllAutomations(civId, civilization, gameMap, resources);
+        AutomationController.processAllAutomations(civId, civilization, islandMap, resources);
         
         // Vérifier le nouveau nombre de routes
-        roadCount = civilization.getRoadCount(gameMap);
+        roadCount = civilization.getRoadCount(islandMap);
         
         // Avancer le temps
         gameClock.updateTime(gameClock.getCurrentTime() + 0.1);
@@ -104,8 +104,8 @@ describe('GameAutomation', () => {
 
     it('devrait construire automatiquement des outposts (niveau 2)', () => {
       const gs = Make7HexesMapWithPortAndCapital();
-      const gameMap = gs.getGameMap();
-      if (!gameMap) throw new Error('Carte non trouvée');
+      const islandMap = gs.getIslandMap();
+      if (!islandMap) throw new Error('Carte non trouvée');
 
       const civId = gs.getPlayerCivilizationId();
       const resources = gs.getPlayerResources();
@@ -113,7 +113,7 @@ describe('GameAutomation', () => {
       const center = new HexCoord(0, 0);
 
       const capitalVertex = center.vertex(SecondaryHexDirection.N);
-      const capital = gameMap.getCity(capitalVertex);
+      const capital = islandMap.getCity(capitalVertex);
       if (!capital) throw new Error('Capitale non trouvée');
 
       // Construire la Guilde des batisseurs niveau 3
@@ -121,7 +121,7 @@ describe('GameAutomation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
@@ -130,7 +130,7 @@ describe('GameAutomation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
@@ -139,7 +139,7 @@ describe('GameAutomation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
@@ -150,9 +150,9 @@ describe('GameAutomation', () => {
       
       // Construire des routes si possible
       const road1 = Edge.create(center, seHex);
-      if (!gameMap.hasRoad(road1)) {
+      if (!islandMap.hasRoad(road1)) {
         try {
-          GameAutoPlayer.playUntilBuildingRoad(road1, civId, gameMap, resources, gameClock);
+          GameAutoPlayer.playUntilBuildingRoad(road1, civId, islandMap, resources, gameClock);
         } catch (e) {
           // Ignorer si on ne peut pas construire
         }
@@ -163,7 +163,7 @@ describe('GameAutomation', () => {
       civilization.setAutoOutpostConstruction(true);
 
       // Compter le nombre d'outposts initial
-      const initialCityCount = civilization.getCityCount(gameMap);
+      const initialCityCount = civilization.getCityCount(islandMap);
 
       // Faire dérouler la gameloop pour permettre à l'automation de fonctionner
       const maxIterations = 200;
@@ -172,13 +172,13 @@ describe('GameAutomation', () => {
 
       while (iterations < maxIterations && cityCount === initialCityCount) {
         // Avancer le temps et récolter
-        GameAutoPlayer.advanceTimeAndHarvest(civId, gameMap, resources, gameClock);
+        GameAutoPlayer.advanceTimeAndHarvest(civId, islandMap, resources, gameClock);
         
         // Traiter les automations
-        AutomationController.processAllAutomations(civId, civilization, gameMap, resources);
+        AutomationController.processAllAutomations(civId, civilization, islandMap, resources);
         
         // Vérifier le nouveau nombre de villes
-        cityCount = civilization.getCityCount(gameMap);
+        cityCount = civilization.getCityCount(islandMap);
         
         // Avancer le temps
         gameClock.updateTime(gameClock.getCurrentTime() + 0.1);
@@ -194,8 +194,8 @@ describe('GameAutomation', () => {
 
     it('devrait améliorer automatiquement les villes (niveau 2)', () => {
       const gs = Make7HexesMapWithPortAndCapital();
-      const gameMap = gs.getGameMap();
-      if (!gameMap) throw new Error('Carte non trouvée');
+      const islandMap = gs.getIslandMap();
+      if (!islandMap) throw new Error('Carte non trouvée');
 
       const civId = gs.getPlayerCivilizationId();
       const resources = gs.getPlayerResources();
@@ -203,7 +203,7 @@ describe('GameAutomation', () => {
       const center = new HexCoord(0, 0);
 
       const capitalVertex = center.vertex(SecondaryHexDirection.N);
-      const capital = gameMap.getCity(capitalVertex);
+      const capital = islandMap.getCity(capitalVertex);
       if (!capital) throw new Error('Capitale non trouvée');
 
       // Construire la Guilde des batisseurs niveau 3
@@ -211,7 +211,7 @@ describe('GameAutomation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
@@ -220,7 +220,7 @@ describe('GameAutomation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
@@ -229,14 +229,14 @@ describe('GameAutomation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
 
       // Trouver une autre ville (la ville portuaire) pour tester l'amélioration automatique
       // Chercher toutes les villes de la civilisation
-      const cities = gameMap.getCitiesByCivilization(civId);
+      const cities = islandMap.getCitiesByCivilization(civId);
       let testCity = null;
       let testCityVertex: Vertex | null = null;
 
@@ -256,26 +256,26 @@ describe('GameAutomation', () => {
         const road1 = Edge.create(center, seHex);
         
         // Construire une route si nécessaire
-        if (!gameMap.hasRoad(road1)) {
+        if (!islandMap.hasRoad(road1)) {
           try {
-            GameAutoPlayer.playUntilBuildingRoad(road1, civId, gameMap, resources, gameClock);
+            GameAutoPlayer.playUntilBuildingRoad(road1, civId, islandMap, resources, gameClock);
           } catch (e) {
             // Ignorer si on ne peut pas construire
           }
         }
 
         // Chercher un vertex adjacent à la route pour créer un outpost
-        const grid = gameMap.getGrid();
+        const grid = islandMap.getGrid();
         const allVertices = grid.getAllVertices();
         
         for (const vertex of allVertices) {
-          if (gameMap.hasCity(vertex)) continue;
+          if (islandMap.hasCity(vertex)) continue;
           
-          const edgesForVertex = gameMap.getEdgesForVertex(vertex);
+          const edgesForVertex = islandMap.getEdgesForVertex(vertex);
           let touchesRoad = false;
           for (const edge of edgesForVertex) {
-            if (gameMap.hasRoad(edge)) {
-              const owner = gameMap.getRoadOwner(edge);
+            if (islandMap.hasRoad(edge)) {
+              const owner = islandMap.getRoadOwner(edge);
               if (owner && owner.equals(civId)) {
                 touchesRoad = true;
                 break;
@@ -286,8 +286,8 @@ describe('GameAutomation', () => {
           if (touchesRoad) {
             // Créer un outpost manuellement
             try {
-              OutpostController.buildOutpost(vertex, civId, gameMap, resources);
-              testCity = gameMap.getCity(vertex);
+              OutpostController.buildOutpost(vertex, civId, islandMap, resources);
+              testCity = islandMap.getCity(vertex);
               testCityVertex = vertex;
               break;
             } catch (e) {
@@ -323,13 +323,13 @@ describe('GameAutomation', () => {
 
       while (iterations < maxIterations && currentLevel === initialLevel && currentTownHallLevel === initialTownHallLevel) {
         // Avancer le temps et récolter
-        GameAutoPlayer.advanceTimeAndHarvest(civId, gameMap, resources, gameClock);
+        GameAutoPlayer.advanceTimeAndHarvest(civId, islandMap, resources, gameClock);
         
         // Traiter les automations
-        AutomationController.processAllAutomations(civId, civilization, gameMap, resources);
+        AutomationController.processAllAutomations(civId, civilization, islandMap, resources);
         
         // Vérifier le niveau actuel
-        const updatedCity = gameMap.getCity(testCityVertex);
+        const updatedCity = islandMap.getCity(testCityVertex);
         if (updatedCity) {
           currentLevel = updatedCity.level;
           const updatedTownHall = updatedCity.getBuilding(BuildingType.TownHall);
@@ -347,8 +347,8 @@ describe('GameAutomation', () => {
 
     it('devrait construire automatiquement des bâtiments de production (niveau 3)', () => {
       const gs = Make7HexesMapWithPortAndCapital();
-      const gameMap = gs.getGameMap();
-      if (!gameMap) throw new Error('Carte non trouvée');
+      const islandMap = gs.getIslandMap();
+      if (!islandMap) throw new Error('Carte non trouvée');
 
       const civId = gs.getPlayerCivilizationId();
       const resources = gs.getPlayerResources();
@@ -356,7 +356,7 @@ describe('GameAutomation', () => {
       const center = new HexCoord(0, 0);
 
       const capitalVertex = center.vertex(SecondaryHexDirection.N);
-      const capital = gameMap.getCity(capitalVertex);
+      const capital = islandMap.getCity(capitalVertex);
       if (!capital) throw new Error('Capitale non trouvée');
 
       // Construire la Guilde des batisseurs niveau 3
@@ -364,7 +364,7 @@ describe('GameAutomation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
@@ -373,7 +373,7 @@ describe('GameAutomation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
@@ -382,13 +382,13 @@ describe('GameAutomation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
 
       // Compter les bâtiments de production initiaux
-      let currentCapital = gameMap.getCity(capitalVertex);
+      let currentCapital = islandMap.getCity(capitalVertex);
       if (!currentCapital) throw new Error('Capitale non trouvée');
       
       const initialProductionBuildings = new Set<BuildingType>();
@@ -417,13 +417,13 @@ describe('GameAutomation', () => {
 
       while (iterations < maxIterations && productionBuildings.size === initialProductionBuildings.size) {
         // Avancer le temps et récolter
-        GameAutoPlayer.advanceTimeAndHarvest(civId, gameMap, resources, gameClock);
+        GameAutoPlayer.advanceTimeAndHarvest(civId, islandMap, resources, gameClock);
         
         // Traiter les automations
-        AutomationController.processAllAutomations(civId, civilization, gameMap, resources);
+        AutomationController.processAllAutomations(civId, civilization, islandMap, resources);
         
         // Vérifier les bâtiments de production actuels
-        currentCapital = gameMap.getCity(capitalVertex);
+        currentCapital = islandMap.getCity(capitalVertex);
         if (currentCapital) {
           productionBuildings.clear();
           for (const buildingType of productionBuildingTypes) {
@@ -447,8 +447,8 @@ describe('GameAutomation', () => {
 
     it('ne devrait pas construire de routes à distance > 2', () => {
       const gs = Make7HexesMapWithPortAndCapital();
-      const gameMap = gs.getGameMap();
-      if (!gameMap) throw new Error('Carte non trouvée');
+      const islandMap = gs.getIslandMap();
+      if (!islandMap) throw new Error('Carte non trouvée');
 
       const civId = gs.getPlayerCivilizationId();
       const resources = gs.getPlayerResources();
@@ -456,7 +456,7 @@ describe('GameAutomation', () => {
       const center = new HexCoord(0, 0);
 
       const capitalVertex = center.vertex(SecondaryHexDirection.N);
-      const capital = gameMap.getCity(capitalVertex);
+      const capital = islandMap.getCity(capitalVertex);
       if (!capital) throw new Error('Capitale non trouvée');
 
       // Construire la Guilde des batisseurs niveau 1 (pour les routes)
@@ -464,18 +464,18 @@ describe('GameAutomation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
 
       // Vérifier que la Guilde des batisseurs est au niveau 1
-      let currentCapital = gameMap.getCity(capitalVertex);
+      let currentCapital = islandMap.getCity(capitalVertex);
       if (!currentCapital) throw new Error('Capitale non trouvée');
       const buildersGuild = currentCapital.getBuilding(BuildingType.BuildersGuild);
       expect(buildersGuild?.level).toBeGreaterThanOrEqual(1);
 
-      const allRoadsBefore = gameMap.getRoadsForCivilization(civId);
+      const allRoadsBefore = islandMap.getRoadsForCivilization(civId);
 
       // Activer l'automation de construction de routes
       const civilization = gs.getCivilization(civId);
@@ -488,11 +488,11 @@ describe('GameAutomation', () => {
       while (iterations < maxIterations) {
         // Avancer le temps et récolter beaucoup pour avoir des ressources
         for (let i = 0; i < 5; i++) {
-          GameAutoPlayer.advanceTimeAndHarvest(civId, gameMap, resources, gameClock);
+          GameAutoPlayer.advanceTimeAndHarvest(civId, islandMap, resources, gameClock);
         }
         
         // Traiter les automations
-        AutomationController.processAllAutomations(civId, civilization, gameMap, resources);
+        AutomationController.processAllAutomations(civId, civilization, islandMap, resources);
         
         // Avancer le temps
         gameClock.updateTime(gameClock.getCurrentTime() + 1);
@@ -501,13 +501,13 @@ describe('GameAutomation', () => {
       }
 
       // Vérifier que toutes les routes construites ont une distance <= 2
-      const allRoads = gameMap.getRoadsForCivilization(civId);
+      const allRoads = islandMap.getRoadsForCivilization(civId);
       
       // Vérifier qu'au moins 4 routes ont été construites
       expect(allRoads.length).toBeGreaterThanOrEqual(allRoadsBefore.length + 10);
       
       for (const road of allRoads) {
-        const distance = gameMap.calculateBuildableRoadDistance(road, civId);
+        const distance = islandMap.calculateBuildableRoadDistance(road, civId);
         // Si distance est undefined, c'est que la route n'est pas constructible depuis nos routes existantes
         // Donc elle doit avoir été présente dès le départ (ce qui ne peut pas arriver en partant d'une capitale)
         // Les routes que nous avons construites doivent toutes être à distance <= 2
@@ -519,8 +519,8 @@ describe('GameAutomation', () => {
 
     it('devrait créer un TownHall automatiquement pour une nouvelle ville', () => {
       const gs = Make7HexesMapWithPortAndCapital();
-      const gameMap = gs.getGameMap();
-      if (!gameMap) throw new Error('Carte non trouvée');
+      const islandMap = gs.getIslandMap();
+      if (!islandMap) throw new Error('Carte non trouvée');
 
       const civId = gs.getPlayerCivilizationId();
       const resources = gs.getPlayerResources();
@@ -528,7 +528,7 @@ describe('GameAutomation', () => {
       const center = new HexCoord(0, 0);
 
       const capitalVertex = center.vertex(SecondaryHexDirection.N);
-      const capital = gameMap.getCity(capitalVertex);
+      const capital = islandMap.getCity(capitalVertex);
       if (!capital) throw new Error('Capitale non trouvée');
 
       // Construire la Guilde des batisseurs niveau 2 (pour l'automation de villes)
@@ -536,7 +536,7 @@ describe('GameAutomation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
@@ -545,13 +545,13 @@ describe('GameAutomation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
 
       // Vérifier que la Guilde des batisseurs est au niveau 2
-      let currentCapital = gameMap.getCity(capitalVertex);
+      let currentCapital = islandMap.getCity(capitalVertex);
       if (!currentCapital) throw new Error('Capitale non trouvée');
       const buildersGuild = currentCapital.getBuilding(BuildingType.BuildersGuild);
       expect(buildersGuild?.level).toBe(2);
@@ -562,7 +562,7 @@ describe('GameAutomation', () => {
       civilization.setAutoOutpostConstruction(true);
       civilization.setAutoCityUpgrade(true);
 
-      const initialCityCount = civilization.getCityCount(gameMap);
+      const initialCityCount = civilization.getCityCount(islandMap);
 
       // Faire dérouler la gameloop jusqu'à ce qu'une nouvelle ville soit créée
       const maxIterations = 400;
@@ -572,17 +572,17 @@ describe('GameAutomation', () => {
 
       while (iterations < maxIterations && cityCount === initialCityCount) {
         // Avancer le temps et récolter
-        GameAutoPlayer.advanceTimeAndHarvest(civId, gameMap, resources, gameClock);
+        GameAutoPlayer.advanceTimeAndHarvest(civId, islandMap, resources, gameClock);
         
         // Traiter les automations
-        AutomationController.processAllAutomations(civId, civilization, gameMap, resources);
+        AutomationController.processAllAutomations(civId, civilization, islandMap, resources);
         
         // Vérifier le nouveau nombre de villes
-        const newCityCount = civilization.getCityCount(gameMap);
+        const newCityCount = civilization.getCityCount(islandMap);
         if (newCityCount > initialCityCount) {
           cityCount = newCityCount;
           // Trouver la nouvelle ville
-          const cities = gameMap.getCitiesByCivilization(civId);
+          const cities = islandMap.getCitiesByCivilization(civId);
           for (const city of cities) {
             if (!city.equals(capital)) {
               outpostVertex = city.vertex;
@@ -600,7 +600,7 @@ describe('GameAutomation', () => {
       }
 
       // Vérifier que l'outpost existe et n'a pas de TownHall
-      let outpostCity = gameMap.getCity(outpostVertex);
+      let outpostCity = islandMap.getCity(outpostVertex);
       expect(outpostCity).toBeDefined();
       let townHall = outpostCity?.getBuilding(BuildingType.TownHall);
       expect(townHall).toBeUndefined();
@@ -616,13 +616,13 @@ describe('GameAutomation', () => {
 
       while (iterations < maxIterations && !townHallUpgraded) {
         // Avancer le temps et récolter
-        GameAutoPlayer.advanceTimeAndHarvest(civId, gameMap, resources, gameClock);
+        GameAutoPlayer.advanceTimeAndHarvest(civId, islandMap, resources, gameClock);
         
         // Traiter les automations
-        AutomationController.processAllAutomations(civId, civilization, gameMap, resources);
+        AutomationController.processAllAutomations(civId, civilization, islandMap, resources);
         
         // Vérifier le statut du TownHall
-        const currentCity = gameMap.getCity(outpostVertex);
+        const currentCity = islandMap.getCity(outpostVertex);
         if (currentCity) {
           const currentTownHall = currentCity.getBuilding(BuildingType.TownHall);
           if (currentTownHall) {
@@ -643,8 +643,8 @@ describe('GameAutomation', () => {
 
     it('devrait améliorer un TownHall existant automatiquement', () => {
       const gs = Make7HexesMapWithPortAndCapital();
-      const gameMap = gs.getGameMap();
-      if (!gameMap) throw new Error('Carte non trouvée');
+      const islandMap = gs.getIslandMap();
+      if (!islandMap) throw new Error('Carte non trouvée');
 
       const civId = gs.getPlayerCivilizationId();
       const resources = gs.getPlayerResources();
@@ -652,7 +652,7 @@ describe('GameAutomation', () => {
       const center = new HexCoord(0, 0);
 
       const capitalVertex = center.vertex(SecondaryHexDirection.N);
-      const capital = gameMap.getCity(capitalVertex);
+      const capital = islandMap.getCity(capitalVertex);
       if (!capital) throw new Error('Capitale non trouvée');
 
       // Construire la Guilde des batisseurs niveau 2 (minimal pour l'automation de villes)
@@ -660,7 +660,7 @@ describe('GameAutomation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
@@ -669,7 +669,7 @@ describe('GameAutomation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
@@ -679,7 +679,7 @@ describe('GameAutomation', () => {
       civilization.setAutoRoadConstruction(true);
       civilization.setAutoOutpostConstruction(true);
 
-      const initialCityCount = civilization.getCityCount(gameMap);
+      const initialCityCount = civilization.getCityCount(islandMap);
 
       // Faire dérouler la gameloop jusqu'à ce qu'une nouvelle ville soit créée
       const maxIterations = 400;
@@ -689,17 +689,17 @@ describe('GameAutomation', () => {
 
       while (iterations < maxIterations && cityCount === initialCityCount) {
         // Avancer le temps et récolter
-        GameAutoPlayer.advanceTimeAndHarvest(civId, gameMap, resources, gameClock);
+        GameAutoPlayer.advanceTimeAndHarvest(civId, islandMap, resources, gameClock);
         
         // Traiter les automations
-        AutomationController.processAllAutomations(civId, civilization, gameMap, resources);
+        AutomationController.processAllAutomations(civId, civilization, islandMap, resources);
         
         // Vérifier le nouveau nombre de villes
-        const newCityCount = civilization.getCityCount(gameMap);
+        const newCityCount = civilization.getCityCount(islandMap);
         if (newCityCount > initialCityCount) {
           cityCount = newCityCount;
           // Trouver la nouvelle ville
-          const cities = gameMap.getCitiesByCivilization(civId);
+          const cities = islandMap.getCitiesByCivilization(civId);
           for (const city of cities) {
             if (!city.equals(capital)) {
               testVertex = city.vertex;
@@ -718,7 +718,7 @@ describe('GameAutomation', () => {
       civilization.setAutoOutpostConstruction(false);
 
       // Créer manuellement un TownHall niveau 1 (si l'automation ne l'a pas déjà fait)
-      let testCity = gameMap.getCity(testVertex);
+      let testCity = islandMap.getCity(testVertex);
       expect(testCity).toBeDefined();
       if (!testCity) throw new Error('Ville non trouvée');
 
@@ -729,14 +729,14 @@ describe('GameAutomation', () => {
           BuildingType.TownHall,
           testVertex,
           civId,
-          gameMap,
+          islandMap,
           resources,
           gameClock
         );
       }
 
       // Vérifier que le TownHall existe et est au niveau 1
-      testCity = gameMap.getCity(testVertex);
+      testCity = islandMap.getCity(testVertex);
       townHall = testCity?.getBuilding(BuildingType.TownHall);
       expect(townHall).toBeDefined();
       const initialLevel = townHall?.level;
@@ -751,13 +751,13 @@ describe('GameAutomation', () => {
 
       while (iterations < maxIterations && !townHallUpgraded) {
         // Avancer le temps et récolter
-        GameAutoPlayer.advanceTimeAndHarvest(civId, gameMap, resources, gameClock);
+        GameAutoPlayer.advanceTimeAndHarvest(civId, islandMap, resources, gameClock);
         
         // Traiter les automations
-        AutomationController.processAllAutomations(civId, civilization, gameMap, resources);
+        AutomationController.processAllAutomations(civId, civilization, islandMap, resources);
         
         // Vérifier le niveau actuel du TownHall
-        const currentCity = gameMap.getCity(testVertex);
+        const currentCity = islandMap.getCity(testVertex);
         if (currentCity) {
           const currentTownHall = currentCity.getBuilding(BuildingType.TownHall);
           if (currentTownHall && currentTownHall.level > (initialLevel || 1)) {

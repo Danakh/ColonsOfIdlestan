@@ -2,7 +2,7 @@ import { BuildingType } from '../model/city/BuildingType';
 import { City } from '../model/city/City';
 import { Civilization } from '../model/map/Civilization';
 import { Building } from '../model/city/Building';
-import { GameMap } from '../model/map/GameMap';
+import { IslandMap } from '../model/map/IslandMap';
 
 /**
  * Callbacks pour les actions du panneau d'automatisation.
@@ -47,7 +47,7 @@ export interface AutomationPanelDependencies {
   /** Fonction pour obtenir le sommet sélectionné */
   getSelectedVertex: () => import('../model/hex/Vertex').Vertex | null;
   /** Fonction pour obtenir la carte de jeu */
-  getGameMap: () => GameMap | null;
+  getIslandMap: () => IslandMap | null;
   /** Fonction pour obtenir l'ID de la civilisation du joueur */
   getPlayerCivilizationId: () => import('../model/map/CivilizationId').CivilizationId;
   /** Fonction pour obtenir la civilisation depuis le GameState */
@@ -59,7 +59,7 @@ export interface AutomationPanelDependencies {
   /** Fonction pour obtenir la ville actuelle depuis le panneau de ville */
   getCurrentCity: () => City | null;
   /** Fonction pour rendre la carte */
-  renderMap: (gameMap: GameMap, civId: import('../model/map/CivilizationId').CivilizationId) => void;
+  renderMap: (islandMap: IslandMap, civId: import('../model/map/CivilizationId').CivilizationId) => void;
   /** Fonction pour sauvegarder automatiquement */
   autoSave: () => void;
 }
@@ -121,11 +121,11 @@ export class AutomationPanelView {
     this.setCallbacks({
       onOpenAutomation: () => {
         const selectedVertex = dependencies.getSelectedVertex();
-        const currentGameMap = dependencies.getGameMap();
-        if (!selectedVertex || !currentGameMap || !currentGameMap.hasCity(selectedVertex)) {
+        const currentIslandMap = dependencies.getIslandMap();
+        if (!selectedVertex || !currentIslandMap || !currentIslandMap.hasCity(selectedVertex)) {
           return;
         }
-        const city = currentGameMap.getCity(selectedVertex);
+        const city = currentIslandMap.getCity(selectedVertex);
         if (!city) {
           return;
         }
@@ -135,11 +135,11 @@ export class AutomationPanelView {
       },
       onToggleAutomation: (automationType: AutomationType, enabled: boolean) => {
         const selectedVertex = dependencies.getSelectedVertex();
-        const currentGameMap = dependencies.getGameMap();
-        if (!selectedVertex || !currentGameMap || !currentGameMap.hasCity(selectedVertex)) {
+        const currentIslandMap = dependencies.getIslandMap();
+        if (!selectedVertex || !currentIslandMap || !currentIslandMap.hasCity(selectedVertex)) {
           return;
         }
-        const city = currentGameMap.getCity(selectedVertex);
+        const city = currentIslandMap.getCity(selectedVertex);
         if (!city) {
           return;
         }
@@ -193,7 +193,7 @@ export class AutomationPanelView {
           this.updateAutomationButton(currentCity);
 
           // Re-rendre la carte
-          dependencies.renderMap(currentGameMap, civId);
+          dependencies.renderMap(currentIslandMap, civId);
 
           // Sauvegarder le jeu
           dependencies.autoSave();

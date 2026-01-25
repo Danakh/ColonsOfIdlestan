@@ -3,7 +3,7 @@ import { RoadConstruction } from '../../../src/model/game/RoadConstruction';
 import { RoadController } from '../../../src/controller/RoadController';
 import { Edge } from '../../../src/model/hex/Edge';
 import { Vertex } from '../../../src/model/hex/Vertex';
-import { GameMap } from '../../../src/model/map/GameMap';
+import { IslandMap } from '../../../src/model/map/IslandMap';
 import { CivilizationId } from '../../../src/model/map/CivilizationId';
 import { ResourceType } from '../../../src/model/map/ResourceType';
 import { PlayerResources } from '../../../src/model/game/PlayerResources';
@@ -24,7 +24,7 @@ describe('RoadConstruction', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -48,7 +48,7 @@ describe('RoadConstruction', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId1 = CivilizationId.create('civ1');
       const civId2 = CivilizationId.create('civ2');
       map.registerCivilization(civId1);
@@ -74,7 +74,7 @@ describe('RoadConstruction', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -98,7 +98,7 @@ describe('RoadConstruction', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId1 = CivilizationId.create('civ1');
       const civId2 = CivilizationId.create('civ2');
       map.registerCivilization(civId1);
@@ -126,7 +126,7 @@ describe('RoadConstruction', () => {
         new Hex(isolated),
         new Hex(isolatedNeighbor),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -144,7 +144,7 @@ describe('RoadConstruction', () => {
         new Hex(center),
         new Hex(north),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -162,7 +162,7 @@ describe('RoadConstruction', () => {
         new Hex(center),
         new Hex(north),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
 
       const edge = Edge.create(center, north);
@@ -228,7 +228,7 @@ describe('RoadConstruction', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -263,7 +263,7 @@ describe('RoadConstruction', () => {
         new Hex(isolated),
         new Hex(isolatedNeighbor),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -288,7 +288,7 @@ describe('RoadConstruction', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -316,7 +316,7 @@ describe('RoadConstruction', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -353,7 +353,7 @@ describe('RoadConstruction', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 

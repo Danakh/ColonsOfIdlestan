@@ -1,4 +1,4 @@
-import { GameMap } from '../model/map/GameMap';
+import { IslandMap } from '../model/map/IslandMap';
 import { CivilizationId } from '../model/map/CivilizationId';
 import { CityLevel } from '../model/city/CityLevel';
 import { calculateCivilizationPoints } from '../model/game/CivilizationPoints';
@@ -32,7 +32,7 @@ export class PrestigeController {
    * @param map - La carte de jeu
    * @returns true si l'action peut être activée
    */
-  static canActivatePrestige(civId: CivilizationId, map: GameMap): boolean {
+  static canActivatePrestige(civId: CivilizationId, map: IslandMap): boolean {
     // Vérifier qu'une capitale existe
     const cities = map.getCitiesByCivilization(civId);
     const hasCapital = cities.some(city => city.level === CityLevel.Capital);
@@ -53,7 +53,7 @@ export class PrestigeController {
    * @param map - La carte de jeu
    * @returns Un message d'explication ou undefined si l'action peut être activée
    */
-  static getPrestigeRestrictionReason(civId: CivilizationId, map: GameMap): string | undefined {
+  static getPrestigeRestrictionReason(civId: CivilizationId, map: IslandMap): string | undefined {
     const cities = map.getCitiesByCivilization(civId);
     const hasCapital = cities.some(city => city.level === CityLevel.Capital);
     
@@ -80,7 +80,7 @@ export class PrestigeController {
    */
   static activatePrestige(
     civId: CivilizationId,
-    map: GameMap
+    map: IslandMap
   ): PrestigeActionResult {
     // Vérifier les conditions
     if (!this.canActivatePrestige(civId, map)) {

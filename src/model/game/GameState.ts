@@ -1,4 +1,4 @@
-import { GameMap } from '../map/GameMap';
+import { IslandMap } from '../map/IslandMap';
 import { CivilizationId } from '../map/CivilizationId';
 import { Civilization, CivilizationSerialized } from '../map/Civilization';
 import { PlayerResources } from './PlayerResources';
@@ -7,10 +7,10 @@ import { GameClock } from './GameClock';
 /**
  * État de la partie : ressources, civilisations, carte et horloge de jeu.
  * Couche modèle regroupant les données de jeu.
- * La sérialisation est déléguée à chaque sous-objet (PlayerResources, GameClock, GameMap, etc.).
+ * La sérialisation est déléguée à chaque sous-objet (PlayerResources, GameClock, IslandMap, etc.).
  */
 export class GameState {
-  private gameMap: GameMap | null = null;
+  private islandMap: IslandMap | null = null;
   private civilizations: CivilizationId[] = [];
   private civilizationData: Map<string, Civilization> = new Map();
   /** Seed utilisé pour la génération de la carte (null si non initialisée). */
@@ -38,8 +38,8 @@ export class GameState {
   }
 
   /** Carte de jeu, ou null si non initialisée. */
-  getGameMap(): GameMap | null {
-    return this.gameMap;
+  getIslandMap(): IslandMap | null {
+    return this.islandMap;
   }
 
   /** Horloge de jeu. */
@@ -53,8 +53,8 @@ export class GameState {
   }
 
   /** Définit la carte de jeu (lors d'une nouvelle partie ou régénération). */
-  setGameMap(map: GameMap | null): void {
-    this.gameMap = map;
+  setIslandMap(map: IslandMap | null): void {
+    this.islandMap = map;
   }
 
   /** Définit la liste des civilisations de la partie. */
@@ -93,7 +93,7 @@ export class GameState {
   serializeToObject(): {
     playerResources: any;
     playerCivilizationId: string;
-    gameMap: any | null;
+    islandMap: any | null;
     civilizations: string[];
     civilizationsData: CivilizationSerialized[];
     seed: number | null;
@@ -111,7 +111,7 @@ export class GameState {
     return {
       playerResources: this.playerResources.serialize(),
       playerCivilizationId: this.playerCivilizationId.serialize(),
-      gameMap: this.gameMap?.serialize() ?? null,
+      islandMap: this.islandMap?.serialize() ?? null,
       civilizations: this.civilizations.map((c) => c.serialize()),
       civilizationsData: civilizationsData,
       seed: this.seed,
@@ -125,7 +125,7 @@ export class GameState {
   static deserializeFromObject(obj: {
     playerResources: any;
     playerCivilizationId: string;
-    gameMap: any | null;
+    islandMap: any | null;
     civilizations: string[];
     civilizationsData: CivilizationSerialized[];
     seed: number | null;
@@ -146,15 +146,15 @@ export class GameState {
     }
     
     gs.setSeed(obj.seed);
-    if (obj.gameMap != null) {
-      gs.setGameMap(GameMap.deserialize(obj.gameMap));
+    if (obj.islandMap != null) {
+      gs.setIslandMap(IslandMap.deserialize(obj.islandMap));
     }
     return gs;
   }
 
   /**
    * Sérialise l'état en une chaîne JSON.
-   * Chaque sous-objet (PlayerResources, GameClock, GameMap) se sérialise lui-même.
+   * Chaque sous-objet (PlayerResources, GameClock, IslandMap) se sérialise lui-même.
    */
   serialize(): string {
     const civilizationsData: CivilizationSerialized[] = [];
@@ -171,7 +171,7 @@ export class GameState {
       playerResources: this.playerResources.serialize(),
       playerCivilizationId: this.playerCivilizationId.serialize(),
       gameClock: this.gameClock.serialize(),
-      gameMap: this.gameMap?.serialize() ?? null,
+      islandMap: this.islandMap?.serialize() ?? null,
       civilizations: this.civilizations.map((c) => c.serialize()),
       civilizationsData: civilizationsData,
       seed: this.seed,
@@ -201,8 +201,8 @@ export class GameState {
     }
     
     gs.setSeed(obj.seed);
-    if (obj.gameMap != null) {
-      gs.setGameMap(GameMap.deserialize(obj.gameMap));
+    if (obj.islandMap != null) {
+      gs.setIslandMap(IslandMap.deserialize(obj.islandMap));
     }
     return gs;
   }

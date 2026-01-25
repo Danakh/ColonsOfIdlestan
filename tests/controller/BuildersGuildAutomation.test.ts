@@ -19,8 +19,8 @@ describe('BuildersGuild Automation', () => {
   describe('Construction et amélioration de la Guilde des batisseurs', () => {
     it('devrait construire la Guilde des batisseurs niveau 1 dans la capitale', () => {
       const gs = Make7HexesMapWithPortAndCapital();
-      const gameMap = gs.getGameMap();
-      if (!gameMap) throw new Error('Carte non trouvée');
+      const islandMap = gs.getIslandMap();
+      if (!islandMap) throw new Error('Carte non trouvée');
 
       const civId = gs.getPlayerCivilizationId();
       const resources = gs.getPlayerResources();
@@ -29,7 +29,7 @@ describe('BuildersGuild Automation', () => {
 
       // Ville initiale (capitale)
       const capitalVertex = center.vertex(SecondaryHexDirection.N);
-      const capital = gameMap.getCity(capitalVertex);
+      const capital = islandMap.getCity(capitalVertex);
       if (!capital) throw new Error('Capitale non trouvée');
 
       // Vérifier que la ville est bien une capitale
@@ -40,7 +40,7 @@ describe('BuildersGuild Automation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
@@ -53,8 +53,8 @@ describe('BuildersGuild Automation', () => {
 
     it('devrait améliorer la Guilde des batisseurs jusqu\'au niveau 3', () => {
       const gs = Make7HexesMapWithPortAndCapital();
-      const gameMap = gs.getGameMap();
-      if (!gameMap) throw new Error('Carte non trouvée');
+      const islandMap = gs.getIslandMap();
+      if (!islandMap) throw new Error('Carte non trouvée');
 
       const civId = gs.getPlayerCivilizationId();
       const resources = gs.getPlayerResources();
@@ -62,7 +62,7 @@ describe('BuildersGuild Automation', () => {
       const center = new HexCoord(0, 0);
 
       const capitalVertex = center.vertex(SecondaryHexDirection.N);
-      const capital = gameMap.getCity(capitalVertex);
+      const capital = islandMap.getCity(capitalVertex);
       if (!capital) throw new Error('Capitale non trouvée');
 
       // Construire la Guilde des batisseurs niveau 1
@@ -70,7 +70,7 @@ describe('BuildersGuild Automation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
@@ -80,13 +80,13 @@ describe('BuildersGuild Automation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
 
       // Vérifier le niveau 2
-      let currentCapital = gameMap.getCity(capitalVertex);
+      let currentCapital = islandMap.getCity(capitalVertex);
       if (!currentCapital) throw new Error('Capitale non trouvée');
       const buildersGuildLevel2 = currentCapital.getBuilding(BuildingType.BuildersGuild);
       expect(buildersGuildLevel2?.level).toBe(2);
@@ -96,13 +96,13 @@ describe('BuildersGuild Automation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
 
       // Vérifier le niveau 3
-      currentCapital = gameMap.getCity(capitalVertex);
+      currentCapital = islandMap.getCity(capitalVertex);
       if (!currentCapital) throw new Error('Capitale non trouvée');
       const buildersGuildLevel3 = currentCapital.getBuilding(BuildingType.BuildersGuild);
       expect(buildersGuildLevel3?.level).toBe(3);
@@ -112,8 +112,8 @@ describe('BuildersGuild Automation', () => {
   describe('Automatisations de la Guilde des batisseurs', () => {
     it('devrait activer/désactiver la construction automatique de routes (niveau 1)', () => {
       const gs = Make7HexesMapWithPortAndCapital();
-      const gameMap = gs.getGameMap();
-      if (!gameMap) throw new Error('Carte non trouvée');
+      const islandMap = gs.getIslandMap();
+      if (!islandMap) throw new Error('Carte non trouvée');
 
       const civId = gs.getPlayerCivilizationId();
       const resources = gs.getPlayerResources();
@@ -121,7 +121,7 @@ describe('BuildersGuild Automation', () => {
       const center = new HexCoord(0, 0);
 
       const capitalVertex = center.vertex(SecondaryHexDirection.N);
-      const capital = gameMap.getCity(capitalVertex);
+      const capital = islandMap.getCity(capitalVertex);
       if (!capital) throw new Error('Capitale non trouvée');
 
       // Construire la Guilde des batisseurs niveau 1
@@ -129,7 +129,7 @@ describe('BuildersGuild Automation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
@@ -153,8 +153,8 @@ describe('BuildersGuild Automation', () => {
 
     it('devrait activer/désactiver la construction automatique d\'outposts (niveau 2)', () => {
       const gs = Make7HexesMapWithPortAndCapital();
-      const gameMap = gs.getGameMap();
-      if (!gameMap) throw new Error('Carte non trouvée');
+      const islandMap = gs.getIslandMap();
+      if (!islandMap) throw new Error('Carte non trouvée');
 
       const civId = gs.getPlayerCivilizationId();
       const resources = gs.getPlayerResources();
@@ -162,7 +162,7 @@ describe('BuildersGuild Automation', () => {
       const center = new HexCoord(0, 0);
 
       const capitalVertex = center.vertex(SecondaryHexDirection.N);
-      const capital = gameMap.getCity(capitalVertex);
+      const capital = islandMap.getCity(capitalVertex);
       if (!capital) throw new Error('Capitale non trouvée');
 
       // Construire et améliorer la Guilde des batisseurs au niveau 2
@@ -170,7 +170,7 @@ describe('BuildersGuild Automation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
@@ -179,12 +179,12 @@ describe('BuildersGuild Automation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
 
-      let currentCapital = gameMap.getCity(capitalVertex);
+      let currentCapital = islandMap.getCity(capitalVertex);
       if (!currentCapital) throw new Error('Capitale non trouvée');
       const buildersGuild = currentCapital.getBuilding(BuildingType.BuildersGuild);
       if (!buildersGuild) throw new Error('Guilde des batisseurs non trouvée');
@@ -205,8 +205,8 @@ describe('BuildersGuild Automation', () => {
 
     it('devrait activer/désactiver l\'amélioration automatique de villes (niveau 2)', () => {
       const gs = Make7HexesMapWithPortAndCapital();
-      const gameMap = gs.getGameMap();
-      if (!gameMap) throw new Error('Carte non trouvée');
+      const islandMap = gs.getIslandMap();
+      if (!islandMap) throw new Error('Carte non trouvée');
 
       const civId = gs.getPlayerCivilizationId();
       const resources = gs.getPlayerResources();
@@ -214,7 +214,7 @@ describe('BuildersGuild Automation', () => {
       const center = new HexCoord(0, 0);
 
       const capitalVertex = center.vertex(SecondaryHexDirection.N);
-      const capital = gameMap.getCity(capitalVertex);
+      const capital = islandMap.getCity(capitalVertex);
       if (!capital) throw new Error('Capitale non trouvée');
 
       // Construire et améliorer la Guilde des batisseurs au niveau 2
@@ -222,7 +222,7 @@ describe('BuildersGuild Automation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
@@ -231,12 +231,12 @@ describe('BuildersGuild Automation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
 
-      let currentCapital = gameMap.getCity(capitalVertex);
+      let currentCapital = islandMap.getCity(capitalVertex);
       if (!currentCapital) throw new Error('Capitale non trouvée');
       const buildersGuild = currentCapital.getBuilding(BuildingType.BuildersGuild);
       if (!buildersGuild) throw new Error('Guilde des batisseurs non trouvée');
@@ -257,8 +257,8 @@ describe('BuildersGuild Automation', () => {
 
     it('devrait activer/désactiver la construction automatique de bâtiments de production (niveau 3)', () => {
       const gs = Make7HexesMapWithPortAndCapital();
-      const gameMap = gs.getGameMap();
-      if (!gameMap) throw new Error('Carte non trouvée');
+      const islandMap = gs.getIslandMap();
+      if (!islandMap) throw new Error('Carte non trouvée');
 
       const civId = gs.getPlayerCivilizationId();
       const resources = gs.getPlayerResources();
@@ -266,7 +266,7 @@ describe('BuildersGuild Automation', () => {
       const center = new HexCoord(0, 0);
 
       const capitalVertex = center.vertex(SecondaryHexDirection.N);
-      const capital = gameMap.getCity(capitalVertex);
+      const capital = islandMap.getCity(capitalVertex);
       if (!capital) throw new Error('Capitale non trouvée');
 
       // Construire et améliorer la Guilde des batisseurs au niveau 3
@@ -274,7 +274,7 @@ describe('BuildersGuild Automation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
@@ -283,7 +283,7 @@ describe('BuildersGuild Automation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
@@ -292,12 +292,12 @@ describe('BuildersGuild Automation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
 
-      let currentCapital = gameMap.getCity(capitalVertex);
+      let currentCapital = islandMap.getCity(capitalVertex);
       if (!currentCapital) throw new Error('Capitale non trouvée');
       const buildersGuild = currentCapital.getBuilding(BuildingType.BuildersGuild);
       if (!buildersGuild) throw new Error('Guilde des batisseurs non trouvée');
@@ -318,8 +318,8 @@ describe('BuildersGuild Automation', () => {
 
     it('devrait activer toutes les automatisations au niveau 3', () => {
       const gs = Make7HexesMapWithPortAndCapital();
-      const gameMap = gs.getGameMap();
-      if (!gameMap) throw new Error('Carte non trouvée');
+      const islandMap = gs.getIslandMap();
+      if (!islandMap) throw new Error('Carte non trouvée');
 
       const civId = gs.getPlayerCivilizationId();
       const resources = gs.getPlayerResources();
@@ -327,7 +327,7 @@ describe('BuildersGuild Automation', () => {
       const center = new HexCoord(0, 0);
 
       const capitalVertex = center.vertex(SecondaryHexDirection.N);
-      const capital = gameMap.getCity(capitalVertex);
+      const capital = islandMap.getCity(capitalVertex);
       if (!capital) throw new Error('Capitale non trouvée');
 
       // Construire et améliorer la Guilde des batisseurs au niveau 3
@@ -335,7 +335,7 @@ describe('BuildersGuild Automation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
@@ -344,7 +344,7 @@ describe('BuildersGuild Automation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
@@ -353,12 +353,12 @@ describe('BuildersGuild Automation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );
 
-      let currentCapital = gameMap.getCity(capitalVertex);
+      let currentCapital = islandMap.getCity(capitalVertex);
       if (!currentCapital) throw new Error('Capitale non trouvée');
       const buildersGuild = currentCapital.getBuilding(BuildingType.BuildersGuild);
       if (!buildersGuild) throw new Error('Guilde des batisseurs non trouvée');
@@ -382,8 +382,8 @@ describe('BuildersGuild Automation', () => {
 
     it('devrait lever une erreur si on essaie d\'activer une automatisation sans le niveau requis', () => {
       const gs = Make7HexesMapWithPortAndCapital();
-      const gameMap = gs.getGameMap();
-      if (!gameMap) throw new Error('Carte non trouvée');
+      const islandMap = gs.getIslandMap();
+      if (!islandMap) throw new Error('Carte non trouvée');
 
       const civId = gs.getPlayerCivilizationId();
       const resources = gs.getPlayerResources();
@@ -391,7 +391,7 @@ describe('BuildersGuild Automation', () => {
       const center = new HexCoord(0, 0);
 
       const capitalVertex = center.vertex(SecondaryHexDirection.N);
-      const capital = gameMap.getCity(capitalVertex);
+      const capital = islandMap.getCity(capitalVertex);
       if (!capital) throw new Error('Capitale non trouvée');
 
       // Construire la Guilde des batisseurs niveau 1 seulement
@@ -399,7 +399,7 @@ describe('BuildersGuild Automation', () => {
         BuildingType.BuildersGuild,
         capitalVertex,
         civId,
-        gameMap,
+        islandMap,
         resources,
         gameClock
       );

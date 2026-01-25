@@ -16,7 +16,7 @@ import { calculateInventoryCapacity } from '../../src/model/game/InventoryCapaci
 
 describe('TradeController (Map7HexesScenario)', () => {
   let gameState: GameState;
-  let map: ReturnType<GameState['getGameMap']>;
+  let map: ReturnType<GameState['getIslandMap']>;
   let civId: ReturnType<GameState['getPlayerCivilizationId']>;
   let resources: PlayerResources;
 
@@ -26,7 +26,7 @@ describe('TradeController (Map7HexesScenario)', () => {
 
   beforeEach(() => {
     gameState = Make7HexesMap();
-    map = gameState.getGameMap()!;
+    map = gameState.getIslandMap()!;
     civId = gameState.getPlayerCivilizationId();
     resources = gameState.getPlayerResources();
   });
@@ -50,7 +50,7 @@ describe('TradeController (Map7HexesScenario)', () => {
 
 describe('TradeController (Map7HexesWithPortCity)', () => {
   let gameState: GameState;
-  let map: ReturnType<GameState['getGameMap']>;
+  let map: ReturnType<GameState['getIslandMap']>;
   let civId: ReturnType<GameState['getPlayerCivilizationId']>;
   let resources: PlayerResources;
 
@@ -58,7 +58,7 @@ describe('TradeController (Map7HexesWithPortCity)', () => {
   
   beforeEach(() => {
     gameState = Make7HexesMapWithPortCity();
-    map = gameState.getGameMap()!;
+    map = gameState.getIslandMap()!;
     civId = gameState.getPlayerCivilizationId();
     resources = gameState.getPlayerResources();
   });

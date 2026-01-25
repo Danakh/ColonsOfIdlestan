@@ -2,7 +2,7 @@ import { HexCoord } from '../../src/model/hex/HexCoord';
 import { HexDirection } from '../../src/model/hex/HexDirection';
 import { Vertex } from '../../src/model/hex/Vertex';
 import { Edge } from '../../src/model/hex/Edge';
-import { GameMap } from '../../src/model/map/GameMap';
+import { IslandMap } from '../../src/model/map/IslandMap';
 import { HexType } from '../../src/model/map/HexType';
 import { CivilizationId } from '../../src/model/map/CivilizationId';
 import { CityLevel } from '../../src/model/city/CityLevel';
@@ -26,8 +26,8 @@ import { SecondaryHexDirection } from '../../src/model/hex';
 export function Make7HexesMapWithPortCity(): GameState {
   // Partir de la carte de base
   const gs = Make7HexesMap();
-  const gameMap = gs.getGameMap();
-  if (!gameMap) throw new Error('Carte non trouvée');
+  const islandMap = gs.getIslandMap();
+  if (!islandMap) throw new Error('Carte non trouvée');
   
   const civId = gs.getPlayerCivilizationId();
   const resources = gs.getPlayerResources();
@@ -39,7 +39,7 @@ export function Make7HexesMapWithPortCity(): GameState {
   
   // Ville initiale créée par Make7HexesMap (niveau Colony avec TownHall niveau 1)
   const initialCityVertex = center.vertex(SecondaryHexDirection.N);
-  const initialCity = gameMap.getCity(initialCityVertex);
+  const initialCity = islandMap.getCity(initialCityVertex);
   if (!initialCity) throw new Error('Ville initiale non trouvée');
   
   // Étape 1: Construire un marché pour permettre le commerce
@@ -47,7 +47,7 @@ export function Make7HexesMapWithPortCity(): GameState {
     BuildingType.Market,
     initialCityVertex,
     civId,
-    gameMap,
+    islandMap,
     resources,
     gameClock
   );
@@ -57,7 +57,7 @@ export function Make7HexesMapWithPortCity(): GameState {
     BuildingType.Brickworks,
     initialCityVertex,
     civId,
-    gameMap,
+    islandMap,
     resources,
     gameClock
   );
@@ -65,7 +65,7 @@ export function Make7HexesMapWithPortCity(): GameState {
     BuildingType.Sawmill,
     initialCityVertex,
     civId,
-    gameMap,
+    islandMap,
     resources,
     gameClock
   );
@@ -75,7 +75,7 @@ export function Make7HexesMapWithPortCity(): GameState {
     BuildingType.TownHall,
     initialCityVertex,
     civId,
-    gameMap,
+    islandMap,
     resources,
     gameClock
   );
@@ -83,27 +83,27 @@ export function Make7HexesMapWithPortCity(): GameState {
   // Étape 4: Construire des routes pour étendre le territoire
   // Route 1
   const road1 = center.edge(HexDirection.NE);
-  GameAutoPlayer.playUntilBuildingRoad(road1, civId, gameMap, resources, gameClock);
+  GameAutoPlayer.playUntilBuildingRoad(road1, civId, islandMap, resources, gameClock);
   
   // Route 2
   const road2 = center.outgoingEdge(SecondaryHexDirection.EN);
-  GameAutoPlayer.playUntilBuildingRoad(road2, civId, gameMap, resources, gameClock);
+  GameAutoPlayer.playUntilBuildingRoad(road2, civId, islandMap, resources, gameClock);
   
   // Étape 5: Trouver un vertex au bord de l'eau pour créer la ville portuaire
   const portCityVertex = road2.otherVertex(center.vertex(SecondaryHexDirection.EN));
-  const grid = gameMap.getGrid();
+  const grid = islandMap.getGrid();
   
   // Verifie que portCityVertex est bien au bord de l'eau
   const waterHex = portCityVertex.hex(SecondaryHexDirection.EN);
-  if (!waterHex || gameMap.getHexType(waterHex) !== HexType.Water) {
+  if (!waterHex || islandMap.getHexType(waterHex) !== HexType.Water) {
     throw new Error('Le vertex du port n\'est pas au bord de l\'eau comme prévu');
   }
 
   // Étape 6: Créer un outpost au bord de l'eau (niveau 0)
   // Pour créer un outpost, il faut qu'il touche une route et soit à 2+ routes d'une ville
-  GameAutoPlayer.playUntilOutpost(portCityVertex, civId, gameMap, resources, gameClock);
+  GameAutoPlayer.playUntilOutpost(portCityVertex, civId, islandMap, resources, gameClock);
   
-  const portCity = gameMap.getCity(portCityVertex);
+  const portCity = islandMap.getCity(portCityVertex);
   if (!portCity) throw new Error('Ville portuaire non trouvée après addCity');
   
   // Vérifier qu'on part bien d'un outpost (niveau 0, pas de TownHall)
@@ -117,7 +117,7 @@ export function Make7HexesMapWithPortCity(): GameState {
     BuildingType.TownHall,
     portCityVertex,
     civId,
-    gameMap,
+    islandMap,
     resources,
     gameClock
   );
@@ -127,7 +127,7 @@ export function Make7HexesMapWithPortCity(): GameState {
     BuildingType.TownHall,
     portCityVertex,
     civId,
-    gameMap,
+    islandMap,
     resources,
     gameClock
   );
@@ -137,13 +137,13 @@ export function Make7HexesMapWithPortCity(): GameState {
     BuildingType.TownHall,
     portCityVertex,
     civId,
-    gameMap,
+    islandMap,
     resources,
     gameClock
   );
   
   // Récupérer la ville mise à jour pour vérifier le niveau
-  const portCityAfterUpgrade = gameMap.getCity(portCityVertex);
+  const portCityAfterUpgrade = islandMap.getCity(portCityVertex);
   if (!portCityAfterUpgrade) throw new Error('Ville portuaire non trouvée après amélioration');
   
   // Vérifier que la ville est bien au niveau 3
@@ -156,13 +156,13 @@ export function Make7HexesMapWithPortCity(): GameState {
     BuildingType.Seaport,
     portCityVertex,
     civId,
-    gameMap,
+    islandMap,
     resources,
     gameClock
   );
   
   // Étape 11: Améliorer le port au niveau 2
-  let currentPortCity = gameMap.getCity(portCityVertex);
+  let currentPortCity = islandMap.getCity(portCityVertex);
   if (!currentPortCity) throw new Error('Ville portuaire non trouvée');
   let seaport = currentPortCity.getBuilding(BuildingType.Seaport);
   if (!seaport) throw new Error('Le port n\'a pas été construit');
@@ -172,12 +172,12 @@ export function Make7HexesMapWithPortCity(): GameState {
       BuildingType.Seaport,
       portCityVertex,
       civId,
-      gameMap,
+      islandMap,
       resources,
       gameClock
     );
     // Récupérer la ville mise à jour
-    currentPortCity = gameMap.getCity(portCityVertex);
+    currentPortCity = islandMap.getCity(portCityVertex);
     if (!currentPortCity) throw new Error('Ville portuaire non trouvée après amélioration du port');
     seaport = currentPortCity.getBuilding(BuildingType.Seaport);
     if (!seaport) throw new Error('Le port n\'existe pas après amélioration');
@@ -194,12 +194,12 @@ export function Make7HexesMapWithPortCity(): GameState {
       BuildingType.Seaport,
       portCityVertex,
       civId,
-      gameMap,
+      islandMap,
       resources,
       gameClock
     );
     // Récupérer la ville mise à jour
-    currentPortCity = gameMap.getCity(portCityVertex);
+    currentPortCity = islandMap.getCity(portCityVertex);
     if (!currentPortCity) throw new Error('Ville portuaire non trouvée après amélioration finale du port');
     seaport = currentPortCity.getBuilding(BuildingType.Seaport);
     if (!seaport) throw new Error('Le port n\'existe pas après amélioration finale');
@@ -229,8 +229,8 @@ export function Make7HexesMapWithPortCity(): GameState {
 export function Make7HexesMapWithPortAndCapital(): GameState {
   // Partir de la carte avec port
   const gs = Make7HexesMapWithPortCity();
-  const gameMap = gs.getGameMap();
-  if (!gameMap) throw new Error('Carte non trouvée');
+  const islandMap = gs.getIslandMap();
+  if (!islandMap) throw new Error('Carte non trouvée');
   
   const civId = gs.getPlayerCivilizationId();
   const resources = gs.getPlayerResources();
@@ -243,11 +243,11 @@ export function Make7HexesMapWithPortAndCapital(): GameState {
   // Ville initiale créée par Make7HexesMap (niveau Colony avec TownHall niveau 1)
   // Après Make7HexesMapWithPortCity(), elle devrait être au niveau Town (2) avec TownHall niveau 2
   const initialCityVertex = center.vertex(SecondaryHexDirection.N);
-  const initialCity = gameMap.getCity(initialCityVertex);
+  const initialCity = islandMap.getCity(initialCityVertex);
   if (!initialCity) throw new Error('Ville initiale non trouvée');
   
   // Vérifier le niveau actuel de la ville initiale
-  let currentCity = gameMap.getCity(initialCityVertex);
+  let currentCity = islandMap.getCity(initialCityVertex);
   if (!currentCity) throw new Error('Ville initiale non trouvée');
   const townHall = currentCity.getBuilding(BuildingType.TownHall);
   if (!townHall) throw new Error('Le TownHall de la ville initiale n\'existe pas');
@@ -262,12 +262,12 @@ export function Make7HexesMapWithPortAndCapital(): GameState {
       BuildingType.TownHall,
       initialCityVertex,
       civId,
-      gameMap,
+      islandMap,
       resources,
       gameClock
     );
     // Récupérer la ville mise à jour
-    currentCity = gameMap.getCity(initialCityVertex);
+    currentCity = islandMap.getCity(initialCityVertex);
     if (!currentCity) throw new Error('Ville initiale non trouvée après amélioration');
   }
   
@@ -284,12 +284,12 @@ export function Make7HexesMapWithPortAndCapital(): GameState {
       BuildingType.TownHall,
       initialCityVertex,
       civId,
-      gameMap,
+      islandMap,
       resources,
       gameClock
     );
     // Récupérer la ville mise à jour
-    currentCity = gameMap.getCity(initialCityVertex);
+    currentCity = islandMap.getCity(initialCityVertex);
     if (!currentCity) throw new Error('Ville initiale non trouvée après amélioration finale');
   }
   

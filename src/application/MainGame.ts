@@ -1,6 +1,6 @@
 import { MapGenerator, MapGeneratorConfig } from '../controller/MapGenerator';
 import { MainGameController } from '../controller/MainGameController';
-import { GameMap } from '../model/map/GameMap';
+import { IslandMap } from '../model/map/IslandMap';
 import { HexType } from '../model/map/HexType';
 import { GameState } from '../model/game/GameState';
 import { PlayerResources } from '../model/game/PlayerResources';
@@ -67,8 +67,8 @@ export class MainGame {
       seed: actualSeed,
     };
 
-    const gameMap = this.mapGenerator.generate(config);
-    state.setGameMap(gameMap);
+    const islandMap = this.mapGenerator.generate(config);
+    state.setIslandMap(islandMap);
     state.setCivilizations(civilizations);
     state.setSeed(actualSeed);
     state.getPlayerResources().clear();
@@ -116,8 +116,8 @@ export class MainGame {
     return this.controller.getGameState();
   }
 
-  getGameMap(): GameMap | null {
-    return this.controller.getGameMap();
+  getIslandMap(): IslandMap | null {
+    return this.controller.getIslandMap();
   }
 
   getPlayerResources(): PlayerResources {

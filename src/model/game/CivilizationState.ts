@@ -3,7 +3,7 @@ import { GameClock } from './GameClock';
 import { PlayerResources } from './PlayerResources';
 import { CivilizationId } from '../map/CivilizationId';
 import { calculateCivilizationPoints } from './CivilizationPoints';
-import { GameMap } from '../map/GameMap';
+import { IslandMap } from '../map/IslandMap';
 
 /**
  * État d'une civilisation : contient GameState, horloge de jeu et points de civilisation.
@@ -73,11 +73,11 @@ export class CivilizationState {
    * Doit être appelé chaque fois que la carte change (construction de bâtiments, amélioration de villes, etc.).
    */
   updateCivilizationPoints(): void {
-    const gameMap = this.gameState.getGameMap();
+    const islandMap = this.gameState.getIslandMap();
     const civId = this.gameState.getPlayerCivilizationId();
     
-    if (gameMap && civId) {
-      this.civilizationPoints = calculateCivilizationPoints(gameMap, civId);
+    if (islandMap && civId) {
+      this.civilizationPoints = calculateCivilizationPoints(islandMap, civId);
     }
   }
 

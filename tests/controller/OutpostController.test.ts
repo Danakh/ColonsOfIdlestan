@@ -18,7 +18,7 @@ import { BuildingType } from '../../src/model/city';
 
 describe('OutpostController', () => {
   let gameState: GameState;
-  let map: ReturnType<GameState['getGameMap']>;
+  let map: ReturnType<GameState['getIslandMap']>;
   let civId: ReturnType<GameState['getPlayerCivilizationId']>;
   let resources: PlayerResources;
   const center = new HexCoord(0, 0);
@@ -28,7 +28,7 @@ describe('OutpostController', () => {
   beforeEach(() => {
     // Utiliser la carte de Map7HexesScenario
     gameState = Make7HexesMap();
-    map = gameState.getGameMap()!;
+    map = gameState.getIslandMap()!;
     civId = gameState.getPlayerCivilizationId();
     resources = gameState.getPlayerResources();
   });

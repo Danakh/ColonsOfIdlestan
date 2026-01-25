@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { calculateCivilizationPoints, hasLibrary } from '../../../src/model/game/CivilizationPoints';
-import { GameMap } from '../../../src/model/map/GameMap';
+import { IslandMap } from '../../../src/model/map/IslandMap';
 import { CivilizationId } from '../../../src/model/map/CivilizationId';
 import { HexGrid } from '../../../src/model/hex/HexGrid';
 import { Hex } from '../../../src/model/hex/Hex';
@@ -25,7 +25,7 @@ describe('CivilizationPoints', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -46,7 +46,7 @@ describe('CivilizationPoints', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -67,7 +67,7 @@ describe('CivilizationPoints', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -88,7 +88,7 @@ describe('CivilizationPoints', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -109,7 +109,7 @@ describe('CivilizationPoints', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -130,7 +130,7 @@ describe('CivilizationPoints', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -163,7 +163,7 @@ describe('CivilizationPoints', () => {
         new Hex(northeast),
         new Hex(southeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -192,7 +192,7 @@ describe('CivilizationPoints', () => {
     it('devrait retourner 0 si aucune ville n\'existe', () => {
       const center = new HexCoord(0, 0);
       const grid = new HexGrid([new Hex(center)]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -212,7 +212,7 @@ describe('CivilizationPoints', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -232,7 +232,7 @@ describe('CivilizationPoints', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -264,7 +264,7 @@ describe('CivilizationPoints', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -295,7 +295,7 @@ describe('CivilizationPoints', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -322,7 +322,7 @@ describe('CivilizationPoints', () => {
         new Hex(northeast),
         new Hex(southeast),
       ]);
-      const map2 = new GameMap(grid2);
+      const map2 = new IslandMap(grid2);
       map2.registerCivilization(civId);
       const vertex2 = Vertex.create(center, northeast, southeast);
       map2.addCity(vertex2, civId, CityLevel.Metropolis);
@@ -343,7 +343,7 @@ describe('CivilizationPoints', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 

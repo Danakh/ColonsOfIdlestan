@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { GameMap } from '../../../src/model/map/GameMap';
+import { IslandMap } from '../../../src/model/map/IslandMap';
 import { HexType } from '../../../src/model/map/HexType';
 import { ResourceType } from '../../../src/model/map/ResourceType';
 import { CivilizationId } from '../../../src/model/map/CivilizationId';
@@ -10,7 +10,7 @@ import { HexDirection } from '../../../src/model/hex/HexDirection';
 import { Edge } from '../../../src/model/hex/Edge';
 import { Vertex } from '../../../src/model/hex/Vertex';
 
-describe('GameMap', () => {
+describe('IslandMap', () => {
   describe('initialisation', () => {
     it('devrait créer une carte à partir d\'une grille', () => {
       const hexes = [
@@ -18,7 +18,7 @@ describe('GameMap', () => {
         new Hex(new HexCoord(1, 0)),
       ];
       const grid = new HexGrid(hexes);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
 
       expect(map.getGrid()).toBe(grid);
     });
@@ -29,7 +29,7 @@ describe('GameMap', () => {
         new Hex(new HexCoord(1, 0)),
       ];
       const grid = new HexGrid(hexes);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
 
       expect(map.getHexType(new HexCoord(0, 0))).toBe(HexType.Desert);
       expect(map.getHexType(new HexCoord(1, 0))).toBe(HexType.Desert);
@@ -40,7 +40,7 @@ describe('GameMap', () => {
     it('devrait définir et récupérer une ressource pour un hexagone', () => {
       const hex = new Hex(new HexCoord(0, 0));
       const grid = new HexGrid([hex]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
 
       map.setHexType(hex, HexType.Wood);
       expect(map.getHexType(hex)).toBe(HexType.Wood);
@@ -49,7 +49,7 @@ describe('GameMap', () => {
     it('devrait accepter une coordonnée pour définir une ressource', () => {
       const hex = new Hex(new HexCoord(0, 0));
       const grid = new HexGrid([hex]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
 
       map.setHexType(new HexCoord(0, 0), HexType.Brick);
       expect(map.getHexType(new HexCoord(0, 0))).toBe(HexType.Brick);
@@ -62,7 +62,7 @@ describe('GameMap', () => {
         new Hex(new HexCoord(0, 1)),
       ];
       const grid = new HexGrid(hexes);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
 
       map.setHexType(new HexCoord(0, 0), HexType.Wood);
       map.setHexType(new HexCoord(1, 0), HexType.Brick);
@@ -76,7 +76,7 @@ describe('GameMap', () => {
     it('devrait lancer une erreur si on définit une ressource pour un hexagone inexistant', () => {
       const hex = new Hex(new HexCoord(0, 0));
       const grid = new HexGrid([hex]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
 
       expect(() => {
         map.setHexType(new HexCoord(10, 10), HexType.Wood);
@@ -86,7 +86,7 @@ describe('GameMap', () => {
     it('devrait retourner undefined pour un hexagone inexistant', () => {
       const hex = new Hex(new HexCoord(0, 0));
       const grid = new HexGrid([hex]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
 
       expect(map.getHexType(new HexCoord(10, 10))).toBeUndefined();
     });
@@ -103,7 +103,7 @@ describe('GameMap', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -123,7 +123,7 @@ describe('GameMap', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
 
       const vertex = Vertex.create(center, north, northeast);
       expect(map.hasCity(vertex)).toBe(false);
@@ -138,7 +138,7 @@ describe('GameMap', () => {
       const invalidHex2 = new HexCoord(10, 11);
       const invalidHex3 = new HexCoord(11, 10);
 
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
 
       // Un sommet avec des hexagones invalides ne peut pas être créé par Vertex.create
       // Mais testons avec un sommet qui n'a aucun hexagone valide
@@ -159,7 +159,7 @@ describe('GameMap', () => {
         new Hex(center),
         new Hex(north),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -177,7 +177,7 @@ describe('GameMap', () => {
         new Hex(center),
         new Hex(north),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
 
       const edge = Edge.create(center, north);
       expect(map.hasRoad(edge)).toBe(false);
@@ -193,7 +193,7 @@ describe('GameMap', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -212,7 +212,7 @@ describe('GameMap', () => {
     it('devrait retourner false pour un hexagone sans route adjacente', () => {
       const center = new HexCoord(0, 0);
       const grid = new HexGrid([new Hex(center)]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
 
       expect(map.isHexVisible(center)).toBe(false);
     });
@@ -225,7 +225,7 @@ describe('GameMap', () => {
         new Hex(center),
         new Hex(north),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -249,7 +249,7 @@ describe('GameMap', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -274,7 +274,7 @@ describe('GameMap', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -298,7 +298,7 @@ describe('GameMap', () => {
         new Hex(isolated),
         new Hex(north),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -315,7 +315,7 @@ describe('GameMap', () => {
     it('devrait retourner false pour un hexagone inexistant', () => {
       const center = new HexCoord(0, 0);
       const grid = new HexGrid([new Hex(center)]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
 
       expect(map.isHexVisible(new HexCoord(10, 10))).toBe(false);
     });
@@ -332,7 +332,7 @@ describe('GameMap', () => {
         new Hex(northeast),
         new Hex(southeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -360,7 +360,7 @@ describe('GameMap', () => {
         new Hex(northeast),
         new Hex(waterHex),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -391,7 +391,7 @@ describe('GameMap', () => {
         new Hex(isolated),
         new Hex(waterHex),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -421,7 +421,7 @@ describe('GameMap', () => {
     it('ne devrait pas permettre la mutation de la grille via getGrid', () => {
       const hex = new Hex(new HexCoord(0, 0));
       const grid = new HexGrid([hex]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
 
       const retrievedGrid = map.getGrid();
       
@@ -439,7 +439,7 @@ describe('GameMap', () => {
         new Hex(new HexCoord(1, 0)),
       ];
       const grid = new HexGrid(hexes);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
 
       map.setHexType(new HexCoord(0, 0), HexType.Wood);
       map.setHexType(new HexCoord(1, 0), HexType.Brick);
@@ -453,7 +453,7 @@ describe('GameMap', () => {
   describe('gestion des civilisations', () => {
     it('devrait enregistrer une civilisation', () => {
       const grid = new HexGrid([new Hex(new HexCoord(0, 0))]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
 
       map.registerCivilization(civId);
@@ -463,7 +463,7 @@ describe('GameMap', () => {
 
     it('devrait retourner false si une civilisation n\'est pas enregistrée', () => {
       const grid = new HexGrid([new Hex(new HexCoord(0, 0))]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
 
       expect(map.isCivilizationRegistered(civId)).toBe(false);
@@ -481,7 +481,7 @@ describe('GameMap', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -501,7 +501,7 @@ describe('GameMap', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
 
       const vertex = Vertex.create(center, north, northeast);
 
@@ -518,7 +518,7 @@ describe('GameMap', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
 
       const vertex = Vertex.create(center, north, northeast);
@@ -538,7 +538,7 @@ describe('GameMap', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId1 = CivilizationId.create('civ1');
       const civId2 = CivilizationId.create('civ2');
       map.registerCivilization(civId1);
@@ -564,7 +564,7 @@ describe('GameMap', () => {
         new Hex(northeast),
         new Hex(southeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -587,7 +587,7 @@ describe('GameMap', () => {
         new Hex(center),
         new Hex(north),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -605,7 +605,7 @@ describe('GameMap', () => {
         new Hex(center),
         new Hex(north),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
 
       const edge = Edge.create(center, north);
 
@@ -620,7 +620,7 @@ describe('GameMap', () => {
         new Hex(center),
         new Hex(north),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
 
       const edge = Edge.create(center, north);
@@ -638,7 +638,7 @@ describe('GameMap', () => {
         new Hex(center),
         new Hex(north),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId1 = CivilizationId.create('civ1');
       const civId2 = CivilizationId.create('civ2');
       map.registerCivilization(civId1);
@@ -662,7 +662,7 @@ describe('GameMap', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -689,7 +689,7 @@ describe('GameMap', () => {
         new Hex(northeast),
         new Hex(southeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId1 = CivilizationId.create('civ1');
       const civId2 = CivilizationId.create('civ2');
       map.registerCivilization(civId1);
@@ -712,7 +712,7 @@ describe('GameMap', () => {
 
     it('devrait retourner un tableau vide si une civilisation n\'a pas de villes', () => {
       const grid = new HexGrid([new Hex(new HexCoord(0, 0))]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -732,7 +732,7 @@ describe('GameMap', () => {
         new Hex(northeast),
         new Hex(southeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId1 = CivilizationId.create('civ1');
       const civId2 = CivilizationId.create('civ2');
       map.registerCivilization(civId1);
@@ -755,7 +755,7 @@ describe('GameMap', () => {
 
     it('devrait retourner un tableau vide si une civilisation n\'a pas de routes', () => {
       const grid = new HexGrid([new Hex(new HexCoord(0, 0))]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -775,7 +775,7 @@ describe('GameMap', () => {
         new Hex(north),
         new Hex(northeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -803,7 +803,7 @@ describe('GameMap', () => {
         new Hex(northeast),
         new Hex(west),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -835,7 +835,7 @@ describe('GameMap', () => {
         new Hex(northeast),
         new Hex(southeast),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -873,7 +873,7 @@ describe('GameMap', () => {
         new Hex(center),
         new Hex(north),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
 
       const edge = Edge.create(center, north);
       expect(map.getRoadDistanceToCity(edge)).toBeUndefined();
@@ -891,7 +891,7 @@ describe('GameMap', () => {
         new Hex(northeast),
         new Hex(west),
       ]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -935,7 +935,7 @@ describe('GameMap', () => {
         new Hex(southeast),
       ];
       const grid = new HexGrid(hexes);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
 
       // Obtenir tous les vertices de la grille
       const allVertices = grid.getAllVertices();
@@ -973,7 +973,7 @@ describe('GameMap', () => {
         new Hex(southeast),
       ];
       const grid = new HexGrid(hexes);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
 
       // Obtenir tous les hexagones de la grille
       const allHexes = grid.getAllHexes();
@@ -1007,7 +1007,7 @@ describe('GameMap', () => {
 
       const hexes = [new Hex(center), ...neighbors.map(coord => new Hex(coord))];
       const grid = new HexGrid(hexes);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
 
       // Test 1: Pour chaque vertex, vérifier qu'il est dans la liste de vertices de ses hexagones
       const allVertices = grid.getAllVertices();
@@ -1037,7 +1037,7 @@ describe('GameMap', () => {
     it('devrait vérifier la cohérence avec un hexagone isolé', () => {
       const center = new HexCoord(0, 0);
       const grid = new HexGrid([new Hex(center)]);
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
 
       // Un hexagone isolé devrait avoir 6 vertices
       const hexVertices = grid.getVerticesForHex(center);

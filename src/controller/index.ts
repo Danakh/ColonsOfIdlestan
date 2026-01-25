@@ -1,7 +1,7 @@
 /**
  * Module Controller pour la génération de cartes et la gestion des actions de jeu.
  * Fournit les composants responsables de la logique de contrôle,
- * de génération de GameMap et de construction de routes.
+ * de génération de IslandMap et de construction de routes.
  */
 
 export { MainGameController } from './MainGameController';

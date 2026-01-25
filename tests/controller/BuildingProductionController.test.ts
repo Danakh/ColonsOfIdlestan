@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { BuildingProductionController } from '../../src/controller/BuildingProductionController';
 import { HexCoord } from '../../src/model/hex/HexCoord';
 import { Vertex } from '../../src/model/hex/Vertex';
-import { GameMap } from '../../src/model/map/GameMap';
+import { IslandMap } from '../../src/model/map/IslandMap';
 import { CivilizationId } from '../../src/model/map/CivilizationId';
 import { HexType } from '../../src/model/map/HexType';
 import { HexGrid } from '../../src/model/hex/HexGrid';
@@ -45,7 +45,7 @@ describe('BuildingProductionController', () => {
 
 
   describe('isHexAutoHarvested', () => {
-    let map: GameMap;
+    let map: IslandMap;
     let civId: CivilizationId;
     let otherCivId: CivilizationId;
     let hexCoord: HexCoord;
@@ -71,7 +71,7 @@ describe('BuildingProductionController', () => {
         new Hex(southwest),
       ]);
       
-      map = new GameMap(grid);
+      map = new IslandMap(grid);
       civId = CivilizationId.create('civ1');
       otherCivId = CivilizationId.create('civ2');
       map.registerCivilization(civId);
@@ -277,7 +277,7 @@ describe('BuildingProductionController', () => {
   });
 
   describe('processAutomaticProduction - récolte par deux villes', () => {
-    let map: GameMap;
+    let map: IslandMap;
     let civId: CivilizationId;
     let resources: PlayerResources;
     let gameClock: GameClock;
@@ -299,7 +299,7 @@ describe('BuildingProductionController', () => {
         new Hex(southeast),
       ]);
       
-      map = new GameMap(grid);
+      map = new IslandMap(grid);
       civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 
@@ -471,7 +471,7 @@ describe('BuildingProductionController', () => {
         new Hex(northeast),
       ]);
 
-      const map = new GameMap(grid);
+      const map = new IslandMap(grid);
       const civId = CivilizationId.create('civ1');
       map.registerCivilization(civId);
 

@@ -10,7 +10,7 @@ import { GameState } from '../../../src/model/game/GameState';
 
 /** Vérifie qu'un GameState correspond à la structure Map7Hexes (7 hex principaux + hexagones d'eau tout autour, centre Brick, 6 voisins, 1 ville Colony + TownHall, GameClock à 123s). */
 function assertMap7Hexes(gs: GameState): void {
-  const map = gs.getGameMap();
+  const map = gs.getIslandMap();
   expect(map).not.toBeNull();
   if (!map) throw new Error('Carte nulle');
 

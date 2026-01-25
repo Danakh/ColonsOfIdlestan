@@ -32,7 +32,7 @@ describe('Map7HexesScenario', () => {
     // Enregistrer l'état initial
     saveGameState(gs, 'Map7HexesScenario-start');
     
-    const map = gs.getGameMap()!;
+    const map = gs.getIslandMap()!;
     const civId = gs.getPlayerCivilizationId();
     const resources = gs.getPlayerResources();
     const city = map.getCity(cityVertex)!;
@@ -63,7 +63,7 @@ describe('Map7HexesScenario', () => {
 
   it('TradeController.canTrade - Market débloque le commerce', () => {
     const gs = Make7HexesMap();
-    const map = gs.getGameMap()!;
+    const map = gs.getIslandMap()!;
     const civId = gs.getPlayerCivilizationId();
     const resources = gs.getPlayerResources();
     const city = map.getCity(cityVertex)!;
@@ -81,7 +81,7 @@ describe('Map7HexesScenario', () => {
 
   it('hasAutomationBuilding() détecte la Guilde des bâtisseurs', () => {
     const gs = Make7HexesMap();
-    const map = gs.getGameMap()!;
+    const map = gs.getIslandMap()!;
     const civId = gs.getPlayerCivilizationId();
     const resources = gs.getPlayerResources();
     const city = map.getCity(cityVertex)!;
@@ -119,7 +119,7 @@ describe('Map7HexesScenario', () => {
 
   it('on ne peut pas avoir 2 capitales - seule capitale existante reste au niveau Capital', () => {
     const gs = Make7HexesMapWithPortAndCapital();
-    const map = gs.getGameMap()!;
+    const map = gs.getIslandMap()!;
     const civId = gs.getPlayerCivilizationId();
     const resources = gs.getPlayerResources();
     const gameClock = gs.getGameClock();

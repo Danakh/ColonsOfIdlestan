@@ -1,4 +1,4 @@
-import { GameMap } from '../model/map/GameMap';
+import { IslandMap } from '../model/map/IslandMap';
 import { CivilizationId } from '../model/map/CivilizationId';
 import { Civilization } from '../model/map/Civilization';
 import { PlayerResources } from '../model/game/PlayerResources';
@@ -33,7 +33,7 @@ export class AutomationController {
   static processAllAutomations(
     civId: CivilizationId,
     civilization: Civilization,
-    map: GameMap,
+    map: IslandMap,
     resources: PlayerResources
   ): void {
     // Obtenir toutes les villes de la civilisation
@@ -74,7 +74,7 @@ export class AutomationController {
    */
   private static processAutomaticRoadConstruction(
     civId: CivilizationId,
-    map: GameMap,
+    map: IslandMap,
     resources: PlayerResources,
     cityVertex: Vertex
   ): void {
@@ -195,7 +195,7 @@ export class AutomationController {
    */
   private static processAutomaticOutpostConstruction(
     civId: CivilizationId,
-    map: GameMap,
+    map: IslandMap,
     resources: PlayerResources
   ): void {
     // Obtenir toutes les routes de la civilisation
@@ -267,7 +267,7 @@ export class AutomationController {
    */
   private static processAutomaticCityUpgrade(
     civId: CivilizationId,
-    map: GameMap,
+    map: IslandMap,
     resources: PlayerResources,
     city: City
   ): void {
@@ -314,7 +314,7 @@ export class AutomationController {
    */
   private static processAutomaticProductionBuildingConstruction(
     civId: CivilizationId,
-    map: GameMap,
+    map: IslandMap,
     resources: PlayerResources,
     city: City,
     cityVertex: Vertex

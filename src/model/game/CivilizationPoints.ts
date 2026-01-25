@@ -1,4 +1,4 @@
-import { GameMap } from '../map/GameMap';
+import { IslandMap } from '../map/IslandMap';
 import { CivilizationId } from '../map/CivilizationId';
 import { BuildingType } from '../city/BuildingType';
 
@@ -14,7 +14,7 @@ import { BuildingType } from '../city/BuildingType';
  * @returns Le nombre total de points de civilisation
  */
 export function calculateCivilizationPoints(
-  map: GameMap,
+  map: IslandMap,
   civId: CivilizationId
 ): number {
   const cities = map.getCitiesByCivilization(civId);
@@ -45,7 +45,7 @@ export function calculateCivilizationPoints(
  * @param civId - L'identifiant de la civilisation
  * @returns true si la civilisation a au moins une bibliothèque
  */
-export function hasLibrary(map: GameMap, civId: CivilizationId): boolean {
+export function hasLibrary(map: IslandMap, civId: CivilizationId): boolean {
   const cities = map.getCitiesByCivilization(civId);
   
   for (const city of cities) {

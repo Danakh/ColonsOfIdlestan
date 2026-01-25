@@ -3,7 +3,7 @@ import { Hex } from '../model/hex/Hex';
 import { HexCoord } from '../model/hex/HexCoord';
 import { HexDirection, ALL_HEX_DIRECTIONS } from '../model/hex/HexDirection';
 import { Vertex } from '../model/hex/Vertex';
-import { GameMap } from '../model/map/GameMap';
+import { IslandMap } from '../model/map/IslandMap';
 import { HexType } from '../model/map/HexType';
 import { CivilizationId } from '../model/map/CivilizationId';
 import { SeededRNG } from './util/SeededRNG';
@@ -21,20 +21,20 @@ export interface MapGeneratorConfig {
 }
 
 /**
- * Génère une GameMap selon des règles configurables.
+ * Génère une IslandMap selon des règles configurables.
  * 
  * Cette classe appartient à la couche Controller et agit comme une factory
- * pour créer des GameMap avec une structure et des ressources prédéterminées.
+ * pour créer des IslandMap avec une structure et des ressources prédéterminées.
  */
 export class MapGenerator {
   /**
-   * Génère une nouvelle GameMap selon la configuration fournie.
+   * Génère une nouvelle IslandMap selon la configuration fournie.
    * 
    * @param config - Configuration de génération
-   * @returns Une GameMap complètement initialisée avec ressources assignées
+   * @returns Une IslandMap complètement initialisée avec ressources assignées
    * @throws Error si la configuration est invalide
    */
-  generate(config: MapGeneratorConfig): GameMap {
+  generate(config: MapGeneratorConfig): IslandMap {
     this.validateConfig(config);
 
     const rng = new SeededRNG(config.seed);
@@ -47,26 +47,26 @@ export class MapGenerator {
     
     // Créer la grille complète avec tous les hexagones (terrestres + eau)
     const hexGrid = new HexGrid(allHexes);
-    const gameMap = new GameMap(hexGrid);
+    const islandMap = new IslandMap(hexGrid);
 
     // Enregistrer les civilisations
     for (const civId of config.civilizations) {
-      gameMap.registerCivilization(civId);
+      islandMap.registerCivilization(civId);
     }
 
     // Assigner les ressources aux hexagones terrestres
     // Les deux premiers (Bois et Argile) doivent être assignés en premier
-    this.assignResources(gameMap, terrestrialHexes, config, rng, woodCoord, brickCoord);
+    this.assignResources(islandMap, terrestrialHexes, config, rng, woodCoord, brickCoord);
 
     // Assigner Water à tous les hexagones d'eau
-    this.assignWaterResources(gameMap, terrestrialHexes);
+    this.assignWaterResources(islandMap, terrestrialHexes);
 
     // Ajouter la ville initiale sur le vertex bois-argile-eau pour la première civilisation
     if (config.civilizations.length > 0) {
-      this.addInitialCity(gameMap, woodCoord, brickCoord, config.civilizations[0]);
+      this.addInitialCity(islandMap, woodCoord, brickCoord, config.civilizations[0]);
     }
 
-    return gameMap;
+    return islandMap;
   }
 
   /**
@@ -300,7 +300,7 @@ export class MapGenerator {
    * Les deux premiers hexagones (Bois et Argile) sont assignés en premier.
    */
   private assignResources(
-    gameMap: GameMap,
+    islandMap: IslandMap,
     terrestrialHexes: Hex[],
     config: MapGeneratorConfig,
     rng: SeededRNG,
@@ -339,8 +339,8 @@ export class MapGenerator {
     rng.shuffle(hexTypesToAssign);
 
     // Assigner Bois et Argile aux deux premiers hexagones
-    gameMap.setHexType(woodCoord, HexType.Wood);
-    gameMap.setHexType(brickCoord, HexType.Brick);
+    islandMap.setHexType(woodCoord, HexType.Wood);
+    islandMap.setHexType(brickCoord, HexType.Brick);
 
     // Filtrer les hexagones terrestres (exclure Bois et Argile)
     const remainingHexes = terrestrialHexes.filter(
@@ -355,15 +355,15 @@ export class MapGenerator {
     for (let i = 0; i < hexTypesToAssign.length && i < shuffledHexes.length; i++) {
       const hex = shuffledHexes[i];
       const hexType = hexTypesToAssign[i];
-      gameMap.setHexType(hex.coord, hexType);
+      islandMap.setHexType(hex.coord, hexType);
     }
   }
 
   /**
    * Assignë Water à tous les hexagones d'eau de la carte.
    */
-  private assignWaterResources(gameMap: GameMap, terrestrialHexes: Hex[]): void {
-    const grid = gameMap.getGrid();
+  private assignWaterResources(islandMap: IslandMap, terrestrialHexes: Hex[]): void {
+    const grid = islandMap.getGrid();
     const terrestrialCoords = new Set<string>();
 
     // Marquer tous les hexagones terrestres
@@ -374,7 +374,7 @@ export class MapGenerator {
     // Parcourir tous les hexagones de la grille et assigner Water à ceux qui ne sont pas terrestres
     for (const hex of grid.getAllHexes()) {
       if (!terrestrialCoords.has(hex.coord.hashCode())) {
-        gameMap.setHexType(hex.coord, HexType.Water);
+        islandMap.setHexType(hex.coord, HexType.Water);
       }
     }
   }
@@ -383,12 +383,12 @@ export class MapGenerator {
    * Ajoute la ville initiale sur le vertex bois-argile-eau.
    */
   private addInitialCity(
-    gameMap: GameMap,
+    islandMap: IslandMap,
     woodCoord: HexCoord,
     brickCoord: HexCoord,
     civId: CivilizationId
   ): void {
-    const grid = gameMap.getGrid();
+    const grid = islandMap.getGrid();
 
     // Trouver l'hexagone d'eau qui forme un vertex avec Bois et Argile
     // Un vertex est formé par trois hexagones mutuellement adjacents
@@ -410,11 +410,11 @@ export class MapGenerator {
         // Trouver l'hexagone qui n'est ni wood ni brick (c'est l'eau)
         const waterHex = hexes.find(h => !h.equals(woodCoord) && !h.equals(brickCoord));
         if (waterHex) {
-          const hexType = gameMap.getHexType(waterHex);
+          const hexType = islandMap.getHexType(waterHex);
           if (hexType === HexType.Water) {
             // Ajouter la ville sur ce vertex (utiliser le vertex retourné par la grille)
             try {
-              gameMap.addCity(vertex, civId);
+              islandMap.addCity(vertex, civId);
               return;
             } catch (e) {
               // Ignorer les erreurs (ville déjà présente ou civilisation non enregistrée)
@@ -439,7 +439,7 @@ export class MapGenerator {
         // Vérifier si cet hexagone existe dans la grille et est de l'eau
         const neighborHex = grid.getHex(neighborCoord);
         if (neighborHex) {
-          const hexType = gameMap.getHexType(neighborCoord);
+          const hexType = islandMap.getHexType(neighborCoord);
           if (hexType === HexType.Water) {
             // Trouver le vertex correspondant dans la grille (pour utiliser le même instance)
             const vertices = grid.getVerticesForHex(woodCoord);
@@ -449,7 +449,7 @@ export class MapGenerator {
                   hexes.some(h => h.equals(brickCoord)) &&
                   hexes.some(h => h.equals(neighborCoord))) {
                 try {
-                  gameMap.addCity(vertex, civId);
+                  islandMap.addCity(vertex, civId);
                   return;
                 } catch (e) {
                   console.warn(`[MapGenerator] Échec lors de l'ajout de la ville (méthode 2): ${e}`);

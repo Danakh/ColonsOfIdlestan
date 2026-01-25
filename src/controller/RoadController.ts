@@ -1,5 +1,5 @@
 import { Edge } from '../model/hex/Edge';
-import { GameMap } from '../model/map/GameMap';
+import { IslandMap } from '../model/map/IslandMap';
 import { CivilizationId } from '../model/map/CivilizationId';
 import { ResourceType } from '../model/map/ResourceType';
 import { PlayerResources } from '../model/game/PlayerResources';
@@ -25,7 +25,7 @@ export class RoadController {
   static buildRoad(
     edge: Edge,
     civId: CivilizationId,
-    map: GameMap,
+    map: IslandMap,
     resources: PlayerResources
   ): void {
     // Vérifier que la construction est possible

@@ -2,7 +2,7 @@ import { ResourceType } from '../model/map/ResourceType';
 import { PlayerResources } from '../model/game/PlayerResources';
 import { ResourceSprites } from './ResourceSprites';
 import { TradeController } from '../controller/TradeController';
-import { GameMap } from '../model/map/GameMap';
+import { IslandMap } from '../model/map/IslandMap';
 import { CivilizationId } from '../model/map/CivilizationId';
 
 /**
@@ -33,7 +33,7 @@ export class TradePanelView {
   private playerResources: PlayerResources | null = null;
   private resourceSprites: ResourceSprites | null = null;
   private callbacks: TradePanelCallbacks = {};
-  private gameMap: GameMap | null = null;
+  private islandMap: IslandMap | null = null;
   private civId: CivilizationId | null = null;
 
   // Noms des ressources en français
@@ -147,8 +147,8 @@ export class TradePanelView {
   /**
    * Configure la carte de jeu et la civilisation pour vérifier l'accès au commerce.
    */
-  setGameContext(gameMap: GameMap, civId: CivilizationId): void {
-    this.gameMap = gameMap;
+  setGameContext(islandMap: IslandMap, civId: CivilizationId): void {
+    this.islandMap = islandMap;
     this.civId = civId;
   }
 
@@ -219,8 +219,8 @@ export class TradePanelView {
       
       // Pour la liste offerte, désactiver visuellement si on n'a pas assez pour un échange minimum
       if (isOffered) {
-        const rate = (this.civId && this.gameMap)
-          ? TradeController.getTradeRateForResource(this.civId, this.gameMap, resourceType)
+        const rate = (this.civId && this.islandMap)
+          ? TradeController.getTradeRateForResource(this.civId, this.islandMap, resourceType)
           : 4;
         if (available < rate) {
           item.classList.add('disabled');
@@ -312,8 +312,8 @@ export class TradePanelView {
       return;
     }
 
-    const rate = (this.civId && this.gameMap)
-      ? TradeController.getTradeRateForResource(this.civId, this.gameMap, resourceType)
+    const rate = (this.civId && this.islandMap)
+      ? TradeController.getTradeRateForResource(this.civId, this.islandMap, resourceType)
       : 4;
     
     // Déterminer le nombre de batches à ajouter selon les modificateurs
@@ -366,8 +366,8 @@ export class TradePanelView {
   private handleOfferedRightClick(resourceType: ResourceType, event: MouseEvent): void {
     const current = this.offeredResources.get(resourceType) || 0;
     if (current > 0) {
-      const rate = (this.civId && this.gameMap)
-        ? TradeController.getTradeRateForResource(this.civId, this.gameMap, resourceType)
+      const rate = (this.civId && this.islandMap)
+        ? TradeController.getTradeRateForResource(this.civId, this.islandMap, resourceType)
         : 4;
       
       // Déterminer le nombre de batches à retirer selon les modificateurs
@@ -409,13 +409,13 @@ export class TradePanelView {
    * Calcule le nombre total de batches offerts.
    */
   private getOfferedBatches(): number {
-    if (!this.civId || !this.gameMap) {
+    if (!this.civId || !this.islandMap) {
       return 0;
     }
     let totalBatches = 0;
     for (const [resourceType, quantity] of this.offeredResources.entries()) {
       if (quantity > 0) {
-        const rate = TradeController.getTradeRateForResource(this.civId, this.gameMap, resourceType);
+        const rate = TradeController.getTradeRateForResource(this.civId, this.islandMap, resourceType);
         totalBatches += quantity / rate;
       }
     }
@@ -462,8 +462,8 @@ export class TradePanelView {
 
     // Vérifier l'accès au commerce
     let canTrade = true;
-    if (this.gameMap && this.civId) {
-      canTrade = TradeController.canTrade(this.civId, this.gameMap);
+    if (this.islandMap && this.civId) {
+      canTrade = TradeController.canTrade(this.civId, this.islandMap);
     }
 
     // Vérifier que le joueur a assez de ressources pour toutes les offres

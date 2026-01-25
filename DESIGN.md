@@ -24,7 +24,7 @@ Lorsque la civilisation atteint son apogée, le joueur accède à la couche divi
 - Boucle de jeu : recommencer une nouvelle civilisation avec des avantages divins
 
 ## 4. Suggestions techniques
-- Structurer les modèles en trois niveaux imbriqués : Île (GameMap, GameState), Civilisation (CivilizationState), Dieu (GodState)
+- Structurer les modèles en trois niveaux imbriqués : Île (IslandMap, IslandState), Civilisation (CivilizationState), Dieu (GodState)
 - Chaque couche doit être sérialisable indépendamment pour faciliter la sauvegarde et la reprise
 - Découpler strictement les logiques de chaque couche pour faciliter l’extension et la maintenance
 - Prévoir des points d’extension pour ajouter des effets d’héritage, des bonus, ou des événements spécifiques à chaque transition

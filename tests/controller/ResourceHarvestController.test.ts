@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { ResourceHarvestController } from '../../src/controller/ResourceHarvestController';
 import { HexCoord } from '../../src/model/hex/HexCoord';
 import { Vertex } from '../../src/model/hex/Vertex';
-import { GameMap } from '../../src/model/map/GameMap';
+import { IslandMap } from '../../src/model/map/IslandMap';
 import { CivilizationId } from '../../src/model/map/CivilizationId';
 import { PlayerResources } from '../../src/model/game/PlayerResources';
 import { GameClock } from '../../src/model/game/GameClock';
@@ -13,7 +13,7 @@ import { Hex } from '../../src/model/hex/Hex';
 import { HexDirection } from '../../src/model/hex/HexDirection';
 
 describe('ResourceHarvestController', () => {
-  let map: GameMap;
+  let map: IslandMap;
   let civId: CivilizationId;
   let resources: PlayerResources;
   let hexCoord: HexCoord;
@@ -33,7 +33,7 @@ describe('ResourceHarvestController', () => {
       new Hex(north),
       new Hex(northeast),
     ]);
-    map = new GameMap(grid);
+    map = new IslandMap(grid);
     civId = CivilizationId.create('civ1');
     map.registerCivilization(civId);
 
@@ -125,7 +125,7 @@ describe('ResourceHarvestController', () => {
       // Créer un hexagone non récoltable (pas adjacent à une ville)
       const farHex = new HexCoord(10, 10);
       const grid = new HexGrid([new Hex(hexCoord), new Hex(hexCoord.neighbor(HexDirection.SW)), new Hex(hexCoord.neighbor(HexDirection.SE))]);
-      const newMap = new GameMap(grid);
+      const newMap = new IslandMap(grid);
       newMap.registerCivilization(civId);
       newMap.addCity(vertex, civId);
 
