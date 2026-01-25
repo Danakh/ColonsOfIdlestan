@@ -29,6 +29,7 @@ import { City } from './model/city/City';
 import { IslandMap } from './model/map/IslandMap';
 import { APP_VERSION, APP_NAME } from './config/version';
 import { SaveManager } from './application/SaveManager';
+import { GameLoop } from './application/GameLoop';
 
 /**
  * Point d'entrée principal de l'application web.
@@ -174,9 +175,8 @@ function main(): void {
   // Game coordinator centralise les appels aux controllers
   const coordinator = new GameCoordinator(game, renderer, saveManager);
 
-  // Boucle principale d'animation pour gérer le temps et la production automatique
-  let lastAnimationFrame: number | null = null;
-  let gameStartTime: number | null = null;
+  // Boucle principale d'animation encapsulée
+  const gameLoop = new GameLoop(game, renderer, cityPanelView);
 
   function setActiveTab(mode: 'classic' | 'prestige'): void {
     if (mode === 'classic') {
@@ -252,7 +252,7 @@ function main(): void {
     setActiveTab('classic');
 
     game.newGame();
-    gameStartTime = null;
+    gameLoop.resetStartTime();
 
     saveManager.saveToLocal();
 
@@ -309,7 +309,7 @@ function main(): void {
   } else {
     // Réinitialiser le temps de référence pour la boucle d'animation après le chargement
     // Cela permettra à la boucle de repartir correctement
-    gameStartTime = null;
+    gameLoop.resetStartTime();
     // Sauvegarder immédiatement après le chargement pour s'assurer qu'on a une sauvegarde valide
     saveManager.saveToLocal();
     // Mettre à jour la civilisation du joueur dans le panneau de ville (peut avoir changé lors du chargement)
@@ -720,7 +720,7 @@ function main(): void {
   regenerateBtn.addEventListener('click', () => {
     game.newGame();
     // Réinitialiser le temps de référence pour la boucle d'animation
-    gameStartTime = null;
+    gameLoop.resetStartTime();
     
     // Sauvegarder immédiatement après la régénération
     saveManager.saveToLocal();
@@ -829,105 +829,9 @@ function main(): void {
   // Initialiser le panneau (sidebar fixe)
   cityPanelView.refreshNow();
 
-  /**
-   * Traite la production automatique des bâtiments et déclenche les animations.
-   */
-  function processAutomaticBuildingProduction(): void {
-    const currentIslandMap = game.getIslandMap();
-    if (!currentIslandMap) {
-      return;
-    }
-
-    const civId = game.getPlayerCivilizationId();
-    const playerResources = game.getPlayerResources();
-    const gameClock = game.getGameClock();
-
-    // Traiter la production automatique via le contrôleur
-    const productionResults = BuildingProductionController.processAutomaticProduction(
-      civId,
-      currentIslandMap,
-      playerResources,
-      gameClock
-    );
-
-    // Si des productions ont eu lieu, déclencher les animations et mettre à jour l'affichage
-    if (productionResults.length > 0) {
-      // Déclencher les animations pour chaque production
-      for (const result of productionResults) {
-        // Vérifier si c'est un marché niveau 2 (production spéciale)
-        if (result.buildingType === BuildingType.Market) {
-          // Pour le marché niveau 2, animation spéciale : particule qui monte depuis la ville
-          renderer.triggerMarketProductionAnimation(
-            result.cityVertex,
-            result.resourceType
-          );
-        } else {
-          // Pour les autres bâtiments, animation normale : hex vers ville
-          // Effet visuel sur l'hex récolté (automatique, donc sans effet de réduction)
-          renderer.triggerHarvestEffect(result.hexCoord, true);
-          
-          // Animation de la particule de ressource vers la ville ayant déclenché le harvest
-          renderer.triggerResourceHarvestAnimation(
-            result.hexCoord,
-            result.resourceType,
-            result.cityVertex
-          );
-        }
-      }
-
-      // Mettre à jour l'affichage des ressources
-      updateResourcesDisplay();
-      cityPanelView.scheduleRefresh();
-    }
-  }
-
-  /**
-   * Boucle d'animation principale qui gère le temps et la production automatique.
-   */
-  function gameLoop(timestamp: number): void {
-    // Initialiser le temps de référence au premier appel
-    if (gameStartTime === null) {
-      gameStartTime = timestamp;
-      // Si on a chargé une partie, on doit ajuster gameStartTime pour tenir compte
-      // du temps déjà écoulé dans le GameClock
-      const savedTime = game.getGameClock().getCurrentTime();
-      if (savedTime > 0) {
-        // Ajuster gameStartTime pour que le temps continue depuis où il était
-        gameStartTime = timestamp - savedTime * 1000;
-      }
-    }
-
-    // Calculer le temps écoulé depuis le début en secondes
-    const timeSeconds = (timestamp - gameStartTime) / 1000;
-
-    // Mettre à jour l'horloge de jeu
-    game.updateGameTime(timeSeconds);
-
-    // Traiter la production automatique
-    processAutomaticBuildingProduction();
-
-    // Traiter les automatisations
-    const currentIslandMap = game.getIslandMap();
-    if (currentIslandMap) {
-      const civId = game.getPlayerCivilizationId();
-      const playerResources = game.getPlayerResources();
-      const civilization = game.getIslandState().getCivilization(civId);
-      AutomationController.processAllAutomations(civId, civilization, currentIslandMap, playerResources);
-      
-      // Mettre à jour l'affichage si des automatisations ont été exécutées
-      updateResourcesDisplay();
-      cityPanelView.scheduleRefresh();
-      
-      // Re-rendre la carte si nécessaire
-      renderer.render(currentIslandMap, civId);
-    }
-
-    // Continuer la boucle
-    lastAnimationFrame = requestAnimationFrame(gameLoop);
-  }
 
   // Démarrer la boucle d'animation
-  lastAnimationFrame = requestAnimationFrame(gameLoop);
+  gameLoop.start();
 
   // Sauvegarder automatiquement toutes les secondes via SaveManager
   saveManager.startAutosave(1000);
