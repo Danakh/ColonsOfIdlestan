@@ -733,3 +733,76 @@ footer {
         max-width: 100%;
     }
 }
+
+/* Panneau d'amélioration de civilisation */
+.civilization-upgrades-list {
+    list-style: none;
+    padding: 0;
+    margin: 1em 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.upgrade-item {
+    padding: 1rem;
+    background: rgba(102, 126, 234, 0.05);
+    border: 2px solid #667eea;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.upgrade-item:hover {
+    background: rgba(102, 126, 234, 0.1);
+    transform: translateX(4px);
+}
+
+.upgrade-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.upgrade-header strong {
+    color: #333;
+    font-size: 1.1rem;
+}
+
+.upgrade-cost {
+    color: #d4a574;
+    font-weight: bold;
+    margin-left: 1rem;
+    font-size: 0.9rem;
+}
+
+.upgrade-buy-btn {
+    padding: 0.5rem 1rem;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+}
+
+.upgrade-buy-btn:hover:not(:disabled) {
+    background: #5568d3;
+}
+
+.upgrade-buy-btn:disabled {
+    background: #ccc;
+    color: #999;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.upgrade-description {
+    color: #666;
+    font-size: 0.9rem;
+    margin: 0;
+    padding: 0;
+}
+

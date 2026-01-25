@@ -8,3 +8,8 @@ export { TradePanelView, TradePanelCallbacks } from './TradePanelView';
 export { PortSpecializationPanelView, PortSpecializationPanelCallbacks } from './PortSpecializationPanelView';
 export { InventoryView } from './InventoryView';
 export { ResourceSprites } from './ResourceSprites';
+export {
+  CivilizationUpgradePanelView,
+  CivilizationUpgradePanelCallbacks,
+  CivilizationUpgrade
+} from './CivilizationUpgradePanelView';

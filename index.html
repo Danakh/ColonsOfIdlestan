@@ -120,6 +120,18 @@
                     <button id="prestige-cancel-btn" class="trade-btn" style="background-color: #888;">Annuler</button>
                 </div>
             </aside>
+            <aside id="civilization-upgrade-panel" class="trade-panel hidden">
+                <h2>Dépenser les Points de Civilisation</h2>
+                <div style="margin: 1em; padding: 1em; background: #f0f0f0; border-radius: 4px;">
+                    <p style="color: #333; margin: 0 0 0.5em 0;"><strong>Points disponibles:</strong></p>
+                    <p id="civilization-upgrade-points" style="color: #d4a574; font-size: 1.5em; font-weight: bold; margin: 0;">0</p>
+                </div>
+                <p style="margin: 1em; color: #666;">Choisissez les améliorations à débloquer pour votre prochaine partie.</p>
+                <ul id="civilization-upgrades-list" class="civilization-upgrades-list"></ul>
+                <div class="trade-actions">
+                    <button id="civilization-upgrade-close-btn" class="trade-btn confirm-btn">Fermer et Relancer la Partie</button>
+                </div>
+            </aside>
         </main>
         <footer>
         </footer>

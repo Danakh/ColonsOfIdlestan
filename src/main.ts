@@ -5,6 +5,7 @@ import { TradePanelView } from './view/TradePanelView';
 import { PortSpecializationPanelView } from './view/PortSpecializationPanelView';
 import { AutomationPanelView, AutomationType } from './view/AutomationPanelView';
 import { PrestigeConfirmationPanel } from './view/PrestigePanelView';
+import { CivilizationUpgradePanelView, CivilizationUpgrade } from './view/CivilizationUpgradePanelView';
 import { ResourceSprites } from './view/ResourceSprites';
 import { InventoryView } from './view/InventoryView';
 import { ResourceHarvest } from './model/game/ResourceHarvest';
@@ -65,6 +66,9 @@ function main(): void {
 
   // Créer la vue du panneau de confirmation de prestige
   const prestigeConfirmationPanel = new PrestigeConfirmationPanel('prestige-panel');
+
+  // Créer la vue du panneau d'amélioration de civilisation
+  const civilizationUpgradePanel = new CivilizationUpgradePanelView('civilization-upgrade-panel');
 
   if (!canvas) {
     throw new Error('Canvas introuvable');
@@ -476,17 +480,50 @@ function main(): void {
       if (pendingPrestigeGain > 0) {
         const civState = game.getController().getCivilizationState();
         civState.addPrestigePoints(pendingPrestigeGain);
+        const civId = game.getPlayerCivilizationId();
+        const civ = game.getIslandState().getCivilization(civId);
+        
+        // Afficher le panneau d'amélioration de civilisation
+        const upgrades: CivilizationUpgrade[] = [
+          {
+            id: 'resource-harvest-x1.5',
+            label: 'Récolte +50%',
+            description: 'Augmente le gain de ressources de 50% pour la prochaine partie.',
+            cost: 5,
+            onPurchase: () => {
+              // Augmenter le niveau de récolte de ressources (0.1 par niveau)
+              // Pour 1.5x: 1 + 0.1 * niveau = 1.5, donc niveau = 5
+              const current = civ.getResourceGainLevel();
+              civ.setResourceGainLevel(current + 5);
+            },
+          },
+          {
+            id: 'civilization-points-x1.25',
+            label: 'Points de civilisation +25%',
+            description: 'Augmente les points de civilisation gagnés de 25% pour la prochaine partie.',
+            cost: 7,
+            onPurchase: () => {
+              // Augmenter le niveau de points de civilisation (0.1 par niveau)
+              // Pour 1.25x: 1 + 0.1 * niveau = 1.25, donc niveau = 2.5 → 2 (un peu moins) ou 3 (un peu plus)
+              const current = civ.getCivPointGainLevel();
+              civ.setCivPointGainLevel(current + 3);
+            },
+          },
+          {
+            id: 'builders-guild-unlock',
+            label: 'Débloquer Guilde des batisseurs',
+            description: 'Rend disponible la Guilde des batisseurs dès le départ de la partie suivante.',
+            cost: 10,
+            onPurchase: () => {
+              // Sera appliqué au newGame
+              console.log('Déblocage Guilde des batisseurs pour la prochaine partie');
+            },
+          },
+        ];
+        
+        civilizationUpgradePanel.setUpgrades(upgrades);
+        civilizationUpgradePanel.show(pendingPrestigeGain);
         pendingPrestigeGain = 0;
-      }
-      
-      // Mettre à jour l'affichage
-      const currentIslandMap = game.getIslandMap();
-      const civId = game.getPlayerCivilizationId();
-      if (currentIslandMap && civId) {
-        updateResourcesDisplay();
-        cityPanelView.refreshNow();
-        renderer.render(currentIslandMap, civId);
-        autoSave();
       }
     },
     onCancel: () => {
@@ -499,6 +536,40 @@ function main(): void {
       }
     },
   });
+
+  // Configurer les callbacks du panneau d'amélioration de civilisation
+  civilizationUpgradePanel.setCallbacks({
+    onClose: () => {
+      // Fermer le panneau et relancer une nouvelle partie
+      civilizationUpgradePanel.hide();
+      
+      // Créer une nouvelle partie
+      game.newGame();
+      gameStartTime = null;
+      
+      // Sauvegarder immédiatement après la nouvelle partie
+      autoSave();
+      
+      // Mettre à jour la civilisation du joueur dans le panneau de ville
+      cityPanelView.setPlayerCivilizationId(game.getPlayerCivilizationId());
+      
+      // Mettre à jour l'affichage
+      const newIslandMap = game.getIslandMap();
+      if (newIslandMap) {
+        const civId = game.getPlayerCivilizationId();
+        renderer.render(newIslandMap, civId);
+        updateResourcesDisplay();
+        cityPanelView.refreshNow();
+        cityPanelView.updateFooter();
+      }
+    },
+    onUpgradePurchased: (upgradeId: string, remainingPoints: number) => {
+      // Callback optionnel appelé quand on achète une amélioration
+      // On peut ici ajouter des effets visuels ou des logs
+      console.log(`Amélioration achetée: ${upgradeId}, Points restants: ${remainingPoints}`);
+    },
+  });
+
 
   // Gérer les événements personnalisés du panneau de ville
   const panelElement = cityPanelView.getPanelElement();
