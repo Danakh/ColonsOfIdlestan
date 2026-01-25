@@ -500,14 +500,14 @@ function main(): void {
           }
 
           // Activer l'action Prestige
-          const result = PrestigeController.activatePrestige(game.getIslandState());
+          const civState = game.getController().getCivilizationState();
+          const result = PrestigeController.calculatePrestigeGain(civState);
           
           if (result.success && result.civilizationPointsGained !== undefined) {
             // Stocker le gain en attente de confirmation
             pendingPrestigeGain = result.civilizationPointsGained;
             
             // Afficher le panneau de confirmation de prestige
-            const civState = game.getController().getCivilizationState();
             const currentPoints = civState.getPrestigePointsTotal();
             prestigeConfirmationPanel.show(currentPoints, result.civilizationPointsGained);
           } else {
@@ -629,10 +629,18 @@ function main(): void {
     onConfirm: () => {
       if (pendingPrestigeGain > 0) {
         const civState = game.getController().getCivilizationState();
-        civState.addPrestigePoints(pendingPrestigeGain);
-        updatePrestigeTabsVisibility();
-        showPrestigeUpgradePanel('prestige', pendingPrestigeGain);
-        pendingPrestigeGain = 0;
+        // Activer réellement le prestige (ajoute les points et détruit l'IslandState)
+        const result = PrestigeController.activatePrestige(civState);
+        
+        if (result.success) {
+          updatePrestigeTabsVisibility();
+          showPrestigeUpgradePanel('prestige', pendingPrestigeGain);
+          pendingPrestigeGain = 0;
+        } else {
+          // En cas d'erreur, annuler
+          alert(result.message);
+          pendingPrestigeGain = 0;
+        }
       }
     },
     onCancel: () => {

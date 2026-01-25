@@ -58,14 +58,17 @@ describe('FiveCitiesLibrariesScenario', () => {
     // Vérifier que l'IHM autoriserait le prestige
     expect(PrestigeController.canActivatePrestige(civId, map!)).toBe(true);
 
-    const result = PrestigeController.activatePrestige(game.getIslandState());
+    const civState = game.getController().getCivilizationState();
+    const result = PrestigeController.activatePrestige(civState);
     expect(result.success).toBe(true);
     expect(result.civilizationPointsGained).toBeGreaterThan(0);
 
-    // Simuler la confirmation utilisateur sur le panneau de prestige
+    // Vérifier que les points ont été ajoutés automatiquement
     const gained = result.civilizationPointsGained!;
-    const civState = game.getController().getCivilizationState();
-    civState.addPrestigePoints(gained);
+    expect(civState.getPrestigePointsTotal()).toBe(gained);
+    
+    // Vérifier que l'IslandState a été détruit
+    expect(game.getIslandMap()).toBeNull();
 
     // Démarrer une nouvelle partie via l'API applicative (bouton Nouvelle partie)
     const prestigeAvantReset = civState.getPrestigePointsTotal();

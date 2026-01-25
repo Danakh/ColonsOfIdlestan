@@ -4,6 +4,7 @@ import { PrestigeController } from '../../src/controller/PrestigeController';
 import { BuildingType } from '../../src/model/city/BuildingType';
 import { CityLevel } from '../../src/model/city/CityLevel';
 import { MainGame } from '../../src/application/MainGame';
+import { CivilizationState } from '../../src/model/game/CivilizationState';
 
 describe('PrestigeController', () => {
   let game: MainGame;
@@ -114,49 +115,79 @@ describe('PrestigeController', () => {
     });
   });
 
-  describe('activatePrestige', () => {
-    it('devrait ajouter des points de civilisation lors du prestige', () => {
+  describe('calculatePrestigeGain', () => {
+    it('devrait calculer les points de civilisation sans effectuer le prestige', () => {
       const generatedState = createScenarioWithCapitalAndResources(42);
+      const civState = new CivilizationState(generatedState.islandState, generatedState.islandState.getGameClock());
 
-      const result = PrestigeController.activatePrestige(generatedState.islandState);
+      const result = PrestigeController.calculatePrestigeGain(civState);
 
       expect(result.success).toBe(true);
       expect(result.message).toBeDefined();
       expect(result.civilizationPointsGained).toBeDefined();
       expect(result.civilizationPointsGained).toBeGreaterThan(0);
+      // Vérifier que les points n'ont pas été ajoutés
+      expect(civState.getPrestigePointsTotal()).toBe(0);
+      // Vérifier que l'IslandState existe toujours
+      expect(civState.getIslandState().getIslandMap()).not.toBeNull();
     });
 
     it('devrait retourner false si les conditions ne sont pas remplies', () => {
       game.newGame(42);
       const controller = game.getController();
+      const civState = controller.getCivilizationState();
 
-      const result = PrestigeController.activatePrestige(controller.getIslandState());
+      const result = PrestigeController.calculatePrestigeGain(civState);
 
       expect(result.success).toBe(false);
       expect(result.message).toBeDefined();
     });
+  });
 
-    it('devrait inclure un bonus basé sur le nombre de ports', () => {
+  describe('activatePrestige', () => {
+    it('devrait ajouter des points de civilisation et détruire l\'IslandState', () => {
       const generatedState = createScenarioWithCapitalAndResources(42);
+      const civState = new CivilizationState(generatedState.islandState, generatedState.islandState.getGameClock());
+
+      const result = PrestigeController.activatePrestige(civState);
+
+      expect(result.success).toBe(true);
+      expect(result.message).toBeDefined();
+      expect(result.civilizationPointsGained).toBeDefined();
+      expect(result.civilizationPointsGained).toBeGreaterThan(0);
+      // Vérifier que les points ont été ajoutés
+      expect(civState.getPrestigePointsTotal()).toBe(result.civilizationPointsGained);
+      // Vérifier que l'IslandState a été détruit
+      expect(civState.getIslandState().getIslandMap()).toBeNull();
+    });
+
+    it('devrait retourner false si les conditions ne sont pas remplies', () => {
+      game.newGame(42);
+      const controller = game.getController();
+      const civState = controller.getCivilizationState();
+      const initialPoints = civState.getPrestigePointsTotal();
+
+      const result = PrestigeController.activatePrestige(civState);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBeDefined();
+      // Vérifier que rien n'a changé
+      expect(civState.getPrestigePointsTotal()).toBe(initialPoints);
+      expect(civState.getIslandState().getIslandMap()).not.toBeNull();
+    });
+
+    it('devrait calculer correctement avec le multiplicateur', () => {
+      const generatedState = createScenarioWithCapitalAndResources(42);
+      const civState = new CivilizationState(generatedState.islandState, generatedState.islandState.getGameClock());
       const map = generatedState.islandMap;
       const civId = generatedState.civId;
 
-      // Compter les ports actuels
-      const cities = map.getCitiesByCivilization(civId);
-      let seaportCount = 0;
-      for (const city of cities) {
-        if (city.hasBuilding(BuildingType.Seaport)) {
-          seaportCount++;
-        }
-      }
-
-      const result = PrestigeController.activatePrestige(generatedState.islandState);
+      const result = PrestigeController.activatePrestige(civState);
 
       expect(result.success).toBe(true);
-      // Au moins un port devrait être présent pour cette validation
-      if (seaportCount > 0) {
-        expect(result.message).toContain('points de civilisation');
-      }
+      expect(result.message).toContain('points de civilisation');
+      expect(civState.getPrestigePointsTotal()).toBe(result.civilizationPointsGained);
+      expect(civState.getIslandState().getIslandMap()).toBeNull();
     });
   });
 });

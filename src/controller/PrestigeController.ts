@@ -1,5 +1,6 @@
 import { IslandMap } from '../model/map/IslandMap';
 import { IslandState } from '../model/game/IslandState';
+import { CivilizationState } from '../model/game/CivilizationState';
 import { CivilizationId } from '../model/map/CivilizationId';
 import { CityLevel } from '../model/city/CityLevel';
 import { calculateCivilizationPoints } from '../model/game/CivilizationPoints';
@@ -71,15 +72,13 @@ export class PrestigeController {
   }
 
   /**
-   * Active l'action Prestige et retourne les points de civilisation gagnés.
+   * Calcule le gain de prestige potentiel sans effectuer le prestige.
    * 
-   * Les points de civilisation bonus sont basés sur le niveau de civilisation.
-   * Le multiplicateur est récupéré automatiquement depuis la civilisation.
-   * 
-   * @param islandState - L'état de jeu contenant la carte et les civilisations
-   * @returns Le résultat de l'action avec les points de civilisation gagnés
+   * @param civState - L'état de la civilisation
+   * @returns Le résultat avec les points de civilisation qui seraient gagnés
    */
-  static activatePrestige(islandState: IslandState): PrestigeActionResult {
+  static calculatePrestigeGain(civState: CivilizationState): PrestigeActionResult {
+    const islandState = civState.getIslandState();
     const map = islandState.getIslandMap();
     const civId = islandState.getPlayerCivilizationId();
     
@@ -112,5 +111,30 @@ export class PrestigeController {
       message: `Action Prestige activée! ${prestigePoints} points de civilisation obtenus.`,
       civilizationPointsGained: prestigePoints
     };
+  }
+
+  /**
+   * Active l'action Prestige : ajoute les points de civilisation gagnés et détruit l'IslandState.
+   * Cette fonction doit être appelée après confirmation de l'utilisateur.
+   * 
+   * @param civState - L'état de la civilisation contenant l'IslandState actuelle
+   * @returns Le résultat de l'action avec les points de civilisation gagnés
+   */
+  static activatePrestige(civState: CivilizationState): PrestigeActionResult {
+    // Calculer d'abord le gain
+    const result = this.calculatePrestigeGain(civState);
+    
+    if (!result.success || result.civilizationPointsGained === undefined) {
+      return result;
+    }
+
+    // Ajouter les points de prestige
+    civState.addPrestigePoints(result.civilizationPointsGained);
+
+    // Détruire l'IslandState interne (réinitialiser la carte)
+    const islandState = civState.getIslandState();
+    islandState.setIslandMap(null);
+
+    return result;
   }
 }
