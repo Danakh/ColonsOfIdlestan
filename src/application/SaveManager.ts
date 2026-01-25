@@ -1,4 +1,5 @@
 import { MainGame } from './MainGame';
+import { t } from '../i18n';
 
 export class SaveManager {
   private readonly AUTOSAVE_KEY = 'colons-of-idlestan-autosave';
@@ -11,7 +12,7 @@ export class SaveManager {
       const serialized = this.game.saveGame();
       localStorage.setItem(this.AUTOSAVE_KEY, serialized);
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde automatique:', error);
+      console.error(t('error.autoSaveFailed'), error);
     }
   }
 
@@ -19,22 +20,22 @@ export class SaveManager {
     try {
       const saved = localStorage.getItem(this.AUTOSAVE_KEY);
       if (!saved) {
-        console.log('Aucune sauvegarde trouvée dans localStorage');
+        console.log(t('save.noneFound'));
         return false;
       }
 
-      console.log('Chargement automatique de la sauvegarde...');
+      console.log(t('save.loading'));
       const loaded = this.game.loadGame(saved);
       if (loaded) {
-        console.log('Sauvegarde chargée avec succès');
+        console.log(t('save.loaded'));
         return true;
       }
 
-      console.warn('Sauvegarde corrompue, suppression de l\'autosave');
+      console.warn(t('save.corrupted.warn'));
       this.offerInvalidSaveDownload(saved, 'locale');
       localStorage.removeItem(this.AUTOSAVE_KEY);
     } catch (error) {
-      console.error('Erreur lors du chargement automatique:', error);
+      console.error(t('error.autoLoadFailed'), error);
       const saved = localStorage.getItem(this.AUTOSAVE_KEY);
       if (saved) {
         this.offerInvalidSaveDownload(saved, 'locale');
@@ -57,8 +58,8 @@ export class SaveManager {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Erreur lors de l\'export:', error);
-      alert('Erreur lors de l\'export de la partie');
+      console.error(t('error.exportFailed'), error);
+      alert(t('alert.exportError'));
     }
   }
 
@@ -79,8 +80,8 @@ export class SaveManager {
           this.saveToLocal();
           resolve({ success: true, content });
         } catch (error) {
-          console.error('Erreur lors de l\'import:', error);
-          alert('Erreur lors de l\'import de la partie. Le fichier est peut-être invalide.');
+          console.error(t('error.importFailed'), error);
+          alert(t('alert.importError'));
           const content = event.target?.result as string | undefined;
           if (content) {
             this.offerInvalidSaveDownload(content, 'importée');
@@ -94,7 +95,7 @@ export class SaveManager {
 
   offerInvalidSaveDownload(serialized: string, context: string): void {
     try {
-      const shouldDownload = window.confirm(`La sauvegarde ${context} est corrompue. Voulez-vous l'enregistrer dans un fichier pour diagnostic ?`);
+      const shouldDownload = window.confirm(t('confirm.saveCorrupted', { context }));
       if (!shouldDownload) {
         return;
       }
@@ -108,7 +109,7 @@ export class SaveManager {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (downloadError) {
-      console.error('Impossible de télécharger la sauvegarde corrompue:', downloadError);
+      console.error(t('error.saveDownloadFailed'), downloadError);
     }
   }
 

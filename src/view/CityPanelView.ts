@@ -360,7 +360,7 @@ export class CityPanelView {
     this.automationBtn.hidden = !canAutomate;
     this.automationBtn.disabled = !canAutomate;
     if (canAutomate) {
-      this.automationBtn.textContent = 'Automatisation';
+      this.automationBtn.textContent = t('buildingAction.automation');
       this.automationBtn.title = t('automation.hint');
     }
     
@@ -431,7 +431,7 @@ export class CityPanelView {
 
       this.cityPanel.classList.remove('hidden');
       this.cityPanelTitle.textContent = t('city.noneSelected');
-      this.cityBuildingsTitle.textContent = 'Bâtiments';
+      this.cityBuildingsTitle.textContent = t('city.buildingsTitle');
       this.cityBuildingsList.innerHTML = '';
 
       const emptyItem = document.createElement('li');

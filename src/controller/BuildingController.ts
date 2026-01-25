@@ -6,6 +6,7 @@ import { Vertex } from '../model/hex/Vertex';
 import { PlayerResources } from '../model/game/PlayerResources';
 import { ResourceType } from '../model/map/ResourceType';
 import { HexType } from '../model/map/HexType';
+import { t } from '../i18n';
 
 /**
  * Statut d'un bâtiment constructible avec vérification des ressources.
@@ -83,10 +84,10 @@ export class BuildingController {
   ): void {
     const building = city.getBuilding(buildingType);
     if (!building) {
-      throw new Error(`Le bâtiment ${buildingType} n'est pas construit dans cette ville.`);
+      throw new Error(t('building.error.notBuilt', { building: String(buildingType) }));
     }
     if (!building.canUpgrade()) {
-      throw new Error(`Le bâtiment ${buildingType} est déjà au niveau maximum (${building.getMaxLevel()}).`);
+      throw new Error(t('building.error.maxLevel', { building: String(buildingType), level: String(building.getMaxLevel()) }));
     }
     
     // Vérifier la contrainte : une seule Capitale par civilisation
@@ -97,14 +98,14 @@ export class BuildingController {
         const cities = map.getCitiesByCivilization(city.owner);
         const hasCapital = cities.some(c => c.level === CityLevel.Capital);
         if (hasCapital) {
-          throw new Error('Une Capitale existe déjà. Seule une Capitale est autorisée par civilisation.');
+          throw new Error(t('building.error.capitalExists'));
         }
       }
     }
 
     const cost = building.getUpgradeCost();
     if (!resources.canAfford(cost)) {
-      throw new Error(`Ressources insuffisantes. Coût requis: ${this.formatCost(cost)}.`);
+      throw new Error(t('building.error.insufficientResources', { cost: this.formatCost(cost) }));
     }
 
     resources.payCost(cost);

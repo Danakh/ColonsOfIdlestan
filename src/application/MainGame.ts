@@ -9,6 +9,7 @@ import { CivilizationId } from '../model/map/CivilizationId';
 import { CivilizationState } from '../model/game/CivilizationState';
 import { GodState } from '../model/game/GodState';
 import { PlayerSave } from '../model/game/PlayerSave';
+import { t } from '../i18n';
 
 /**
  * Point d'entrée applicatif : NewGame (génération de carte), SaveGame et LoadGame.
@@ -109,7 +110,7 @@ export class MainGame {
       this.controller = new MainGameController(godState);
       return true;
     } catch (error) {
-      console.error('Échec du chargement de la sauvegarde:', error);
+      console.error(t('error.loadSaveFailed'), error);
       return false;
     }
   }

@@ -351,7 +351,7 @@ function main(): void {
           renderer.render(islandMap, civId);
         }
       } catch (error) {
-        console.error('Erreur lors de la construction du bâtiment:', error);
+        console.error(t('error.buildingConstructionFailed'), error);
       }
     },
     onBuildingAction: (action: BuildingAction, buildingType: BuildingType, city: City) => {
@@ -359,7 +359,7 @@ function main(): void {
         if (action === BuildingAction.Upgrade) {
           const currentIslandMap = game.getIslandMap();
           if (!currentIslandMap) {
-            console.error('Carte de jeu non disponible');
+            console.error(t('error.mapUnavailable'));
             return;
           }
           const result = coordinator.upgradeBuilding(buildingType, city);
@@ -404,14 +404,16 @@ function main(): void {
           const civId = game.getPlayerCivilizationId();
 
           if (!currentIslandMap || !civId) {
-            console.error('Carte de jeu ou civilisation non disponible');
+            console.error(t('error.mapOrCivUnavailable'));
             return;
           }
 
           // Vérifier si l'action peut être activée
           if (!PrestigeController.canActivatePrestige(civId, currentIslandMap)) {
             const reason = PrestigeController.getPrestigeRestrictionReason(civId, currentIslandMap);
-            alert(`Prestige non disponible: ${reason}`);
+            if (reason !== undefined) {
+            alert(t('prestige.unavailable', { reason }));
+            }
             return;
           }
 
@@ -438,7 +440,7 @@ function main(): void {
           renderer.render(currentIslandMap, civId);
         }
       } catch (error) {
-        console.error(`Erreur lors de l'action ${action}:`, error);
+        console.error(t('error.actionFailed', { action }), error);
       }
     },
   });
@@ -480,7 +482,7 @@ function main(): void {
       if (civId) {
         const blockedResources = TradeController.getUsedSpecializations(civId, currentIslandMap, city);
         if (blockedResources.has(resource)) {
-          alert(`Cette ressource est déjà spécialisée par un autre port de votre civilisation.`);
+          alert(t('port.specialization.blocked'));
           return;
         }
       }

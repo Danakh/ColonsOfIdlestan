@@ -11,6 +11,7 @@ import { ResourceHarvestController } from './ResourceHarvestController';
 import { TradeController } from './TradeController';
 import { BuildingController } from './BuildingController';
 import { SaveManager } from '../application/SaveManager';
+import { t } from '../i18n';
 
 export class GameCoordinator {
   constructor(
@@ -36,7 +37,7 @@ export class GameCoordinator {
       this.saveManager?.saveToLocal();
       return { success: true };
     } catch (error) {
-      console.error('Erreur buildOutpost:', error);
+      console.error(t('error.operationFailed', { op: 'buildOutpost' }), error);
       return { success: false };
     }
   }
@@ -51,7 +52,7 @@ export class GameCoordinator {
       this.saveManager?.saveToLocal();
       return { success: true };
     } catch (error) {
-      console.error('Erreur buildRoad:', error);
+      console.error(t('error.operationFailed', { op: 'buildRoad' }), error);
       return { success: false };
     }
   }
@@ -70,7 +71,7 @@ export class GameCoordinator {
       }
       return { success: result.success, cityVertex: result.cityVertex! };
     } catch (error) {
-      console.error('Erreur harvestHex:', error);
+      console.error(t('error.operationFailed', { op: 'harvestHex' }), error);
       return { success: false };
     }
   }
@@ -85,7 +86,7 @@ export class GameCoordinator {
       this.saveManager?.saveToLocal();
       return { success: true };
     } catch (error) {
-      console.error('Erreur performBatchTrade:', error);
+      console.error(t('error.operationFailed', { op: 'performBatchTrade' }), error);
       return { success: false };
     }
   }
@@ -106,7 +107,7 @@ export class GameCoordinator {
       this.saveManager?.saveToLocal();
       return { success: true };
     } catch (error) {
-      console.error('Erreur buildBuilding:', error);
+      console.error(t('error.operationFailed', { op: 'buildBuilding' }), error);
       return { success: false };
     }
   }
@@ -121,7 +122,7 @@ export class GameCoordinator {
       this.saveManager?.saveToLocal();
       return { success: true };
     } catch (error) {
-      console.error('Erreur upgradeBuilding:', error);
+      console.error(t('error.operationFailed', { op: 'upgradeBuilding' }), error);
       return { success: false };
     }
   }

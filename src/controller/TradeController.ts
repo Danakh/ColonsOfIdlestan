@@ -5,6 +5,7 @@ import { ResourceType } from '../model/map/ResourceType';
 import { BuildingType } from '../model/city/BuildingType';
 import { calculateInventoryCapacity } from '../model/game/InventoryCapacity';
 import { City } from '../model/city/City';
+import { t } from '../i18n';
 
 /**
  * Contrôleur pour gérer le commerce.
@@ -103,21 +104,21 @@ export class TradeController {
     // Vérifier que l'échange est possible
     if (!this.canPerformTrade(fromResource, toResource, civId, map, resources)) {
       if (!this.canTrade(civId, map)) {
-        throw new Error(
-          'Le commerce n\'est pas disponible. ' +
-          'Vous devez posséder au moins un port maritime ou un marché dans une de vos villes.'
-        );
+        throw new Error(t('trade.error.unavailable'));
       }
 
       if (fromResource === toResource) {
-        throw new Error('Vous ne pouvez pas échanger une ressource contre elle-même.');
+        throw new Error(t('trade.error.sameResource'));
       }
 
       const tradeRate = this.getTradeRateForResource(civId, map, fromResource);
       if (!resources.hasEnough(fromResource, tradeRate)) {
         throw new Error(
-          `Pas assez de ${fromResource} pour effectuer l'échange. ` +
-          `Requis: ${tradeRate}, disponible: ${resources.getResource(fromResource)}.`
+          t('playerResources.notEnough', {
+            resource: String(fromResource),
+            current: String(resources.getResource(fromResource)),
+            required: String(tradeRate),
+          })
         );
       }
 
@@ -126,8 +127,11 @@ export class TradeController {
       const currentToResource = resources.getResource(toResource);
       if (currentToResource >= maxCapacity) {
         throw new Error(
-          `Impossible d'échanger vers ${toResource} : la capacité maximale est atteinte. ` +
-          `Capacité: ${maxCapacity}, actuel: ${currentToResource}.`
+          t('trade.error.maxCapacity', {
+            resource: String(toResource),
+            capacity: String(maxCapacity),
+            current: String(currentToResource),
+          })
         );
       }
     }
@@ -265,10 +269,7 @@ export class TradeController {
   ): void {
     // Vérifier l'accès au commerce
     if (!this.canTrade(civId, map)) {
-      throw new Error(
-        'Le commerce n\'est pas disponible. ' +
-        'Vous devez posséder au moins un port maritime ou un marché dans une de vos villes.'
-      );
+      throw new Error(t('trade.error.unavailable'));
     }
 
     // Valider que toutes les quantités offertes sont des multiples du taux d'échange approprié
@@ -277,8 +278,7 @@ export class TradeController {
         const tradeRate = this.getTradeRateForResource(civId, map, resourceType);
         if (quantity % tradeRate !== 0) {
           throw new Error(
-            `La quantité offerte de ${resourceType} doit être un multiple de ${tradeRate}. ` +
-            `Quantité actuelle: ${quantity}`
+            t('trade.error.mustBeMultipleOffered', { resource: String(resourceType), rate: String(tradeRate), quantity: String(quantity) })
           );
         }
       }
@@ -286,10 +286,9 @@ export class TradeController {
 
     // Valider que toutes les quantités demandées sont des multiples de 1
     for (const [resourceType, quantity] of requestedResources.entries()) {
-      if (quantity > 0 && quantity % this.TRADE_RECEIVED !== 0) {
+        if (quantity > 0 && quantity % this.TRADE_RECEIVED !== 0) {
         throw new Error(
-          `La quantité demandée de ${resourceType} doit être un multiple de ${this.TRADE_RECEIVED}. ` +
-          `Quantité actuelle: ${quantity}`
+          t('trade.error.mustBeMultipleRequested', { resource: String(resourceType), rate: String(this.TRADE_RECEIVED), quantity: String(quantity) })
         );
       }
     }
@@ -299,8 +298,7 @@ export class TradeController {
       if (quantity > 0) {
         if (!playerResources.hasEnough(resourceType, quantity)) {
           throw new Error(
-            `Pas assez de ${resourceType} pour effectuer l'échange. ` +
-            `Requis: ${quantity}, disponible: ${playerResources.getResource(resourceType)}.`
+            t('playerResources.notEnough', { resource: String(resourceType), current: String(playerResources.getResource(resourceType)), required: String(quantity) })
           );
         }
       }
@@ -311,7 +309,7 @@ export class TradeController {
     const hasRequested = Array.from(requestedResources.values()).some(qty => qty > 0);
 
     if (!hasOffered || !hasRequested) {
-      throw new Error('Vous devez proposer au moins une ressource et en demander au moins une autre.');
+      throw new Error(t('trade.error.mustOfferAndRequest'));
     }
 
     // Créer des copies temporaires pour le calcul
@@ -357,9 +355,7 @@ export class TradeController {
       // Si on n'a pas pu satisfaire toute la demande, c'est une erreur
       if (remainingToReceive > 0) {
         throw new Error(
-          `Impossible de satisfaire la demande de ${toResource}. ` +
-          `Manque ${remainingToReceive} unité(s). ` +
-          `Pas assez de ressources offertes pour compléter l'échange.`
+          t('trade.error.cannotSatisfyRequest', { resource: String(toResource), missing: String(remainingToReceive) })
         );
       }
     }

@@ -457,12 +457,12 @@ export class TradePanelView {
     const requestedBatches = this.getRequestedBatches();
 
     this.offeredTitle.textContent = offeredBatches > 0 
-      ? `Vous donnez (${offeredBatches})`
-      : 'Vous donnez';
+      ? `${t('trade.title.offered')} (${offeredBatches})`
+      : t('trade.title.offered');
     
     this.requestedTitle.textContent = requestedBatches > 0
-      ? `Vous recevez (${requestedBatches})`
-      : 'Vous recevez';
+      ? `${t('trade.title.requested')} (${requestedBatches})`
+      : t('trade.title.requested');
   }
 
   /**

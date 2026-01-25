@@ -252,7 +252,7 @@ export class AutomationPanelView {
   show(city: City, civilization: Civilization): void {
     const buildersGuild = city.getBuilding(BuildingType.BuildersGuild);
     if (!buildersGuild) {
-      throw new Error('La ville doit avoir une Guilde des batisseurs pour ouvrir le panneau d\'automatisation.');
+      throw new Error(t('automation.error.noBuildersGuild'));
     }
 
     this.currentCity = city;
@@ -293,8 +293,8 @@ export class AutomationPanelView {
     this.automationBtn.hidden = !hasBuildersGuild;
     this.automationBtn.disabled = !hasBuildersGuild;
     if (hasBuildersGuild) {
-      this.automationBtn.textContent = 'Automatisation';
-      this.automationBtn.title = 'Ouvrir le panneau d\'automatisation.';
+      this.automationBtn.textContent = t('buildingAction.automation');
+      this.automationBtn.title = t('automation.openPanelTitle');
     }
   }
 

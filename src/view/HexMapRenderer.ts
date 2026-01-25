@@ -111,7 +111,7 @@ export class HexMapRenderer {
     this.canvas = canvas;
     const context = canvas.getContext('2d');
     if (!context) {
-      throw new Error('Impossible d\'obtenir le contexte 2D du canvas');
+      throw new Error(t('error.canvasContextUnavailable'));
     }
     this.ctx = context;
     this.setupMouseMoveHandler();
