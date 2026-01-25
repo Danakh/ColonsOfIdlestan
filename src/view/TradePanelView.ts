@@ -8,6 +8,7 @@ import { BuildingType } from '../model/city/BuildingType';
 import { City } from '../model/city/City';
 import { Vertex } from '../model/hex/Vertex';
 import { Building } from '../model/city/Building';
+import { t } from '../i18n';
 
 /**
  * Callbacks pour les actions du panneau de commerce.
@@ -45,11 +46,11 @@ export class TradePanelView {
 
   // Noms des ressources en français
   private readonly resourceNames: Record<ResourceType, string> = {
-    [ResourceType.Wood]: 'Bois',
-    [ResourceType.Brick]: 'Brique',
-    [ResourceType.Wheat]: 'Blé',
-    [ResourceType.Sheep]: 'Mouton',
-    [ResourceType.Ore]: 'Minerai',
+    [ResourceType.Wood]: t('resource.wood'),
+    [ResourceType.Brick]: t('resource.brick'),
+    [ResourceType.Wheat]: t('resource.wheat'),
+    [ResourceType.Sheep]: t('resource.sheep'),
+    [ResourceType.Ore]: t('resource.ore'),
   };
 
   // Ordre d'affichage des ressources
@@ -72,28 +73,28 @@ export class TradePanelView {
     const requestedTitleEl = document.querySelector('.trade-column:last-child h3') as HTMLElement;
 
     if (!panel) {
-      throw new Error(`Élément avec l'id "${tradePanelId}" introuvable`);
+      throw new Error(t('error.elementNotFound', { id: tradePanelId }));
     }
     if (!offeredListEl) {
-      throw new Error('Élément avec l\'id "trade-offered-list" introuvable');
+      throw new Error(t('error.elementNotFound', { id: 'trade-offered-list' }));
     }
     if (!requestedListEl) {
-      throw new Error('Élément avec l\'id "trade-requested-list" introuvable');
+      throw new Error(t('error.elementNotFound', { id: 'trade-requested-list' }));
     }
     if (!portsListEl) {
-      throw new Error('Élément avec l\'id "trade-ports-list" introuvable');
+      throw new Error(t('error.elementNotFound', { id: 'trade-ports-list' }));
     }
     if (!cancelBtnEl) {
-      throw new Error('Élément avec l\'id "trade-cancel-btn" introuvable');
+      throw new Error(t('error.elementNotFound', { id: 'trade-cancel-btn' }));
     }
     if (!confirmBtnEl) {
-      throw new Error('Élément avec l\'id "trade-confirm-btn" introuvable');
+      throw new Error(t('error.elementNotFound', { id: 'trade-confirm-btn' }));
     }
     if (!offeredTitleEl) {
-      throw new Error('Titre "Vous donnez" introuvable');
+      throw new Error(t('error.elementNotFound', { id: 'trade-offered-title' }));
     }
     if (!requestedTitleEl) {
-      throw new Error('Titre "Vous recevez" introuvable');
+      throw new Error(t('error.elementNotFound', { id: 'trade-requested-title' }));
     }
 
     this.tradePanel = panel;

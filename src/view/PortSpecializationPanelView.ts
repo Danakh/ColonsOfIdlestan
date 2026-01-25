@@ -1,5 +1,6 @@
 import { ResourceType } from '../model/map/ResourceType';
 import { ResourceSprites } from './ResourceSprites';
+import { t } from '../i18n';
 
 /**
  * Callbacks pour les actions du panneau de spécialisation du port.
@@ -28,11 +29,11 @@ export class PortSpecializationPanelView {
 
   // Noms des ressources en français
   private readonly resourceNames: Record<ResourceType, string> = {
-    [ResourceType.Wood]: 'Bois',
-    [ResourceType.Brick]: 'Brique',
-    [ResourceType.Wheat]: 'Blé',
-    [ResourceType.Sheep]: 'Mouton',
-    [ResourceType.Ore]: 'Minerai',
+    [ResourceType.Wood]: t('resource.wood'),
+    [ResourceType.Brick]: t('resource.brick'),
+    [ResourceType.Wheat]: t('resource.wheat'),
+    [ResourceType.Sheep]: t('resource.sheep'),
+    [ResourceType.Ore]: t('resource.ore'),
   };
 
   // Ordre d'affichage des ressources
@@ -51,16 +52,16 @@ export class PortSpecializationPanelView {
     const confirmBtnEl = document.getElementById('port-specialization-confirm-btn') as HTMLButtonElement;
 
     if (!panelEl) {
-      throw new Error(`Élément avec l'id "${panelId}" introuvable`);
+      throw new Error(t('error.elementNotFound', { id: panelId }));
     }
     if (!resourceListEl) {
-      throw new Error('Élément avec l\'id "port-specialization-list" introuvable');
+      throw new Error(t('error.elementNotFound', { id: 'port-specialization-list' }));
     }
     if (!cancelBtnEl) {
-      throw new Error('Élément avec l\'id "port-specialization-cancel-btn" introuvable');
+      throw new Error(t('error.elementNotFound', { id: 'port-specialization-cancel-btn' }));
     }
     if (!confirmBtnEl) {
-      throw new Error('Élément avec l\'id "port-specialization-confirm-btn" introuvable');
+      throw new Error(t('error.elementNotFound', { id: 'port-specialization-confirm-btn' }));
     }
 
     this.panel = panelEl;
@@ -159,7 +160,7 @@ export class PortSpecializationPanelView {
       item.className = 'port-specialization-resource-item';
       if (isBlocked) {
         item.classList.add('blocked');
-        item.title = 'Cette ressource est déjà spécialisée par un autre port de votre civilisation';
+        item.title = t('port.specialization.blocked');
       }
       
       if (this.selectedResource === resourceType) {

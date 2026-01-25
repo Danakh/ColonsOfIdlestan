@@ -31,6 +31,7 @@ import { IslandMap } from './model/map/IslandMap';
 import { APP_VERSION, APP_NAME } from './config/version';
 import { SaveManager } from './application/SaveManager';
 import { GameLoop } from './application/GameLoop';
+import { t } from './i18n';
 
 /**
  * Point d'entrée principal de l'application web.
@@ -65,43 +66,43 @@ function main(): void {
   // Les vues seront initialisées plus bas après création de `game`, `renderer` et `resourceLoader`.
 
   if (!canvas) {
-    throw new Error('Canvas introuvable');
+    throw new Error(t('error.canvasNotFound'));
   }
 
   if (!settingsBtn) {
-    throw new Error('Bouton de paramètres introuvable');
+    throw new Error(t('error.elementNotFound', { id: 'settings-btn' }));
   }
 
   if (!settingsMenu) {
-    throw new Error('Menu de paramètres introuvable');
+    throw new Error(t('error.elementNotFound', { id: 'settings-menu' }));
   }
 
   if (!regenerateBtn) {
-    throw new Error('Bouton de régénération introuvable');
+    throw new Error(t('error.elementNotFound', { id: 'regenerate-btn' }));
   }
 
   if (!hardResetBtn) {
-    throw new Error('Bouton de hard reset introuvable');
+    throw new Error(t('error.elementNotFound', { id: 'hard-reset-btn' }));
   }
 
   if (!exportBtn) {
-    throw new Error('Bouton d\'export introuvable');
+    throw new Error(t('error.elementNotFound', { id: 'export-btn' }));
   }
 
   if (!importBtn) {
-    throw new Error('Bouton d\'import introuvable');
+    throw new Error(t('error.elementNotFound', { id: 'import-btn' }));
   }
 
   if (!cheatBtn) {
-    throw new Error('Bouton cheat introuvable');
+    throw new Error(t('error.elementNotFound', { id: 'cheat-btn' }));
   }
 
   if (!showHexCoordsBtn) {
-    throw new Error('Bouton afficher coordonnées hexs introuvable');
+    throw new Error(t('error.elementNotFound', { id: 'show-hex-coords-btn' }));
   }
 
   if (!gameTabs || !classicTabBtn || !prestigeTabBtn) {
-    throw new Error('Onglets de navigation du jeu introuvables');
+    throw new Error(t('error.gameTabsNotFound'));
   }
 
   // Créer le jeu principal
@@ -196,8 +197,8 @@ function main(): void {
     return [
       {
         id: 'resource-harvest-x1.5',
-        label: 'Récolte +50%',
-        description: 'Augmente le gain de ressources de 50% pour la prochaine partie.',
+        label: t('prestige.upgrade.harvest.label'),
+        description: t('prestige.upgrade.harvest.description'),
         cost: 5,
         onPurchase: () => {
           const current = civ.getResourceGainLevel();
@@ -206,8 +207,8 @@ function main(): void {
       },
       {
         id: 'civilization-points-x1.25',
-        label: 'Points de civilisation +25%',
-        description: 'Augmente les points de civilisation gagnés de 25% pour la prochaine partie.',
+        label: t('prestige.upgrade.civPoints.label'),
+        description: t('prestige.upgrade.civPoints.description'),
         cost: 7,
         onPurchase: () => {
           const current = civ.getCivPointGainLevel();
@@ -216,11 +217,11 @@ function main(): void {
       },
       {
         id: 'builders-guild-unlock',
-        label: 'Débloquer Guilde des batisseurs',
-        description: 'Rend disponible la Guilde des batisseurs dès le départ de la partie suivante.',
+        label: t('prestige.upgrade.buildersGuild.label'),
+        description: t('prestige.upgrade.buildersGuild.description'),
         cost: 10,
         onPurchase: () => {
-          console.log('Déblocage Guilde des batisseurs pour la prochaine partie');
+          console.log(t('prestige.upgrade.buildersGuild.unlockedLog'));
         },
       },
     ];
@@ -275,14 +276,14 @@ function main(): void {
     civilizationUpgradePanel.show(availablePoints, {
       totalPrestigePoints: civState.getPrestigePointsTotal(),
       readOnly: mode === 'consultation',
-      closeLabel: mode === 'prestige' ? 'Fermer et Relancer la Partie' : 'Fermer',
+      closeLabel: mode === 'prestige' ? t('button.closeAndRestart') : t('button.close'),
       subtitle,
     });
     setActiveTab('prestige');
   };
 
   const openPrestigeConsultationPanel = (): void => {
-    const subtitle = 'Aucun point en attente. Gagnez un nouveau Prestige pour débloquer des points.';
+    const subtitle = t('hint.noPendingPrestige');
     showPrestigeUpgradePanel('consultation', 0, subtitle);
   };
 
@@ -504,8 +505,8 @@ function main(): void {
           portSpecializationPanelView.hide();
         }
       } catch (error) {
-        console.error('Erreur lors de la spécialisation:', error);
-        alert(`Erreur lors de la spécialisation: ${error instanceof Error ? error.message : String(error)}`);
+        console.error(t('error.specializationFailed'), error);
+        alert(t('error.specializationFailedDetail', { detail: error instanceof Error ? error.message : String(error) }));
       }
     },
     onCancel: () => {
@@ -715,9 +716,7 @@ function main(): void {
 
   // Gérer le bouton de hard reset dans le menu
   hardResetBtn.addEventListener('click', () => {
-    const ok = confirm(
-      "Hard reset: détruire l'état divin (GodState) et la sauvegarde locale ? Cette action est irréversible."
-    );
+    const ok = confirm(t('confirm.hardReset'));
     if (!ok) return;
 
     // Effacer complètement la sauvegarde (réinitialise GodState)
@@ -774,7 +773,7 @@ function main(): void {
 
       const result = await saveManager.importFromFile(file);
       if (!result.success) {
-        alert('Erreur lors de l\'import de la partie. Le fichier est peut-être invalide.');
+        alert(t('alert.importError'));
         return;
       }
 

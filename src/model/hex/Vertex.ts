@@ -1,6 +1,7 @@
 import { HexCoord } from './HexCoord';
 import { SecondaryHexDirection } from './SecondaryHexDirection';
 import { inverseSecondaryHexDirection } from './SecondaryHexDirection';
+import { t } from '../../i18n';
 
 /**
  * Représente un sommet (vertex) partagé par plusieurs hexagones.
@@ -21,9 +22,7 @@ export class Vertex {
   ) {
     // Validation: les hexagones doivent former un triangle valide
     if (!Vertex.isValidTriangle(hex1, hex2, hex3)) {
-      throw new Error(
-        'Les trois hexagones doivent former un triangle valide pour créer un sommet.'
-      );
+      throw new Error(t('vertex.invalidTriangle'));
     }
   }
 

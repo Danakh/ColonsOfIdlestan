@@ -1,5 +1,6 @@
 import { ResourceType } from '../map/ResourceType';
 import { HexType } from '../map/HexType';
+import { t } from '../../i18n';
 
 /**
  * Types de bâtiments constructibles dans les villes.
@@ -37,19 +38,19 @@ export enum BuildingType {
  * Noms des bâtiments en français.
  */
 export const BUILDING_TYPE_NAMES: Record<BuildingType, string> = {
-  [BuildingType.Seaport]: 'Port maritime',
-  [BuildingType.Market]: 'Marché',
-  [BuildingType.TownHall]: 'Hôtel de ville',
-  [BuildingType.Sawmill]: 'Scierie',
-  [BuildingType.Brickworks]: 'Briqueterie',
-  [BuildingType.Mill]: 'Moulin',
-  [BuildingType.Sheepfold]: 'Bergerie',
-  [BuildingType.Mine]: 'Mine',
-  [BuildingType.Warehouse]: 'Entrepôt',
-  [BuildingType.Forge]: 'Forge',
-  [BuildingType.Library]: 'Bibliothèque',
-  [BuildingType.Temple]: 'Temple',
-  [BuildingType.BuildersGuild]: 'Guilde des batisseurs',
+  [BuildingType.Seaport]: t('building.seaport'),
+  [BuildingType.Market]: t('building.market'),
+  [BuildingType.TownHall]: t('building.townHall'),
+  [BuildingType.Sawmill]: t('building.sawmill'),
+  [BuildingType.Brickworks]: t('building.brickworks'),
+  [BuildingType.Mill]: t('building.mill'),
+  [BuildingType.Sheepfold]: t('building.sheepfold'),
+  [BuildingType.Mine]: t('building.mine'),
+  [BuildingType.Warehouse]: t('building.warehouse'),
+  [BuildingType.Forge]: t('building.forge'),
+  [BuildingType.Library]: t('building.library'),
+  [BuildingType.Temple]: t('building.temple'),
+  [BuildingType.BuildersGuild]: t('building.buildersGuild'),
 };
 
 /**
@@ -304,10 +305,10 @@ export function getBuildingAction(buildingType: BuildingType): BuildingAction | 
  * Noms des actions en français.
  */
 export const BUILDING_ACTION_NAMES: Record<BuildingAction, string> = {
-  [BuildingAction.Trade]: 'Commerce',
-  [BuildingAction.Upgrade]: 'Améliorer',
-  [BuildingAction.Specialization]: 'Spécialisation',
-  [BuildingAction.Auto]: 'Auto',
-  [BuildingAction.Prestige]: 'Prestige',
-  [BuildingAction.Automation]: 'Automatisation',
+  [BuildingAction.Trade]: t('buildingAction.trade'),
+  [BuildingAction.Upgrade]: t('buildingAction.upgrade'),
+  [BuildingAction.Specialization]: t('buildingAction.specialization'),
+  [BuildingAction.Auto]: t('buildingAction.auto'),
+  [BuildingAction.Prestige]: t('buildingAction.prestige'),
+  [BuildingAction.Automation]: t('buildingAction.automation'),
 };

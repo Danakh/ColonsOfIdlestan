@@ -9,6 +9,7 @@ import { City, CitySerialized } from '../city/City';
 import { CityLevel } from '../city/CityLevel';
 import { BuildingType } from '../city/BuildingType';
 import { ResourceType } from './ResourceType';
+import { t } from '../../i18n';
 
 /**
  * Carte de jeu construite sur une grille hexagonale.
@@ -61,7 +62,7 @@ export class IslandMap {
   setHexType(hex: Hex | HexCoord, hexType: HexType): void {
     const coord = hex instanceof Hex ? hex.coord : hex;
     if (!this.grid.hasHex(coord)) {
-      throw new Error(`L'hexagone à la coordonnée ${coord.toString()} n'existe pas dans la grille.`);
+      throw new Error(t('island.hexNotExist', { coord: coord.toString() }));
     }
     this.hexTypeMap.set(coord.hashCode(), hexType);
   }
@@ -117,14 +118,14 @@ export class IslandMap {
   addCity(vertex: Vertex, civId: CivilizationId, level: CityLevel = CityLevel.Outpost): void {
     // Vérifier que la civilisation est enregistrée
     if (!this.isCivilizationRegistered(civId)) {
-      throw new Error(`La civilisation ${civId.toString()} n'est pas enregistrée.`);
+      throw new Error(t('island.civNotRegistered', { civ: civId.toString() }));
     }
 
     const vertexKey = vertex.hashCode();
 
     // Vérifier qu'il n'y a pas déjà une ville sur ce sommet
     if (this.cityMap.has(vertexKey)) {
-      throw new Error(`Une ville existe déjà sur le sommet ${vertex.toString()}.`);
+      throw new Error(t('island.cityExists', { vertex: vertex.toString() }));
     }
 
     // Vérifier que le sommet est valide (au moins un hexagone doit exister)
@@ -132,7 +133,7 @@ export class IslandMap {
     const hasValidHex = hexes.some(coord => this.grid.hasHex(coord));
     
     if (!hasValidHex) {
-      throw new Error(`Le sommet ${vertex.toString()} n'est pas valide dans la grille.`);
+      throw new Error(t('island.vertexInvalid', { vertex: vertex.toString() }));
     }
     
     // Créer la ville
@@ -173,14 +174,14 @@ export class IslandMap {
   addRoad(edge: Edge, civId: CivilizationId): void {
     // Vérifier que la civilisation est enregistrée
     if (!this.isCivilizationRegistered(civId)) {
-      throw new Error(`La civilisation ${civId.toString()} n'est pas enregistrée.`);
+      throw new Error(t('island.civNotRegistered', { civ: civId.toString() }));
     }
 
     const edgeKey = edge.hashCode();
 
     // Vérifier qu'il n'y a pas déjà une route sur cette arête
     if (this.roads.has(edgeKey)) {
-      throw new Error(`Une route existe déjà sur l'arête ${edge.toString()}.`);
+      throw new Error(t('island.routeExists', { edge: edge.toString() }));
     }
 
     // Vérifier que l'arête est valide (au moins un hexagone doit exister)
@@ -188,7 +189,7 @@ export class IslandMap {
     const hasValidHex = this.grid.hasHex(hex1) || this.grid.hasHex(hex2);
     
     if (!hasValidHex) {
-      throw new Error(`L'arête ${edge.toString()} n'est pas valide dans la grille.`);
+      throw new Error(t('island.edgeInvalid', { edge: edge.toString() }));
     }
     
     this.roads.add(edgeKey);

@@ -4,6 +4,7 @@
 import { GodState } from './GodState';
 import { CivilizationState } from './CivilizationState';
 import { IslandState } from './IslandState';
+import { t } from '../../i18n';
 
 export class PlayerSave {
   private readonly godState: GodState;
@@ -24,7 +25,7 @@ export class PlayerSave {
 
   static deserialize(data: any): PlayerSave {
     if (!data || typeof data !== 'object') {
-      throw new Error('Données de sauvegarde invalides: structure inattendue');
+      throw new Error(t('error.save.invalidStructure'));
     }
 
     // Format nouveau: PlayerSave -> GodState -> CivilizationState -> IslandState
@@ -33,6 +34,6 @@ export class PlayerSave {
       return new PlayerSave(godState);
     }
 
-    throw new Error('Données de sauvegarde invalides: format non reconnu');
+    throw new Error(t('error.save.unrecognizedFormat'));
   }
 }

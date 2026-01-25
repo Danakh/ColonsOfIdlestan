@@ -1,5 +1,5 @@
 import { City } from '../model/city/City';
-import { CityLevel } from '../model/city/CityLevel';
+import { CityLevel, getCityLevelName } from '../model/city/CityLevel';
 import { BuildingType, getBuildingTypeName, getBuildingAction, BUILDING_ACTION_NAMES, BuildingAction, getAllBuildingTypes } from '../model/city/BuildingType';
 import { ResourceType } from '../model/map/ResourceType';
 import { Vertex } from '../model/hex/Vertex';
@@ -10,6 +10,7 @@ import { BuildingController } from '../controller/BuildingController';
 import { TradeController } from '../controller/TradeController';
 import { HexMapRenderer } from './HexMapRenderer';
 import { Console } from 'console';
+import { t } from '../i18n';
 
 /**
  * Callbacks pour les actions du panneau de ville.
@@ -66,11 +67,11 @@ export class CityPanelView {
 
   // Noms des ressources en français pour l'affichage (centralisé)
   private static readonly RESOURCE_NAMES: Record<ResourceType, string> = {
-    [ResourceType.Wood]: 'Bois',
-    [ResourceType.Brick]: 'Brique',
-    [ResourceType.Wheat]: 'Blé',
-    [ResourceType.Sheep]: 'Mouton',
-    [ResourceType.Ore]: 'Minerai',
+    [ResourceType.Wood]: t('resource.wood'),
+    [ResourceType.Brick]: t('resource.brick'),
+    [ResourceType.Wheat]: t('resource.wheat'),
+    [ResourceType.Sheep]: t('resource.sheep'),
+    [ResourceType.Ore]: t('resource.ore'),
   };
 
   constructor(cityPanelId: string = 'city-panel') {
@@ -82,16 +83,16 @@ export class CityPanelView {
     const automationBtn = document.getElementById('city-automation-btn') as HTMLButtonElement;
 
     if (!panel) {
-      throw new Error(`Élément avec l'id "${cityPanelId}" introuvable`);
+      throw new Error(t('error.elementNotFound', { id: cityPanelId }));
     }
     if (!title) {
-      throw new Error('Élément avec l\'id "city-panel-title" introuvable');
+      throw new Error(t('error.elementNotFound', { id: 'city-panel-title' }));
     }
     if (!buildingsList) {
-      throw new Error('Élément avec l\'id "city-buildings-list" introuvable');
+      throw new Error(t('error.elementNotFound', { id: 'city-buildings-list' }));
     }
     if (!buildingsTitle) {
-      throw new Error('Titre "Bâtiments" introuvable');
+      throw new Error(t('error.elementNotFound', { id: 'city-buildings-section' }));
     }
 
     this.cityPanel = panel;
@@ -360,7 +361,7 @@ export class CityPanelView {
     this.automationBtn.disabled = !canAutomate;
     if (canAutomate) {
       this.automationBtn.textContent = 'Automatisation';
-      this.automationBtn.title = 'Accédez aux options d\'automatisation.';
+      this.automationBtn.title = t('automation.hint');
     }
     
     if (automationKey === this.lastAutomationKey) {
@@ -429,13 +430,13 @@ export class CityPanelView {
       }
 
       this.cityPanel.classList.remove('hidden');
-      this.cityPanelTitle.textContent = 'Aucune ville sélectionnée';
+      this.cityPanelTitle.textContent = t('city.noneSelected');
       this.cityBuildingsTitle.textContent = 'Bâtiments';
       this.cityBuildingsList.innerHTML = '';
 
       const emptyItem = document.createElement('li');
       emptyItem.className = 'empty';
-      emptyItem.textContent = 'Sélectionnez une ville sur la carte pour afficher ses détails.';
+      emptyItem.textContent = t('city.selectPrompt');
       this.cityBuildingsList.appendChild(emptyItem);
 
       // Réinitialiser le cache lié à une ville
@@ -497,17 +498,8 @@ export class CityPanelView {
     // Sidebar fixe : toujours visible quand une ville est sélectionnée
     this.cityPanel.classList.remove('hidden');
 
-    // Noms des niveaux de ville en français
-    const cityLevelNames: Record<CityLevel, string> = {
-      [CityLevel.Outpost]: 'Avant-poste',
-      [CityLevel.Colony]: 'Colonie',
-      [CityLevel.Town]: 'Ville',
-      [CityLevel.Metropolis]: 'Métropole',
-      [CityLevel.Capital]: 'Capitale',
-    };
-
-    // Mettre à jour le titre avec le sprite
-    const levelName = cityLevelNames[city.level] || `Niveau ${city.level}`;
+    // Obtenir le nom du niveau depuis les traductions
+    const levelName = getCityLevelName(city.level) || t('city.levelFallback', { level: String(city.level) });
 
     // Vider le titre
     this.cityPanelTitle.innerHTML = '';
@@ -665,9 +657,9 @@ export class CityPanelView {
       } else {
         // Si le bâtiment n'est pas construit, afficher le bouton de construction s'il est constructible
         if (buildableStatus) {
-          const buildBtn = document.createElement('button');
-          buildBtn.className = 'build-btn';
-          buildBtn.textContent = 'Construire';
+            const buildBtn = document.createElement('button');
+            buildBtn.className = 'build-btn';
+            buildBtn.textContent = t('button.build');
           // Stocker le buildingType dans le bouton pour le gestionnaire d'événement
           buildBtn.dataset.buildingType = buildingType;
 
@@ -687,7 +679,7 @@ export class CityPanelView {
     // Titre avec le nombre de bâtiments construits / maximum
     const buildingCount = city.getBuildingCount();
     const maxBuildings = city.getMaxBuildings();
-    this.cityBuildingsTitle.textContent = `Bâtiments ${buildingCount}/${maxBuildings}`;
+    this.cityBuildingsTitle.textContent = t('city.buildingsTitle', { count: String(buildingCount), max: String(maxBuildings) });
 
     const builtBuildings = new Set(city.getBuildings());
     const buildableBuildings = BuildingController.getBuildableBuildingsWithStatus(city, islandMap, vertex, playerResources);
@@ -714,16 +706,10 @@ export class CityPanelView {
           if (buildingType === BuildingType.Seaport && building) {
             const specialization = building.getSpecialization();
             if (specialization !== undefined) {
-              const resourceNames: Record<ResourceType, string> = {
-                [ResourceType.Wood]: 'Bois',
-                [ResourceType.Brick]: 'Brique',
-                [ResourceType.Wheat]: 'Blé',
-                [ResourceType.Sheep]: 'Mouton',
-                [ResourceType.Ore]: 'Minerai',
-              };
+              const resourceNames = CityPanelView.RESOURCE_NAMES;
               // Afficher le niveau si le port est niveau 3, sinon seulement la spécialisation
               if (lvl === 3) {
-                name = `${getBuildingTypeName(buildingType)} (${resourceNames[specialization]}) Niv. ${lvl}`;
+                name = `${getBuildingTypeName(buildingType)} (${resourceNames[specialization]}) ${t('label.levelShort')} ${lvl}`;
               } else {
                 name = `${getBuildingTypeName(buildingType)} (${resourceNames[specialization]})`;
               }

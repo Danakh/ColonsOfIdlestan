@@ -1,6 +1,7 @@
 /**
  * Callbacks pour le panneau de confirmation de prestige.
  */
+import { t } from '../i18n';
 export interface PrestigeConfirmationCallbacks {
   /** Callback appelé lorsque l'utilisateur confirme le prestige */
   onConfirm?: () => void;
@@ -28,7 +29,7 @@ export class PrestigeConfirmationPanel {
     const cancelBtnEl = document.getElementById('prestige-cancel-btn') as HTMLButtonElement;
 
     if (!panelEl) {
-      throw new Error(`Élément avec l'id "${panelId}" introuvable`);
+      throw new Error(t('error.elementNotFound', { id: panelId }));
     }
 
     this.panel = panelEl;

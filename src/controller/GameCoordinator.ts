@@ -68,7 +68,7 @@ export class GameCoordinator {
       if (result.success) {
         this.saveManager?.saveToLocal();
       }
-      return { success: result.success, cityVertex: result.cityVertex };
+      return { success: result.success, cityVertex: result.cityVertex! };
     } catch (error) {
       console.error('Erreur harvestHex:', error);
       return { success: false };

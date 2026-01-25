@@ -3,6 +3,7 @@ import { City } from '../model/city/City';
 import { Civilization } from '../model/map/Civilization';
 import { Building } from '../model/city/Building';
 import { IslandMap } from '../model/map/IslandMap';
+import { t } from '../i18n';
 
 /**
  * Callbacks pour les actions du panneau d'automatisation.
@@ -34,10 +35,10 @@ export enum AutomationType {
  * Noms des automatisations en français.
  */
 const AUTOMATION_NAMES: Record<AutomationType, string> = {
-  [AutomationType.RoadConstruction]: 'Auto routes',
-  [AutomationType.OutpostConstruction]: 'Auto outposts',
-  [AutomationType.CityUpgrade]: 'Auto amélioration villes',
-  [AutomationType.ProductionBuildingConstruction]: 'Auto bâtiments production',
+  [AutomationType.RoadConstruction]: t('automation.name.road'),
+  [AutomationType.OutpostConstruction]: t('automation.name.outpost'),
+  [AutomationType.CityUpgrade]: t('automation.name.cityUpgrade'),
+  [AutomationType.ProductionBuildingConstruction]: t('automation.name.production'),
 };
 
 /**
@@ -88,13 +89,13 @@ export class AutomationPanelView {
     const automationBtnEl = document.getElementById(automationBtnId) as HTMLButtonElement;
 
     if (!panelEl) {
-      throw new Error(`Élément avec l'id "${panelId}" introuvable`);
+      throw new Error(t('error.elementNotFound', { id: panelId }));
     }
     if (!automationListEl) {
-      throw new Error('Élément avec l\'id "automation-list" introuvable');
+      throw new Error(t('error.elementNotFound', { id: 'automation-list' }));
     }
     if (!closeBtnEl) {
-      throw new Error('Élément avec l\'id "automation-close-btn" introuvable');
+      throw new Error(t('error.elementNotFound', { id: 'automation-close-btn' }));
     }
 
     this.panel = panelEl;
@@ -198,8 +199,8 @@ export class AutomationPanelView {
           // Sauvegarder le jeu
           dependencies.autoSave();
         } catch (error) {
-          console.error('Erreur lors de la modification de l\'automatisation:', error);
-          alert(`Erreur: ${error instanceof Error ? error.message : String(error)}`);
+          console.error(t('error.automationModifyFailed'), error);
+          alert(t('error.automationModifyFailedDetail', { detail: error instanceof Error ? error.message : String(error) }));
         }
       },
       onClose: () => {
