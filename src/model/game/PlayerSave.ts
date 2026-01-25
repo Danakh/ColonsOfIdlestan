@@ -21,7 +21,14 @@ export class PlayerSave {
   }
 
   static deserialize(data: any): PlayerSave {
-    const godState = GodState.deserialize(data.godState);
+    if (!data || typeof data !== 'object') {
+      throw new Error('Données de sauvegarde invalides: structure inattendue');
+    }
+    if (!('godState' in data)) {
+      throw new Error('Données de sauvegarde invalides: champ godState manquant');
+    }
+
+    const godState = GodState.deserialize((data as any).godState);
     return new PlayerSave(godState);
   }
 }

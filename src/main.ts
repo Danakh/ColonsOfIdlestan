@@ -159,6 +159,26 @@ function main(): void {
   // Clé pour la sauvegarde automatique dans localStorage
   const AUTOSAVE_KEY = 'colons-of-idlestan-autosave';
 
+  function offerInvalidSaveDownload(serialized: string, context: string): void {
+    try {
+      const shouldDownload = window.confirm(`La sauvegarde ${context} est corrompue. Voulez-vous l'enregistrer dans un fichier pour diagnostic ?`);
+      if (!shouldDownload) {
+        return;
+      }
+      const blob = new Blob([serialized], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `colons-of-idlestan-save-invalid-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (downloadError) {
+      console.error('Impossible de télécharger la sauvegarde corrompue:', downloadError);
+    }
+  }
+
   /**
    * Sauvegarde automatique de la partie dans localStorage.
    */
@@ -177,16 +197,27 @@ function main(): void {
   function autoLoad(): boolean {
     try {
       const saved = localStorage.getItem(AUTOSAVE_KEY);
-      if (saved) {
-        console.log('Chargement automatique de la sauvegarde...');
-        game.loadGame(saved);
+      if (!saved) {
+        console.log('Aucune sauvegarde trouvée dans localStorage');
+        return false;
+      }
+
+      console.log('Chargement automatique de la sauvegarde...');
+      const loaded = game.loadGame(saved);
+      if (loaded) {
         console.log('Sauvegarde chargée avec succès');
         return true;
-      } else {
-        console.log('Aucune sauvegarde trouvée dans localStorage');
       }
+
+      console.warn('Sauvegarde corrompue, suppression de l\'autosave');
+      offerInvalidSaveDownload(saved, 'locale');
+      localStorage.removeItem(AUTOSAVE_KEY);
     } catch (error) {
       console.error('Erreur lors du chargement automatique:', error);
+      const saved = localStorage.getItem(AUTOSAVE_KEY);
+      if (saved) {
+        offerInvalidSaveDownload(saved, 'locale');
+      }
       // En cas d'erreur, on supprime la sauvegarde corrompue
       localStorage.removeItem(AUTOSAVE_KEY);
     }
@@ -691,7 +722,12 @@ function main(): void {
       reader.onload = (event) => {
         try {
           const content = event.target?.result as string;
-          game.loadGame(content);
+          const loaded = game.loadGame(content);
+          if (!loaded) {
+            alert('Erreur lors de l\'import de la partie. Le fichier est peut-être invalide.');
+            offerInvalidSaveDownload(content, 'importée');
+            return;
+          }
           
           // Sauvegarder immédiatement après l'import
           autoSave();
@@ -715,6 +751,10 @@ function main(): void {
         } catch (error) {
           console.error('Erreur lors de l\'import:', error);
           alert('Erreur lors de l\'import de la partie. Le fichier est peut-être invalide.');
+          const content = event.target?.result as string | undefined;
+          if (content) {
+            offerInvalidSaveDownload(content, 'importée');
+          }
         }
       };
       

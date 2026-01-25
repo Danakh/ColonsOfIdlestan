@@ -91,12 +91,18 @@ export class MainGame {
   /**
    * Charge une partie depuis une chaîne et remplace l'état du contrôleur.
    */
-  loadGame(serialized: string): void {
-    const data = JSON.parse(serialized);
-    this.playerSave = PlayerSave.deserialize(data);
-    const godState = this.playerSave.getGodState();
-    const civilizationState = godState.getCivilizationState();
-    this.controller = new MainGameController(godState);
+  loadGame(serialized: string): boolean {
+    try {
+      const data = JSON.parse(serialized);
+      const loadedSave = PlayerSave.deserialize(data);
+      const godState = loadedSave.getGodState();
+      this.playerSave = loadedSave;
+      this.controller = new MainGameController(godState);
+      return true;
+    } catch (error) {
+      console.error('Échec du chargement de la sauvegarde:', error);
+      return false;
+    }
   }
 
   /**
