@@ -22,6 +22,7 @@ import { IslandMap } from '../map/IslandMap';
  */
 export class CivilizationState {
   private civilizationPoints: number = 0;
+  private prestigePointsTotal: number = 0;
 
   constructor(
     private readonly islandState: IslandState,
@@ -68,6 +69,26 @@ export class CivilizationState {
     this.civilizationPoints = points;
   }
 
+  /** Retourne le total des points de prestige gagnés. */
+  getPrestigePointsTotal(): number {
+    return this.prestigePointsTotal;
+  }
+
+  /** Ajoute des points de prestige. */
+  addPrestigePoints(points: number): void {
+    this.prestigePointsTotal += points;
+  }
+
+  /** Définit le total des points de prestige. */
+  setPrestigePointsTotal(points: number): void {
+    this.prestigePointsTotal = points;
+  }
+
+  /** Vérifie si la civilisation a obtenu du prestige (a plus de 0 points de prestige). */
+  hasPrestige(): boolean {
+    return this.prestigePointsTotal > 0;
+  }
+
   /**
    * Calcule et met à jour les points de civilisation basés sur l'état actuel de la carte.
    * Doit être appelé chaque fois que la carte change (construction de bâtiments, amélioration de villes, etc.).
@@ -89,6 +110,7 @@ export class CivilizationState {
     const obj = {
       islandState: this.islandState.serialize(),
       civilizationPoints: this.civilizationPoints,
+      prestigePointsTotal: this.prestigePointsTotal,
     };
     return JSON.stringify(obj);
   }
@@ -105,6 +127,11 @@ export class CivilizationState {
     // Restaurer les points de civilisation s'ils existent
     if (obj.civilizationPoints !== undefined) {
       civState.setCivilizationPoints(obj.civilizationPoints);
+    }
+
+    // Restaurer les points de prestige s'ils existent
+    if (obj.prestigePointsTotal !== undefined) {
+      civState.setPrestigePointsTotal(obj.prestigePointsTotal);
     }
     
     return civState;

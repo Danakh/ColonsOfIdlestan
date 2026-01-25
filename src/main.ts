@@ -4,6 +4,7 @@ import { CityPanelView } from './view/CityPanelView';
 import { TradePanelView } from './view/TradePanelView';
 import { PortSpecializationPanelView } from './view/PortSpecializationPanelView';
 import { AutomationPanelView, AutomationType } from './view/AutomationPanelView';
+import { PrestigeConfirmationPanel } from './view/PrestigePanelView';
 import { ResourceSprites } from './view/ResourceSprites';
 import { InventoryView } from './view/InventoryView';
 import { ResourceHarvest } from './model/game/ResourceHarvest';
@@ -38,6 +39,9 @@ function main(): void {
     headerTitle.textContent = `${APP_NAME} v${APP_VERSION}`;
   }
 
+  // Variable pour stocker le gain de prestige en attente de confirmation
+  let pendingPrestigeGain: number = 0;
+
   // Récupérer les éléments DOM
   const canvas = document.getElementById('map-canvas') as HTMLCanvasElement;
   const settingsBtn = document.getElementById('settings-btn') as HTMLButtonElement;
@@ -58,6 +62,9 @@ function main(): void {
 
   // Créer la vue du panneau d'automatisation
   const automationPanelView = new AutomationPanelView('automation-panel');
+
+  // Créer la vue du panneau de confirmation de prestige
+  const prestigeConfirmationPanel = new PrestigeConfirmationPanel('prestige-panel');
 
   if (!canvas) {
     throw new Error('Canvas introuvable');
@@ -310,14 +317,13 @@ function main(): void {
           const result = PrestigeController.activatePrestige(civId, currentIslandMap, civPointMultiplier);
           
           if (result.success && result.civilizationPointsGained !== undefined) {
-            // Ajouter les points obtenus au CivilizationState
+            // Stocker le gain en attente de confirmation
+            pendingPrestigeGain = result.civilizationPointsGained;
+            
+            // Afficher le panneau de confirmation de prestige
             const civState = game.getController().getCivilizationState();
-            civState.setCivilizationPoints(civState.getCivilizationPoints() + result.civilizationPointsGained);
-            alert(result.message);
-            updateResourcesDisplay();
-            cityPanelView.refreshNow();
-            renderer.render(currentIslandMap, civId);
-            autoSave();
+            const currentPoints = civState.getTotalPrestigePoints();
+            prestigeConfirmationPanel.show(currentPoints, result.civilizationPointsGained);
           } else {
             alert(result.message);
           }
@@ -430,6 +436,37 @@ function main(): void {
     getCurrentCity: () => cityPanelView.getCurrentCity(),
     renderMap: (islandMap, civId) => renderer.render(islandMap, civId),
     autoSave: () => autoSave(),
+  });
+
+  // Configurer les callbacks du panneau de confirmation de prestige
+  prestigeConfirmationPanel.setCallbacks({
+    onConfirm: () => {
+      // Appliquer le gain de prestige en attente
+      if (pendingPrestigeGain > 0) {
+        const civState = game.getController().getCivilizationState();
+        civState.addPrestigePoints(pendingPrestigeGain);
+        pendingPrestigeGain = 0;
+      }
+      
+      // Mettre à jour l'affichage
+      const currentIslandMap = game.getIslandMap();
+      const civId = game.getPlayerCivilizationId();
+      if (currentIslandMap && civId) {
+        updateResourcesDisplay();
+        cityPanelView.refreshNow();
+        renderer.render(currentIslandMap, civId);
+        autoSave();
+      }
+    },
+    onCancel: () => {
+      // Annuler le prestige et restaurer l'affichage
+      pendingPrestigeGain = 0;
+      const currentIslandMap = game.getIslandMap();
+      const civId = game.getPlayerCivilizationId();
+      if (currentIslandMap && civId) {
+        renderer.render(currentIslandMap, civId);
+      }
+    },
   });
 
   // Gérer les événements personnalisés du panneau de ville
