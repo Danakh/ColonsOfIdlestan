@@ -8,6 +8,7 @@ import { PrestigeConfirmationPanel } from './view/PrestigePanelView';
 import { CivilizationUpgradePanelView, CivilizationUpgrade } from './view/CivilizationUpgradePanelView';
 import { ResourceSprites } from './view/ResourceSprites';
 import { InventoryView } from './view/InventoryView';
+import { ResourceLoader } from './view/ResourceLoader';
 import { ResourceHarvest } from './model/game/ResourceHarvest';
 import { RoadConstruction } from './model/game/RoadConstruction';
 import { RoadController } from './controller/RoadController';
@@ -126,22 +127,19 @@ function main(): void {
     getPlayerResources: () => game.getPlayerResources(),
   });
   
-  // Charger les sprites de ressources
-  const resourceSprites = new ResourceSprites();
-  
-  // Créer la vue de l'inventaire
-  const inventoryView = new InventoryView('resources-list', resourceSprites);
-  
-  resourceSprites.onAllLoaded(() => {
+  // Charger les sprites de ressources et créer la vue d'inventaire via ResourceLoader
+  const resourceLoader = new ResourceLoader('resources-list');
+  const resourceSprites = resourceLoader.getResourceSprites();
+  const inventoryView = resourceLoader.getInventoryView();
+
+  resourceLoader.onAllLoaded(() => {
     // Mettre à jour l'affichage des ressources une fois les sprites chargés
     updateResourcesDisplay();
   });
-  resourceSprites.load();
+  resourceLoader.load();
 
-  // Configurer les sprites de ressources pour le panneau de commerce
+  // Configurer les sprites de ressources pour les panneaux
   tradePanelView.setResourceSprites(resourceSprites);
-
-  // Configurer les sprites de ressources pour le panneau de spécialisation
   portSpecializationPanelView.setResourceSprites(resourceSprites);
   
   // Redimensionner le canvas au chargement et au redimensionnement
