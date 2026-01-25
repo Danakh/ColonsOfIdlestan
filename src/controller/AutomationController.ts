@@ -10,6 +10,7 @@ import { SecondaryHexDirection } from '../model/hex/SecondaryHexDirection';
 import { RoadController } from './RoadController';
 import { OutpostController } from './OutpostController';
 import { BuildingController } from './BuildingController';
+import { GameCoordinator } from './GameCoordinator';
 import { getResourceProductionBuildings } from '../model/city/BuildingType';
 
 /**
@@ -34,7 +35,8 @@ export class AutomationController {
     civId: CivilizationId,
     civilization: Civilization,
     map: IslandMap,
-    resources: PlayerResources
+    resources: PlayerResources,
+    coordinator: GameCoordinator
   ): void {
     // Obtenir toutes les villes de la civilisation
     const cities = map.getCitiesByCivilization(civId);
@@ -53,12 +55,12 @@ export class AutomationController {
         this.processAutomaticOutpostConstruction(civId, map, resources);
       }
       if (civilization.isAutoCityUpgradeEnabled()) {
-        this.processAutomaticCityUpgrade(civId, map, resources, city);
+        this.processAutomaticCityUpgrade(civId, map, resources, city, coordinator);
       }
 
       // Niveau 3 : Construction automatique de bâtiments de production
       if (civilization.isAutoProductionBuildingConstructionEnabled()) {
-        this.processAutomaticProductionBuildingConstruction(civId, map, resources, city, cityVertex);
+        this.processAutomaticProductionBuildingConstruction(civId, map, resources, city, cityVertex, coordinator);
       }
     }
   }
@@ -269,7 +271,8 @@ export class AutomationController {
     civId: CivilizationId,
     map: IslandMap,
     resources: PlayerResources,
-    city: City
+    city: City,
+    coordinator: GameCoordinator
   ): void {
     // Première étape: créer un TownHall s'il n'existe pas
     let townHall = city.getBuilding(BuildingType.TownHall);
@@ -277,8 +280,8 @@ export class AutomationController {
       try {
         // Vérifier si on peut construire un TownHall et si on a les ressources
         if (BuildingController.canBuild(BuildingType.TownHall, city, map, city.vertex, resources)) {
-          // Construire le TownHall
-          BuildingController.buildBuilding(BuildingType.TownHall, city, map, city.vertex, resources);
+          // Construire le TownHall via le coordinator (gère persistance et initialisation)
+          coordinator.buildBuilding(BuildingType.TownHall, city, city.vertex);
           return; // Attendre le prochain cycle pour améliorer
         }
       } catch (error) {
@@ -294,8 +297,8 @@ export class AutomationController {
         return;
       }
 
-      // Améliorer la ville (le contrôleur vérifie les ressources)
-      BuildingController.upgradeBuilding(BuildingType.TownHall, city, map, resources);
+      // Améliorer la ville via le coordinator (gère persistance)
+      coordinator.upgradeBuilding(BuildingType.TownHall, city);
     } catch (error) {
       // Ignorer les erreurs (ressources insuffisantes, etc.)
     }
@@ -317,7 +320,8 @@ export class AutomationController {
     map: IslandMap,
     resources: PlayerResources,
     city: City,
-    cityVertex: Vertex
+    cityVertex: Vertex,
+    coordinator: GameCoordinator
   ): void {
     // Obtenir tous les types de bâtiments de production
     const productionBuildings = getResourceProductionBuildings();
@@ -334,8 +338,8 @@ export class AutomationController {
           continue;
         }
 
-        // Améliorer le bâtiment (le contrôleur vérifie les ressources)
-        BuildingController.upgradeBuilding(buildingType, city, map, resources);
+        // Améliorer le bâtiment via le coordinator (gère persistance)
+        coordinator.upgradeBuilding(buildingType, city);
         
         // Améliorer un seul bâtiment par cycle pour éviter de tout améliorer d'un coup
         return;
@@ -358,8 +362,8 @@ export class AutomationController {
           continue;
         }
 
-        // Construire le bâtiment (le contrôleur vérifie les ressources)
-        BuildingController.buildBuilding(buildingType, city, map, cityVertex, resources);
+        // Construire le bâtiment via le coordinator (gère persistance et initialisation)
+        coordinator.buildBuilding(buildingType, city, cityVertex);
         
         // Construire un seul bâtiment par cycle pour éviter de tout construire d'un coup
         return;

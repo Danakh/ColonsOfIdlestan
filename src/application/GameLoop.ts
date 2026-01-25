@@ -3,6 +3,7 @@ import { HexMapRenderer } from '../view/HexMapRenderer';
 import { CityPanelView } from '../view/CityPanelView';
 import { BuildingProductionController } from '../controller/BuildingProductionController';
 import { AutomationController } from '../controller/AutomationController';
+import { GameCoordinator } from '../controller/GameCoordinator';
 
 export class GameLoop {
   private lastAnimationFrame: number | null = null;
@@ -12,6 +13,7 @@ export class GameLoop {
     private game: MainGame,
     private renderer: HexMapRenderer,
     private cityPanelView: CityPanelView,
+    private coordinator: GameCoordinator,
   ) {}
 
   private processAutomaticBuildingProduction(): void {
@@ -59,12 +61,12 @@ export class GameLoop {
 
     this.processAutomaticBuildingProduction();
 
-    const currentIslandMap = this.game.getIslandMap();
+      const currentIslandMap = this.game.getIslandMap();
     if (currentIslandMap) {
       const civId = this.game.getPlayerCivilizationId();
       const playerResources = this.game.getPlayerResources();
       const civilization = this.game.getIslandState().getCivilization(civId);
-      AutomationController.processAllAutomations(civId, civilization, currentIslandMap, playerResources);
+      AutomationController.processAllAutomations(civId, civilization, currentIslandMap, playerResources, this.coordinator);
 
       this.cityPanelView.scheduleRefresh();
       this.renderer.render(currentIslandMap, civId);

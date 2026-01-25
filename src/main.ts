@@ -159,7 +159,7 @@ function main(): void {
   const coordinator = new GameCoordinator(game, renderer, saveManager);
 
   // Boucle principale d'animation encapsulée
-  const gameLoop = new GameLoop(game, renderer, cityPanelView);
+  const gameLoop = new GameLoop(game, renderer, cityPanelView, coordinator);
 
   function setActiveTab(mode: 'classic' | 'prestige'): void {
     if (mode === 'classic') {
@@ -340,22 +340,14 @@ function main(): void {
       automationPanelView.updateAutomationButton(city);
     },
     onBuildBuilding: (buildingType: BuildingType, city: City, islandMap: IslandMap, vertex: Vertex) => {
-      const playerResources = game.getPlayerResources();
-      const gameClock = game.getGameClock();
       try {
-        BuildingController.buildBuilding(buildingType, city, islandMap, vertex, playerResources);
-        
-        // Si c'est un bâtiment de ressource, initialiser son temps de production
-        const resourceBuildings = getResourceProductionBuildings();
-        if (resourceBuildings.includes(buildingType)) {
-          const currentTime = gameClock.getCurrentTime();
-          city.getBuilding(buildingType)?.setProductionTimeSeconds(currentTime);
+        const result = coordinator.buildBuilding(buildingType, city, vertex);
+        if (result.success) {
+          updateResourcesDisplay();
+          cityPanelView.refreshNow();
+          const civId = game.getPlayerCivilizationId();
+          renderer.render(islandMap, civId);
         }
-        
-        updateResourcesDisplay();
-        cityPanelView.refreshNow();
-        const civId = game.getPlayerCivilizationId();
-        renderer.render(islandMap, civId);
       } catch (error) {
         console.error('Erreur lors de la construction du bâtiment:', error);
       }
@@ -363,17 +355,18 @@ function main(): void {
     onBuildingAction: (action: BuildingAction, buildingType: BuildingType, city: City) => {
       try {
         if (action === BuildingAction.Upgrade) {
-          const playerResources = game.getPlayerResources();
           const currentIslandMap = game.getIslandMap();
           if (!currentIslandMap) {
             console.error('Carte de jeu non disponible');
             return;
           }
-          BuildingController.upgradeBuilding(buildingType, city, currentIslandMap, playerResources);
-          updateResourcesDisplay();
-          cityPanelView.refreshNow();
-          const civId = game.getPlayerCivilizationId();
-          renderer.render(currentIslandMap, civId);
+          const result = coordinator.upgradeBuilding(buildingType, city);
+          if (result.success) {
+            updateResourcesDisplay();
+            cityPanelView.refreshNow();
+            const civId = game.getPlayerCivilizationId();
+            renderer.render(currentIslandMap, civId);
+          }
         } else if (action === BuildingAction.Trade) {
           // Mettre à jour le contexte de jeu pour le panneau de commerce
           const currentIslandMap = game.getIslandMap();
