@@ -9,6 +9,7 @@ import { CivilizationUpgradePanelView, CivilizationUpgrade } from './view/Civili
 import { ResourceSprites } from './view/ResourceSprites';
 import { InventoryView } from './view/InventoryView';
 import { ResourceLoader } from './view/ResourceLoader';
+import { initializeViews } from './view/ViewsInitializer';
 import { GameCoordinator } from './controller/GameCoordinator';
 import { ResourceHarvest } from './model/game/ResourceHarvest';
 import { RoadConstruction } from './model/game/RoadConstruction';
@@ -60,23 +61,7 @@ function main(): void {
   const gameTabs = document.getElementById('game-tabs') as HTMLElement | null;
   const classicTabBtn = document.getElementById('tab-classic') as HTMLButtonElement | null;
   const prestigeTabBtn = document.getElementById('tab-prestige') as HTMLButtonElement | null;
-  // Créer la vue du panneau de ville
-  const cityPanelView = new CityPanelView('city-panel');
-
-  // Créer la vue du panneau de commerce
-  const tradePanelView = new TradePanelView('trade-panel');
-
-  // Créer la vue du panneau de spécialisation du port
-  const portSpecializationPanelView = new PortSpecializationPanelView('port-specialization-panel');
-
-  // Créer la vue du panneau d'automatisation
-  const automationPanelView = new AutomationPanelView('automation-panel');
-
-  // Créer la vue du panneau de confirmation de prestige
-  const prestigeConfirmationPanel = new PrestigeConfirmationPanel('prestige-panel');
-
-  // Créer la vue du panneau d'amélioration de civilisation
-  const civilizationUpgradePanel = new CivilizationUpgradePanelView('civilization-upgrade-panel');
+  // Les vues seront initialisées plus bas après création de `game`, `renderer` et `resourceLoader`.
 
   if (!canvas) {
     throw new Error('Canvas introuvable');
@@ -116,23 +101,12 @@ function main(): void {
 
   // Créer le jeu principal
   const game = new MainGame();
-  // Donner la civilisation du joueur au panneau (bouton Commerce global)
-  cityPanelView.setPlayerCivilizationId(game.getPlayerCivilizationId());
-
   // Créer le renderer
   const renderer = new HexMapRenderer(canvas);
-  
-  // Configurer le renderer pour le panneau de ville
-  cityPanelView.setRenderer(renderer);
-  cityPanelView.bind(renderer, {
-    getIslandMap: () => game.getIslandMap(),
-    getPlayerResources: () => game.getPlayerResources(),
-  });
-  
+
   // Charger les sprites de ressources et créer la vue d'inventaire via ResourceLoader
   const resourceLoader = new ResourceLoader('resources-list');
   const resourceSprites = resourceLoader.getResourceSprites();
-  const inventoryView = resourceLoader.getInventoryView();
 
   resourceLoader.onAllLoaded(() => {
     // Mettre à jour l'affichage des ressources une fois les sprites chargés
@@ -140,9 +114,18 @@ function main(): void {
   });
   resourceLoader.load();
 
-  // Configurer les sprites de ressources pour les panneaux
-  tradePanelView.setResourceSprites(resourceSprites);
-  portSpecializationPanelView.setResourceSprites(resourceSprites);
+  // Maintenant que game, renderer et resourceLoader existent, initialiser les vues
+  const views = initializeViews(game, renderer, resourceLoader);
+  const cityPanelView = views.cityPanelView;
+  const tradePanelView = views.tradePanelView;
+  const portSpecializationPanelView = views.portSpecializationPanelView;
+  const automationPanelView = views.automationPanelView;
+  const prestigeConfirmationPanel = views.prestigeConfirmationPanel;
+  const civilizationUpgradePanel = views.civilizationUpgradePanel;
+  const inventoryView = views.inventoryView;
+
+  // Donner la civilisation du joueur au panneau (bouton Commerce global)
+  cityPanelView.setPlayerCivilizationId(game.getPlayerCivilizationId());
   
   // Redimensionner le canvas au chargement et au redimensionnement
   renderer.resize();
