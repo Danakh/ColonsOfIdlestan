@@ -117,10 +117,8 @@ describe('PrestigeController', () => {
   describe('activatePrestige', () => {
     it('devrait ajouter des points de civilisation lors du prestige', () => {
       const generatedState = createScenarioWithCapitalAndResources(42);
-      const map = generatedState.islandMap;
-      const civId = generatedState.civId;
 
-      const result = PrestigeController.activatePrestige(civId, map);
+      const result = PrestigeController.activatePrestige(generatedState.islandState);
 
       expect(result.success).toBe(true);
       expect(result.message).toBeDefined();
@@ -131,10 +129,8 @@ describe('PrestigeController', () => {
     it('devrait retourner false si les conditions ne sont pas remplies', () => {
       game.newGame(42);
       const controller = game.getController();
-      const map = controller.getIslandMap();
-      const civId = controller.getPlayerCivilizationId();
 
-      const result = PrestigeController.activatePrestige(civId, map!);
+      const result = PrestigeController.activatePrestige(controller.getIslandState());
 
       expect(result.success).toBe(false);
       expect(result.message).toBeDefined();
@@ -154,7 +150,7 @@ describe('PrestigeController', () => {
         }
       }
 
-      const result = PrestigeController.activatePrestige(civId, map);
+      const result = PrestigeController.activatePrestige(generatedState.islandState);
 
       expect(result.success).toBe(true);
       // Au moins un port devrait être présent pour cette validation

@@ -46,6 +46,12 @@ export class MainGame {
    */
   newGame(seed?: number): void {
     const actualSeed = seed ?? Date.now();
+    // Conserver le prestige déjà gagné avant de recréer l'état
+    const previousPrestige = this.playerSave
+      .getGodState()
+      .getCivilizationState()
+      .getPrestigePointsTotal();
+
     // On recrée le CivilizationState et IslandState
     const civId = CivilizationId.create('player1');
     const civilizationState = CivilizationState.createNew(civId);
@@ -73,6 +79,9 @@ export class MainGame {
     state.setSeed(actualSeed);
     state.getPlayerResources().clear();
     state.getGameClock().reset();
+
+    // Réinjecter les points de prestige accumulés sur la nouvelle partie
+    civilizationState.setPrestigePointsTotal(previousPrestige);
 
     // On conserve les GodPoints existants
     const godPoints = this.playerSave.getGodState().getGodPoints();

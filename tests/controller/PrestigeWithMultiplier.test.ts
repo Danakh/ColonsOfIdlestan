@@ -9,6 +9,9 @@ import { Vertex } from '../../src/model/hex/Vertex';
 import { CityLevel } from '../../src/model/city/CityLevel';
 import { PrestigeController } from '../../src/controller/PrestigeController';
 import { calculateCivilizationPoints } from '../../src/model/game/CivilizationPoints';
+import { IslandState } from '../../src/model/game/IslandState';
+import { PlayerResources } from '../../src/model/game/PlayerResources';
+import { GameClock } from '../../src/model/game/GameClock';
 
 test('prestige applies civ point multiplier', () => {
   // Build multiple towns to reach >=20 civilization points
@@ -61,8 +64,19 @@ test('prestige applies civ point multiplier', () => {
   const base = calculateCivilizationPoints(map, civId);
   expect(base).toBeGreaterThanOrEqual(20);
 
-  const multiplier = 2; // double
-  const res = PrestigeController.activatePrestige(civId, map, multiplier);
+  // Create IslandState with the map
+  const resources = new PlayerResources();
+  const clock = new GameClock();
+  const islandState = new IslandState(resources, civId, clock);
+  islandState.setIslandMap(map);
+  islandState.setCivilizations([civId]);
+
+  // Set civ point gain level to 10 for 2x multiplier (1 + 0.1*10 = 2)
+  const civ = islandState.getCivilization(civId);
+  civ.setCivPointGainLevel(10);
+
+  const multiplier = civ.getCivPointGainMultiplier(); // Should be 2
+  const res = PrestigeController.activatePrestige(islandState);
   expect(res.success).toBe(true);
   expect(res.civilizationPointsGained).toBe(Math.floor(base * multiplier));
 });

@@ -1,4 +1,5 @@
 import { IslandMap } from '../model/map/IslandMap';
+import { IslandState } from '../model/game/IslandState';
 import { CivilizationId } from '../model/map/CivilizationId';
 import { CityLevel } from '../model/city/CityLevel';
 import { calculateCivilizationPoints } from '../model/game/CivilizationPoints';
@@ -73,16 +74,22 @@ export class PrestigeController {
    * Active l'action Prestige et retourne les points de civilisation gagnés.
    * 
    * Les points de civilisation bonus sont basés sur le niveau de civilisation.
+   * Le multiplicateur est récupéré automatiquement depuis la civilisation.
    * 
-   * @param civId - L'identifiant de la civilisation
-   * @param map - La carte de jeu
+   * @param islandState - L'état de jeu contenant la carte et les civilisations
    * @returns Le résultat de l'action avec les points de civilisation gagnés
    */
-  static activatePrestige(
-    civId: CivilizationId,
-    map: IslandMap,
-    civPointMultiplier?: number
-  ): PrestigeActionResult {
+  static activatePrestige(islandState: IslandState): PrestigeActionResult {
+    const map = islandState.getIslandMap();
+    const civId = islandState.getPlayerCivilizationId();
+    
+    if (!map) {
+      return {
+        success: false,
+        message: 'Carte de jeu non disponible.'
+      };
+    }
+
     // Vérifier les conditions
     if (!this.canActivatePrestige(civId, map)) {
       const reason = this.getPrestigeRestrictionReason(civId, map);
@@ -92,9 +99,12 @@ export class PrestigeController {
       };
     }
 
-    // Points de prestige = points de civilisation
+    // Récupérer le multiplicateur depuis la civilisation
+    const civ = islandState.getCivilization(civId);
+    const multiplier = civ.getCivPointGainMultiplier();
+
+    // Points de prestige = points de civilisation * multiplicateur
     const basePoints = calculateCivilizationPoints(map, civId);
-    const multiplier = civPointMultiplier ?? 1;
     const prestigePoints = Math.floor(basePoints * multiplier);
 
     return {

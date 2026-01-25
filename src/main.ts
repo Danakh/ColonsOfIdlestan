@@ -500,10 +500,7 @@ function main(): void {
           }
 
           // Activer l'action Prestige
-          // Appliquer le multiplicateur de points de civilisation depuis la civilisation
-          const civObj = game.getIslandState().getCivilization(civId);
-          const civPointMultiplier = civObj.getCivPointGainMultiplier();
-          const result = PrestigeController.activatePrestige(civId, currentIslandMap, civPointMultiplier);
+          const result = PrestigeController.activatePrestige(game.getIslandState());
           
           if (result.success && result.civilizationPointsGained !== undefined) {
             // Stocker le gain en attente de confirmation
