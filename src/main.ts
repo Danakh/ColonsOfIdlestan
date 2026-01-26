@@ -320,6 +320,9 @@ function main(): void {
   if (!loaded) {
     game.newGame();
   } else {
+    // Réappliquer les traductions et l'attribut lang après chargement
+    localizePage();
+    document.documentElement.lang = getAll() === en ? 'en' : 'fr';
     // Réinitialiser le temps de référence pour la boucle d'animation après le chargement
     // Cela permettra à la boucle de repartir correctement
     gameLoop.resetStartTime();
@@ -920,6 +923,14 @@ function main(): void {
     if (currentIslandMap) {
       const civId = game.getPlayerCivilizationId();
       renderer.render(currentIslandMap, civId);
+    }
+
+    // Persister la préférence de langue dans la sauvegarde et forcer un autosave immédiat
+    try {
+      game.setLanguage(langCode);
+      saveManager.saveToLocal();
+    } catch (e) {
+      console.error('Failed to persist language preference', e);
     }
 
     // Fermer le menu

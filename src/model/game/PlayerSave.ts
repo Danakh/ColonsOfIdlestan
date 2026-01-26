@@ -8,18 +8,25 @@ import { localize } from '../../i18n';
 
 export class PlayerSave {
   private readonly godState: GodState;
+  private readonly language: string;
 
-  constructor(godState: GodState) {
+  constructor(godState: GodState, language = 'fr') {
     this.godState = godState;
+    this.language = language;
   }
 
   getGodState(): GodState {
     return this.godState;
   }
 
+  getLanguage(): string {
+    return this.language;
+  }
+
   serialize(): any {
     return {
-      godState: this.godState.serialize()
+      godState: this.godState.serialize(),
+      language: this.language,
     };
   }
 
@@ -31,7 +38,8 @@ export class PlayerSave {
     // Format nouveau: PlayerSave -> GodState -> CivilizationState -> IslandState
     if ('godState' in data) {
       const godState = GodState.deserialize((data as any).godState);
-      return new PlayerSave(godState);
+      const language = typeof (data as any).language === 'string' ? (data as any).language : 'fr';
+      return new PlayerSave(godState, language);
     }
 
     throw new Error(localize('error.save.unrecognizedFormat'));

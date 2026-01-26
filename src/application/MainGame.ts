@@ -9,7 +9,9 @@ import { CivilizationId } from '../model/map/CivilizationId';
 import { CivilizationState } from '../model/game/CivilizationState';
 import { GodState } from '../model/game/GodState';
 import { PlayerSave } from '../model/game/PlayerSave';
-import { localize } from '../i18n';
+import { localize, setLocale } from '../i18n';
+import en from '../i18n/en';
+import fr from '../i18n/fr';
 
 /**
  * Point d'entrée applicatif : NewGame (génération de carte), SaveGame et LoadGame.
@@ -108,6 +110,13 @@ export class MainGame {
       const godState = loadedSave.getGodState();
       this.playerSave = loadedSave;
       this.controller = new MainGameController(godState);
+      // Réappliquer la langue sauvegardée si présente
+      try {
+        const lang = loadedSave.getLanguage();
+        setLocale(lang === 'en' ? en : fr);
+      } catch (e) {
+        // Ignore si getLanguage absent ou erreur
+      }
       return true;
     } catch (error) {
       console.error(localize('error.loadSaveFailed'), error);
@@ -150,6 +159,23 @@ export class MainGame {
 
   getSeed(): number | null {
     return this.controller.getSeed();
+  }
+
+  /**
+   * Retourne la langue courante stockée dans le PlayerSave.
+   */
+  getLanguage(): string {
+    return this.playerSave.getLanguage();
+  }
+
+  /**
+   * Met à jour la langue courante dans le PlayerSave et réinitialise le contrôleur
+   * en réutilisant le même GodState. Permet de persister la préférence langue.
+   */
+  setLanguage(lang: string): void {
+    const godState = this.playerSave.getGodState();
+    this.playerSave = new PlayerSave(godState, lang);
+    this.controller = new MainGameController(godState);
   }
 
   updateGameTime(timeSeconds: number): void {
