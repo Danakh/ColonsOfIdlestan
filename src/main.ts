@@ -490,6 +490,25 @@ function main(): void {
     onCancel: () => {
       tradePanelView.hide();
     },
+    onPortAutoTradeChange: (city: City, vertex: Vertex, enabled: boolean) => {
+      try {
+        const currentIslandMap = game.getIslandMap();
+        if (!currentIslandMap) return;
+        const civId = game.getPlayerCivilizationId();
+        const seaport = city.getBuilding(BuildingType.Seaport);
+        if (!seaport) return;
+
+        seaport.setAutoTradeEnabled(enabled);
+
+        // Mettre à jour l'affichage et sauvegarder
+        updateResourcesDisplay();
+        cityPanelView.refreshNow();
+        renderer.render(currentIslandMap, civId);
+        saveManager.saveToLocal();
+      } catch (error) {
+        console.error(localize('error.actionFailed', { action: 'autoTrade' }), error);
+      }
+    },
   });
 
   // Configurer les callbacks du panneau de spécialisation
@@ -635,7 +654,26 @@ function main(): void {
     const action = e.detail.buildingAction as BuildingAction;
     const buildingType = e.detail.buildingType as BuildingType;
     const checked = e.detail.checked as boolean | undefined;
-    
+    // Si l'action est l'activation/désactivation de l'auto-trade, l'état "checked" est fourni
+    if (action === BuildingAction.Auto && checked !== undefined) {
+      try {
+        const seaport = city.getBuilding(buildingType);
+        if (seaport) {
+          seaport.setAutoTradeEnabled(checked);
+
+          // Mettre à jour l'affichage et sauvegarder
+          const civId = game.getPlayerCivilizationId();
+          updateResourcesDisplay();
+          cityPanelView.refreshNow();
+          renderer.render(currentIslandMap, civId);
+          saveManager.saveToLocal();
+        }
+      } catch (error) {
+        console.error(localize('error.actionFailed', { action }), error);
+      }
+      return;
+    }
+
     cityPanelView.handleBuildingAction(action, buildingType, city);
   }) as EventListener);
 
