@@ -31,7 +31,9 @@ import { IslandMap } from './model/map/IslandMap';
 import { APP_VERSION, APP_NAME } from './config/version';
 import { SaveManager } from './application/SaveManager';
 import { GameLoop } from './application/GameLoop';
-import { localize } from './i18n';
+import { localize, setLocale, getAll } from './i18n';
+import en from './i18n/en';
+import fr from './i18n/fr';
 
 /**
  * Point d'entrée principal de l'application web.
@@ -60,6 +62,8 @@ function main(): void {
   const importBtn = document.getElementById('import-btn') as HTMLButtonElement;
   const cheatBtn = document.getElementById('cheat-btn') as HTMLButtonElement;
   const showHexCoordsBtn = document.getElementById('show-hex-coords-btn') as HTMLButtonElement;
+  const langFrBtn = document.getElementById('lang-fr-btn') as HTMLButtonElement | null;
+  const langEnBtn = document.getElementById('lang-en-btn') as HTMLButtonElement | null;
   const gameTabs = document.getElementById('game-tabs') as HTMLElement | null;
   const classicTabBtn = document.getElementById('tab-classic') as HTMLButtonElement | null;
   const prestigeTabBtn = document.getElementById('tab-prestige') as HTMLButtonElement | null;
@@ -101,6 +105,9 @@ function main(): void {
     throw new Error(localize('error.elementNotFound', { id: 'show-hex-coords-btn' }));
   }
 
+  // Langue: boutons optionnels (présents dans index.html)
+  // Ils ne sont pas bloquants si absents (ex: tests sans DOM complet)
+
   if (!gameTabs || !classicTabBtn || !prestigeTabBtn) {
     throw new Error(localize('error.gameTabsNotFound'));
   }
@@ -131,6 +138,10 @@ function main(): void {
   const inventoryView = views.inventoryView;
 
   // Donner la civilisation du joueur au panneau (bouton Commerce global)
+  // Appliquer la locale initiale et définir l'attribut `lang` sur la racine
+  localizePage();
+  document.documentElement.lang = getAll() === en ? 'en' : 'fr';
+  
   cityPanelView.setPlayerCivilizationId(game.getPlayerCivilizationId());
   
   // Redimensionner le canvas au chargement et au redimensionnement
@@ -156,6 +167,23 @@ function main(): void {
     if (islandMap) {
       cityPanelView.updateFooter();
     }
+  }
+
+  // Appliquer les traductions sur les éléments marqués par `data-i18n`.
+  function localizePage(): void {
+    const nodes = document.querySelectorAll<HTMLElement>('[data-i18n]');
+    nodes.forEach((n) => {
+      const key = n.getAttribute('data-i18n');
+      if (!key) return;
+      const attr = n.getAttribute('data-i18n-attr');
+      const text = localize(key);
+      if (attr) {
+        n.setAttribute(attr, text);
+      } else {
+        n.textContent = text;
+      }
+    });
+    document.title = `${localize('app.title')} v${APP_VERSION}`;
   }
 
   // Save manager centralise autosave / export / import
@@ -838,6 +866,35 @@ function main(): void {
     // Fermer le menu après l'action
     settingsMenu.classList.add('hidden');
   });
+
+  // Gérer le changement de langue (si les boutons existent)
+  const applyLocaleChange = (localeRecord: Record<string, string>, langCode: string) => {
+    setLocale(localeRecord);
+    document.documentElement.lang = langCode;
+
+    // Appliquer la traduction sur la page
+    localizePage();
+
+    // Rafraîchir les vues dépendantes de la locale
+    updateResourcesDisplay();
+    cityPanelView.refreshNow();
+    const currentIslandMap = game.getIslandMap();
+    if (currentIslandMap) {
+      const civId = game.getPlayerCivilizationId();
+      renderer.render(currentIslandMap, civId);
+    }
+
+    // Fermer le menu
+    settingsMenu.classList.add('hidden');
+  };
+
+  if (langFrBtn) {
+    langFrBtn.addEventListener('click', () => applyLocaleChange(fr, 'fr'));
+  }
+
+  if (langEnBtn) {
+    langEnBtn.addEventListener('click', () => applyLocaleChange(en, 'en'));
+  }
 
 
   // Initialiser le panneau (sidebar fixe)
