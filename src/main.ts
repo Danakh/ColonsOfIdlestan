@@ -31,7 +31,7 @@ import { IslandMap } from './model/map/IslandMap';
 import { APP_VERSION, APP_NAME } from './config/version';
 import { SaveManager } from './application/SaveManager';
 import { GameLoop } from './application/GameLoop';
-import { t } from './i18n';
+import { localize } from './i18n';
 
 /**
  * Point d'entrée principal de l'application web.
@@ -66,43 +66,43 @@ function main(): void {
   // Les vues seront initialisées plus bas après création de `game`, `renderer` et `resourceLoader`.
 
   if (!canvas) {
-    throw new Error(t('error.canvasNotFound'));
+    throw new Error(localize('error.canvasNotFound'));
   }
 
   if (!settingsBtn) {
-    throw new Error(t('error.elementNotFound', { id: 'settings-btn' }));
+    throw new Error(localize('error.elementNotFound', { id: 'settings-btn' }));
   }
 
   if (!settingsMenu) {
-    throw new Error(t('error.elementNotFound', { id: 'settings-menu' }));
+    throw new Error(localize('error.elementNotFound', { id: 'settings-menu' }));
   }
 
   if (!regenerateBtn) {
-    throw new Error(t('error.elementNotFound', { id: 'regenerate-btn' }));
+    throw new Error(localize('error.elementNotFound', { id: 'regenerate-btn' }));
   }
 
   if (!hardResetBtn) {
-    throw new Error(t('error.elementNotFound', { id: 'hard-reset-btn' }));
+    throw new Error(localize('error.elementNotFound', { id: 'hard-reset-btn' }));
   }
 
   if (!exportBtn) {
-    throw new Error(t('error.elementNotFound', { id: 'export-btn' }));
+    throw new Error(localize('error.elementNotFound', { id: 'export-btn' }));
   }
 
   if (!importBtn) {
-    throw new Error(t('error.elementNotFound', { id: 'import-btn' }));
+    throw new Error(localize('error.elementNotFound', { id: 'import-btn' }));
   }
 
   if (!cheatBtn) {
-    throw new Error(t('error.elementNotFound', { id: 'cheat-btn' }));
+    throw new Error(localize('error.elementNotFound', { id: 'cheat-btn' }));
   }
 
   if (!showHexCoordsBtn) {
-    throw new Error(t('error.elementNotFound', { id: 'show-hex-coords-btn' }));
+    throw new Error(localize('error.elementNotFound', { id: 'show-hex-coords-btn' }));
   }
 
   if (!gameTabs || !classicTabBtn || !prestigeTabBtn) {
-    throw new Error(t('error.gameTabsNotFound'));
+    throw new Error(localize('error.gameTabsNotFound'));
   }
 
   // Créer le jeu principal
@@ -197,8 +197,8 @@ function main(): void {
     return [
       {
         id: 'resource-harvest-x1.5',
-        label: t('prestige.upgrade.harvest.label'),
-        description: t('prestige.upgrade.harvest.description'),
+        label: localize('prestige.upgrade.harvest.label'),
+        description: localize('prestige.upgrade.harvest.description'),
         cost: 5,
         onPurchase: () => {
           const current = civ.getResourceGainLevel();
@@ -207,8 +207,8 @@ function main(): void {
       },
       {
         id: 'civilization-points-x1.25',
-        label: t('prestige.upgrade.civPoints.label'),
-        description: t('prestige.upgrade.civPoints.description'),
+        label: localize('prestige.upgrade.civPoints.label'),
+        description: localize('prestige.upgrade.civPoints.description'),
         cost: 7,
         onPurchase: () => {
           const current = civ.getCivPointGainLevel();
@@ -217,11 +217,11 @@ function main(): void {
       },
       {
         id: 'builders-guild-unlock',
-        label: t('prestige.upgrade.buildersGuild.label'),
-        description: t('prestige.upgrade.buildersGuild.description'),
+        label: localize('prestige.upgrade.buildersGuild.label'),
+        description: localize('prestige.upgrade.buildersGuild.description'),
         cost: 10,
         onPurchase: () => {
-          console.log(t('prestige.upgrade.buildersGuild.unlockedLog'));
+          console.log(localize('prestige.upgrade.buildersGuild.unlockedLog'));
         },
       },
     ];
@@ -276,14 +276,14 @@ function main(): void {
     civilizationUpgradePanel.show(availablePoints, {
       totalPrestigePoints: civState.getPrestigePointsTotal(),
       readOnly: mode === 'consultation',
-      closeLabel: mode === 'prestige' ? t('button.closeAndRestart') : t('button.close'),
+      closeLabel: mode === 'prestige' ? localize('button.closeAndRestart') : localize('button.close'),
       subtitle,
     });
     setActiveTab('prestige');
   };
 
   const openPrestigeConsultationPanel = (): void => {
-    const subtitle = t('hint.noPendingPrestige');
+    const subtitle = localize('hint.noPendingPrestige');
     showPrestigeUpgradePanel('consultation', 0, subtitle);
   };
 
@@ -351,7 +351,7 @@ function main(): void {
           renderer.render(islandMap, civId);
         }
       } catch (error) {
-        console.error(t('error.buildingConstructionFailed'), error);
+        console.error(localize('error.buildingConstructionFailed'), error);
       }
     },
     onBuildingAction: (action: BuildingAction, buildingType: BuildingType, city: City) => {
@@ -359,7 +359,7 @@ function main(): void {
         if (action === BuildingAction.Upgrade) {
           const currentIslandMap = game.getIslandMap();
           if (!currentIslandMap) {
-            console.error(t('error.mapUnavailable'));
+            console.error(localize('error.mapUnavailable'));
             return;
           }
           const result = coordinator.upgradeBuilding(buildingType, city);
@@ -404,7 +404,7 @@ function main(): void {
           const civId = game.getPlayerCivilizationId();
 
           if (!currentIslandMap || !civId) {
-            console.error(t('error.mapOrCivUnavailable'));
+            console.error(localize('error.mapOrCivUnavailable'));
             return;
           }
 
@@ -412,7 +412,7 @@ function main(): void {
           if (!PrestigeController.canActivatePrestige(civId, currentIslandMap)) {
             const reason = PrestigeController.getPrestigeRestrictionReason(civId, currentIslandMap);
             if (reason !== undefined) {
-            alert(t('prestige.unavailable', { reason }));
+              alert(localize('prestige.unavailable', { reason }));
             }
             return;
           }
@@ -440,7 +440,7 @@ function main(): void {
           renderer.render(currentIslandMap, civId);
         }
       } catch (error) {
-        console.error(t('error.actionFailed', { action }), error);
+        console.error(localize('error.actionFailed', { action }), error);
       }
     },
   });
@@ -482,7 +482,7 @@ function main(): void {
       if (civId) {
         const blockedResources = TradeController.getUsedSpecializations(civId, currentIslandMap, city);
         if (blockedResources.has(resource)) {
-          alert(t('port.specialization.blocked'));
+          alert(localize('port.specialization.blocked'));
           return;
         }
       }
@@ -507,8 +507,8 @@ function main(): void {
           portSpecializationPanelView.hide();
         }
       } catch (error) {
-        console.error(t('error.specializationFailed'), error);
-        alert(t('error.specializationFailedDetail', { detail: error instanceof Error ? error.message : String(error) }));
+        console.error(localize('error.specializationFailed'), error);
+        alert(localize('error.specializationFailedDetail', { detail: error instanceof Error ? error.message : String(error) }));
       }
     },
     onCancel: () => {
@@ -718,7 +718,7 @@ function main(): void {
 
   // Gérer le bouton de hard reset dans le menu
   hardResetBtn.addEventListener('click', () => {
-    const ok = confirm(t('confirm.hardReset'));
+    const ok = confirm(localize('confirm.hardReset'));
     if (!ok) return;
 
     // Effacer complètement la sauvegarde (réinitialise GodState)
@@ -775,7 +775,7 @@ function main(): void {
 
       const result = await saveManager.importFromFile(file);
       if (!result.success) {
-        alert(t('alert.importError'));
+        alert(localize('alert.importError'));
         return;
       }
 

@@ -1,6 +1,6 @@
 import { ResourceType } from '../map/ResourceType';
 import { HexType } from '../map/HexType';
-import { t } from '../../i18n';
+import { localize } from '../../i18n';
 
 /**
  * Types de bâtiments constructibles dans les villes.
@@ -38,19 +38,19 @@ export enum BuildingType {
  * Noms des bâtiments en français.
  */
 export const BUILDING_TYPE_NAMES: Record<BuildingType, string> = {
-  [BuildingType.Seaport]: t('building.seaport'),
-  [BuildingType.Market]: t('building.market'),
-  [BuildingType.TownHall]: t('building.townHall'),
-  [BuildingType.Sawmill]: t('building.sawmill'),
-  [BuildingType.Brickworks]: t('building.brickworks'),
-  [BuildingType.Mill]: t('building.mill'),
-  [BuildingType.Sheepfold]: t('building.sheepfold'),
-  [BuildingType.Mine]: t('building.mine'),
-  [BuildingType.Warehouse]: t('building.warehouse'),
-  [BuildingType.Forge]: t('building.forge'),
-  [BuildingType.Library]: t('building.library'),
-  [BuildingType.Temple]: t('building.temple'),
-  [BuildingType.BuildersGuild]: t('building.buildersGuild'),
+  [BuildingType.Seaport]: localize('building.seaport'),
+  [BuildingType.Market]: localize('building.market'),
+  [BuildingType.TownHall]: localize('building.townHall'),
+  [BuildingType.Sawmill]: localize('building.sawmill'),
+  [BuildingType.Brickworks]: localize('building.brickworks'),
+  [BuildingType.Mill]: localize('building.mill'),
+  [BuildingType.Sheepfold]: localize('building.sheepfold'),
+  [BuildingType.Mine]: localize('building.mine'),
+  [BuildingType.Warehouse]: localize('building.warehouse'),
+  [BuildingType.Forge]: localize('building.forge'),
+  [BuildingType.Library]: localize('building.library'),
+  [BuildingType.Temple]: localize('building.temple'),
+  [BuildingType.BuildersGuild]: localize('building.buildersGuild'),
 };
 
 /**
@@ -305,10 +305,10 @@ export function getBuildingAction(buildingType: BuildingType): BuildingAction | 
  * Noms des actions en français.
  */
 export const BUILDING_ACTION_NAMES: Record<BuildingAction, string> = {
-  [BuildingAction.Trade]: t('buildingAction.trade'),
-  [BuildingAction.Upgrade]: t('buildingAction.upgrade'),
-  [BuildingAction.Specialization]: t('buildingAction.specialization'),
-  [BuildingAction.Auto]: t('buildingAction.auto'),
-  [BuildingAction.Prestige]: t('buildingAction.prestige'),
-  [BuildingAction.Automation]: t('buildingAction.automation'),
+  [BuildingAction.Trade]: localize('buildingAction.trade'),
+  [BuildingAction.Upgrade]: localize('buildingAction.upgrade'),
+  [BuildingAction.Specialization]: localize('buildingAction.specialization'),
+  [BuildingAction.Auto]: localize('buildingAction.auto'),
+  [BuildingAction.Prestige]: localize('buildingAction.prestige'),
+  [BuildingAction.Automation]: localize('buildingAction.automation'),
 };

@@ -20,14 +20,14 @@ export enum CityLevel {
 /**
  * Noms des niveaux de ville en français.
  */
-import { t } from '../../i18n';
+import { localize } from '../../i18n';
 
 export const CITY_LEVEL_NAMES: Record<CityLevel, string> = {
-  [CityLevel.Outpost]: t('cityLevel.outpost'),
-  [CityLevel.Colony]: t('cityLevel.colony'),
-  [CityLevel.Town]: t('cityLevel.town'),
-  [CityLevel.Metropolis]: t('cityLevel.metropolis'),
-  [CityLevel.Capital]: t('cityLevel.capital'),
+  [CityLevel.Outpost]: localize('cityLevel.outpost'),
+  [CityLevel.Colony]: localize('cityLevel.colony'),
+  [CityLevel.Town]: localize('cityLevel.town'),
+  [CityLevel.Metropolis]: localize('cityLevel.metropolis'),
+  [CityLevel.Capital]: localize('cityLevel.capital'),
 };
 
 /**

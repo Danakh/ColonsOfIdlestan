@@ -6,7 +6,7 @@ import { IslandMap } from '../map/IslandMap';
 import { CivilizationId } from '../map/CivilizationId';
 import { PlayerResources } from './PlayerResources';
 import { calculateInventoryCapacity } from './InventoryCapacity';
-import { t } from '../../i18n';
+import { localize } from '../../i18n';
 
 /**
  * Gère la logique de récolte de ressources par clic sur les hexagones.
@@ -163,17 +163,17 @@ export class ResourceHarvest {
       const isAdjacent = vertexHexes.some(h => h.equals(hexCoord));
       
       if (!isAdjacent) {
-        throw new Error(t('resourceHarvest.vertexNotAdjacent', { coord: hexCoord.toString() }));
+        throw new Error(localize('resourceHarvest.vertexNotAdjacent', { coord: hexCoord.toString() }));
       }
       
       // Vérifier que le vertex a une ville appartenant à la civilisation
       if (!islandMap.hasCity(cityVertex)) {
-        throw new Error(t('resourceHarvest.noCityOnVertex', { coord: hexCoord.toString() }));
+        throw new Error(localize('resourceHarvest.noCityOnVertex', { coord: hexCoord.toString() }));
       }
       
       const owner = islandMap.getCityOwner(cityVertex);
       if (!owner || !owner.equals(civId)) {
-        throw new Error(t('resourceHarvest.cityNotOwned', { coord: hexCoord.toString() }));
+        throw new Error(localize('resourceHarvest.cityNotOwned', { coord: hexCoord.toString() }));
       }
       
       actualCityVertex = cityVertex;
@@ -181,36 +181,36 @@ export class ResourceHarvest {
       // Comportement par défaut: chercher la première ville adjacente
       // Vérifier que la récolte est possible
       if (!this.canHarvest(hexCoord, islandMap, civId)) {
-        throw new Error(t('resourceHarvest.cannotHarvest', { coord: hexCoord.toString() }));
+        throw new Error(localize('resourceHarvest.cannotHarvest', { coord: hexCoord.toString() }));
       }
 
       // Obtenir la ville adjacente qui permet la récolte
       actualCityVertex = this.getAdjacentPlayerCity(hexCoord, islandMap, civId);
       if (!actualCityVertex) {
-        throw new Error(t('resourceHarvest.noAdjacentCity', { coord: hexCoord.toString() }));
+        throw new Error(localize('resourceHarvest.noAdjacentCity', { coord: hexCoord.toString() }));
       }
     }
     
     // Vérifier que l'hex est visible et récoltable
     const grid = islandMap.getGrid();
     if (!grid.hasHex(hexCoord)) {
-      throw new Error(t('resourceHarvest.hexNotExist', { coord: hexCoord.toString() }));
+      throw new Error(localize('resourceHarvest.hexNotExist', { coord: hexCoord.toString() }));
     }
 
     if (!islandMap.isHexVisible(hexCoord)) {
-      throw new Error(t('resourceHarvest.hexNotVisible', { coord: hexCoord.toString() }));
+      throw new Error(localize('resourceHarvest.hexNotVisible', { coord: hexCoord.toString() }));
     }
 
     // Obtenir le type d'hexagone
     const hexType = islandMap.getHexType(hexCoord);
     if (!hexType) {
-      throw new Error(t('resourceHarvest.noHexType', { coord: hexCoord.toString() }));
+      throw new Error(localize('resourceHarvest.noHexType', { coord: hexCoord.toString() }));
     }
 
     // Convertir en ResourceType
     const resourceType = this.hexTypeToResourceType(hexType);
     if (!resourceType) {
-      throw new Error(t('resourceHarvest.notResource', { coord: hexCoord.toString() }));
+      throw new Error(localize('resourceHarvest.notResource', { coord: hexCoord.toString() }));
     }
 
     // Calculer le gain de base

@@ -5,7 +5,7 @@ import { ResourceType } from '../model/map/ResourceType';
 import { BuildingType } from '../model/city/BuildingType';
 import { calculateInventoryCapacity } from '../model/game/InventoryCapacity';
 import { City } from '../model/city/City';
-import { t } from '../i18n';
+import { localize } from '../i18n';
 
 /**
  * Contrôleur pour gérer le commerce.
@@ -104,17 +104,17 @@ export class TradeController {
     // Vérifier que l'échange est possible
     if (!this.canPerformTrade(fromResource, toResource, civId, map, resources)) {
       if (!this.canTrade(civId, map)) {
-        throw new Error(t('trade.error.unavailable'));
+        throw new Error(localize('trade.error.unavailable'));
       }
 
       if (fromResource === toResource) {
-        throw new Error(t('trade.error.sameResource'));
+        throw new Error(localize('trade.error.sameResource'));
       }
 
       const tradeRate = this.getTradeRateForResource(civId, map, fromResource);
       if (!resources.hasEnough(fromResource, tradeRate)) {
         throw new Error(
-          t('playerResources.notEnough', {
+          localize('playerResources.notEnough', {
             resource: String(fromResource),
             current: String(resources.getResource(fromResource)),
             required: String(tradeRate),
@@ -127,7 +127,7 @@ export class TradeController {
       const currentToResource = resources.getResource(toResource);
       if (currentToResource >= maxCapacity) {
         throw new Error(
-          t('trade.error.maxCapacity', {
+          localize('trade.error.maxCapacity', {
             resource: String(toResource),
             capacity: String(maxCapacity),
             current: String(currentToResource),
@@ -269,7 +269,7 @@ export class TradeController {
   ): void {
     // Vérifier l'accès au commerce
     if (!this.canTrade(civId, map)) {
-      throw new Error(t('trade.error.unavailable'));
+      throw new Error(localize('trade.error.unavailable'));
     }
 
     // Valider que toutes les quantités offertes sont des multiples du taux d'échange approprié
@@ -278,7 +278,7 @@ export class TradeController {
         const tradeRate = this.getTradeRateForResource(civId, map, resourceType);
         if (quantity % tradeRate !== 0) {
           throw new Error(
-            t('trade.error.mustBeMultipleOffered', { resource: String(resourceType), rate: String(tradeRate), quantity: String(quantity) })
+            localize('trade.error.mustBeMultipleOffered', { resource: String(resourceType), rate: String(tradeRate), quantity: String(quantity) })
           );
         }
       }
@@ -288,7 +288,7 @@ export class TradeController {
     for (const [resourceType, quantity] of requestedResources.entries()) {
         if (quantity > 0 && quantity % this.TRADE_RECEIVED !== 0) {
         throw new Error(
-          t('trade.error.mustBeMultipleRequested', { resource: String(resourceType), rate: String(this.TRADE_RECEIVED), quantity: String(quantity) })
+          localize('trade.error.mustBeMultipleRequested', { resource: String(resourceType), rate: String(this.TRADE_RECEIVED), quantity: String(quantity) })
         );
       }
     }
@@ -298,7 +298,7 @@ export class TradeController {
       if (quantity > 0) {
         if (!playerResources.hasEnough(resourceType, quantity)) {
           throw new Error(
-            t('playerResources.notEnough', { resource: String(resourceType), current: String(playerResources.getResource(resourceType)), required: String(quantity) })
+            localize('playerResources.notEnough', { resource: String(resourceType), current: String(playerResources.getResource(resourceType)), required: String(quantity) })
           );
         }
       }
@@ -309,7 +309,7 @@ export class TradeController {
     const hasRequested = Array.from(requestedResources.values()).some(qty => qty > 0);
 
     if (!hasOffered || !hasRequested) {
-      throw new Error(t('trade.error.mustOfferAndRequest'));
+      throw new Error(localize('trade.error.mustOfferAndRequest'));
     }
 
     // Créer des copies temporaires pour le calcul
@@ -355,7 +355,7 @@ export class TradeController {
       // Si on n'a pas pu satisfaire toute la demande, c'est une erreur
       if (remainingToReceive > 0) {
         throw new Error(
-          t('trade.error.cannotSatisfyRequest', { resource: String(toResource), missing: String(remainingToReceive) })
+          localize('trade.error.cannotSatisfyRequest', { resource: String(toResource), missing: String(remainingToReceive) })
         );
       }
     }

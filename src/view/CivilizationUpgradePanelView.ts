@@ -13,7 +13,7 @@ export interface CivilizationUpgrade {
 /**
  * Callbacks pour le panneau d'amélioration de civilisation.
  */
-import { t } from '../i18n';
+import { localize } from '../i18n';
 export interface CivilizationUpgradePanelCallbacks {
   /** Callback appelé quand on ferme le panneau et relance une nouvelle partie */
   onClose?: () => void;
@@ -55,7 +55,7 @@ export class CivilizationUpgradePanelView {
   private upgrades: CivilizationUpgrade[] = [];
   private totalPrestigePoints: number = 0;
   private isReadOnly: boolean = false;
-  private closeLabel: string = t('button.closeAndRestart');
+  private closeLabel: string = localize('button.closeAndRestart');
   private subtitle: string | null = null;
 
   constructor(panelId: string = 'civilization-upgrade-panel') {
@@ -67,7 +67,7 @@ export class CivilizationUpgradePanelView {
     const upgradesListEl = document.getElementById('civilization-upgrades-list');
 
     if (!panelEl) {
-      throw new Error(t('error.elementNotFound', { id: panelId }));
+      throw new Error(localize('error.elementNotFound', { id: panelId }));
     }
 
     this.panel = panelEl;
@@ -127,7 +127,7 @@ export class CivilizationUpgradePanelView {
     this.availablePoints = availablePoints;
     this.totalPrestigePoints = options?.totalPrestigePoints ?? availablePoints;
     this.isReadOnly = options?.readOnly ?? false;
-    this.closeLabel = options?.closeLabel ?? t('button.closeAndRestart');
+    this.closeLabel = options?.closeLabel ?? localize('button.closeAndRestart');
     this.subtitle = options?.subtitle ?? null;
     this.panel.classList.remove('hidden');
     this.isVisible = true;
@@ -152,12 +152,12 @@ export class CivilizationUpgradePanelView {
     }
 
     if (this.totalPointsDisplay) {
-      this.totalPointsDisplay.textContent = t('prestige.total', { total: String(this.totalPrestigePoints) });
+      this.totalPointsDisplay.textContent = localize('prestige.total', { total: String(this.totalPrestigePoints) });
     }
 
     if (this.hintDisplay) {
       if (this.isReadOnly) {
-        this.hintDisplay.textContent = this.subtitle ?? t('hint.noPendingPrestige');
+        this.hintDisplay.textContent = this.subtitle ?? localize('hint.noPendingPrestige');
         this.hintDisplay.classList.remove('hidden');
       } else {
         this.hintDisplay.classList.add('hidden');
@@ -190,7 +190,7 @@ export class CivilizationUpgradePanelView {
         
         const buyBtn = document.createElement('button');
         buyBtn.className = 'upgrade-buy-btn';
-        buyBtn.textContent = t('button.buy');
+        buyBtn.textContent = localize('button.buy');
         
         // Désactiver le bouton si le joueur n'a pas assez de points
         const canAfford = !this.isReadOnly && this.availablePoints >= upgrade.cost;

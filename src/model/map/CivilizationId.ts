@@ -3,12 +3,12 @@
  * 
  * Value object immuable qui garantit l'unicité d'une civilisation.
  */
-import { t } from '../../i18n';
+import { localize } from '../../i18n';
 
 export class CivilizationId {
   private constructor(private readonly value: string) {
     if (!value || value.trim().length === 0) {
-      throw new Error(t('civId.empty'));
+      throw new Error(localize('civId.empty'));
     }
   }
 

@@ -4,7 +4,7 @@ import { CivilizationState } from '../model/game/CivilizationState';
 import { CivilizationId } from '../model/map/CivilizationId';
 import { CityLevel } from '../model/city/CityLevel';
 import { calculateCivilizationPoints } from '../model/game/CivilizationPoints';
-import { t } from '../i18n';
+import { localize } from '../i18n';
 
 /**
  * Résultat de l'activation de l'action Prestige du port maritime niveau 4.
@@ -61,12 +61,12 @@ export class PrestigeController {
     const hasCapital = cities.some(city => city.level === CityLevel.Capital);
     
     if (!hasCapital) {
-      return t('prestige.reason.noCapital');
+      return localize('prestige.reason.noCapital');
     }
 
     const civilizationPoints = calculateCivilizationPoints(map, civId);
     if (civilizationPoints < 20) {
-      return t('prestige.reason.notEnough', { needed: String(20 - civilizationPoints), current: String(civilizationPoints) });
+      return localize('prestige.reason.notEnough', { needed: String(20 - civilizationPoints), current: String(civilizationPoints) });
     }
 
     return undefined;
@@ -86,7 +86,7 @@ export class PrestigeController {
     if (!map) {
       return {
         success: false,
-        message: t('error.mapUnavailable')
+        message: localize('error.mapUnavailable')
       };
     }
 
@@ -95,7 +95,7 @@ export class PrestigeController {
       const reason = this.getPrestigeRestrictionReason(civId, map);
       return {
         success: false,
-        message: reason || t('prestige.restrictionsNotMet')
+        message: reason || localize('prestige.restrictionsNotMet')
       };
     }
 
@@ -109,7 +109,7 @@ export class PrestigeController {
 
     return {
       success: true,
-      message: t('prestige.activated', { points: String(prestigePoints) }),
+      message: localize('prestige.activated', { points: String(prestigePoints) }),
       civilizationPointsGained: prestigePoints
     };
   }

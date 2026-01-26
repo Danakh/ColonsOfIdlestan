@@ -5,7 +5,7 @@ import { CivilizationId } from '../model/map/CivilizationId';
 import { calculateInventoryCapacity } from '../model/game/InventoryCapacity';
 import { calculateCivilizationPoints, hasLibrary } from '../model/game/CivilizationPoints';
 import { ResourceSprites } from './ResourceSprites';
-import { t } from '../i18n';
+import { localize } from '../i18n';
 
 /**
  * Vue pour l'affichage de l'inventaire des ressources du joueur.
@@ -16,11 +16,11 @@ export class InventoryView {
 
   // Noms des ressources (i18n)
   private static readonly RESOURCE_NAMES: Record<ResourceType, string> = {
-    [ResourceType.Wood]: t('resource.wood'),
-    [ResourceType.Brick]: t('resource.brick'),
-    [ResourceType.Wheat]: t('resource.wheat'),
-    [ResourceType.Sheep]: t('resource.sheep'),
-    [ResourceType.Ore]: t('resource.ore'),
+    [ResourceType.Wood]: localize('resource.wood'),
+    [ResourceType.Brick]: localize('resource.brick'),
+    [ResourceType.Wheat]: localize('resource.wheat'),
+    [ResourceType.Sheep]: localize('resource.sheep'),
+    [ResourceType.Ore]: localize('resource.ore'),
   };
 
   // Ordre d'affichage des ressources
@@ -49,7 +49,7 @@ export class InventoryView {
   constructor(resourcesListId: string, resourceSprites: ResourceSprites) {
     const element = document.getElementById(resourcesListId);
     if (!element) {
-      throw new Error(t('error.elementNotFound', { id: resourcesListId }));
+      throw new Error(localize('error.elementNotFound', { id: resourcesListId }));
     }
     this.resourcesListElement = element;
     this.resourceSprites = resourceSprites;
@@ -98,7 +98,7 @@ export class InventoryView {
 
     const pointsLabel = document.createElement('span');
     pointsLabel.className = 'civilization-points-label';
-    pointsLabel.textContent = t('inventory.civilizationPoints');
+    pointsLabel.textContent = localize('inventory.civilizationPoints');
 
     const pointsValue = document.createElement('span');
     pointsValue.className = 'civilization-points-value';

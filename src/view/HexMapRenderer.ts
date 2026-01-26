@@ -13,7 +13,7 @@ import { ResourceHarvest } from '../model/game/ResourceHarvest';
 import { BuildingProductionController } from '../controller/BuildingProductionController';
 import { RoadConstruction } from '../model/game/RoadConstruction';
 import { OutpostController } from '../controller/OutpostController';
-import { t } from '../i18n';
+import { localize } from '../i18n';
 
 /**
  * Configuration pour le rendu des hexagones.
@@ -111,7 +111,7 @@ export class HexMapRenderer {
     this.canvas = canvas;
     const context = canvas.getContext('2d');
     if (!context) {
-      throw new Error(t('error.canvasContextUnavailable'));
+      throw new Error(localize('error.canvasContextUnavailable'));
     }
     this.ctx = context;
     this.setupMouseMoveHandler();
@@ -830,7 +830,7 @@ export class HexMapRenderer {
     this.ctx.save();
     
     const fontSize = hexSize * 0.25;
-    const text = t('label.auto');
+    const text = localize('label.auto');
     
     // Configurer la police
     this.ctx.font = `bold ${fontSize}px Arial, sans-serif`;

@@ -1,5 +1,5 @@
 import { ResourceType } from '../map/ResourceType';
-import { t } from '../../i18n';
+import { localize } from '../../i18n';
 
 /**
  * Gère l'inventaire des ressources du joueur.
@@ -32,10 +32,10 @@ export class PlayerResources {
    */
   addResource(resource: ResourceType, amount: number): void {
     if (!this.isHarvestable(resource)) {
-      throw new Error(t('playerResources.notHarvestable', { resource: String(resource) }));
+      throw new Error(localize('playerResources.notHarvestable', { resource: String(resource) }));
     }
     if (amount < 0) {
-      throw new Error(t('playerResources.amountMustBePositive'));
+      throw new Error(localize('playerResources.amountMustBePositive'));
     }
 
     const current = this.resources.get(resource) || 0;
@@ -53,13 +53,13 @@ export class PlayerResources {
    */
   addResourceCapped(resource: ResourceType, amount: number, maxPerResource: number): number {
     if (!this.isHarvestable(resource)) {
-      throw new Error(t('playerResources.notHarvestable', { resource: String(resource) }));
+      throw new Error(localize('playerResources.notHarvestable', { resource: String(resource) }));
     }
     if (amount < 0) {
-      throw new Error(t('playerResources.amountMustBePositive'));
+      throw new Error(localize('playerResources.amountMustBePositive'));
     }
     if (!Number.isFinite(maxPerResource) || maxPerResource < 0) {
-      throw new Error(t('playerResources.maxCapacityMustBeFinitePositive'));
+      throw new Error(localize('playerResources.maxCapacityMustBeFinitePositive'));
     }
 
     const current = this.resources.get(resource) || 0;
@@ -79,15 +79,15 @@ export class PlayerResources {
    */
   removeResource(resource: ResourceType, amount: number): void {
     if (!this.isHarvestable(resource)) {
-      throw new Error(t('playerResources.notHarvestable', { resource: String(resource) }));
+      throw new Error(localize('playerResources.notHarvestable', { resource: String(resource) }));
     }
     if (amount < 0) {
-      throw new Error(t('playerResources.amountToRemoveMustBePositive'));
+      throw new Error(localize('playerResources.amountToRemoveMustBePositive'));
     }
 
     const current = this.resources.get(resource) || 0;
     if (current < amount) {
-      throw new Error(t('playerResources.notEnough', { resource: String(resource), current: String(current), required: String(amount) }));
+      throw new Error(localize('playerResources.notEnough', { resource: String(resource), current: String(current), required: String(amount) }));
     }
 
     this.resources.set(resource, current - amount);
@@ -152,7 +152,7 @@ export class PlayerResources {
    */
   payCost(cost: Map<ResourceType, number> | Record<string, number>): void {
     if (!this.canAfford(cost)) {
-      throw new Error(t('playerResources.cannotAfford'));
+      throw new Error(localize('playerResources.cannotAfford'));
     }
 
     // Convertir Record en Map si nécessaire

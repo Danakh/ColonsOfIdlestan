@@ -1,6 +1,6 @@
 import { ResourceType } from '../model/map/ResourceType';
 import { ResourceSprites } from './ResourceSprites';
-import { t } from '../i18n';
+import { localize } from '../i18n';
 
 /**
  * Callbacks pour les actions du panneau de spécialisation du port.
@@ -29,11 +29,11 @@ export class PortSpecializationPanelView {
 
   // Noms des ressources en français
   private readonly resourceNames: Record<ResourceType, string> = {
-    [ResourceType.Wood]: t('resource.wood'),
-    [ResourceType.Brick]: t('resource.brick'),
-    [ResourceType.Wheat]: t('resource.wheat'),
-    [ResourceType.Sheep]: t('resource.sheep'),
-    [ResourceType.Ore]: t('resource.ore'),
+    [ResourceType.Wood]: localize('resource.wood'),
+    [ResourceType.Brick]: localize('resource.brick'),
+    [ResourceType.Wheat]: localize('resource.wheat'),
+    [ResourceType.Sheep]: localize('resource.sheep'),
+    [ResourceType.Ore]: localize('resource.ore'),
   };
 
   // Ordre d'affichage des ressources
@@ -52,16 +52,16 @@ export class PortSpecializationPanelView {
     const confirmBtnEl = document.getElementById('port-specialization-confirm-btn') as HTMLButtonElement;
 
     if (!panelEl) {
-      throw new Error(t('error.elementNotFound', { id: panelId }));
+      throw new Error(localize('error.elementNotFound', { id: panelId }));
     }
     if (!resourceListEl) {
-      throw new Error(t('error.elementNotFound', { id: 'port-specialization-list' }));
+      throw new Error(localize('error.elementNotFound', { id: 'port-specialization-list' }));
     }
     if (!cancelBtnEl) {
-      throw new Error(t('error.elementNotFound', { id: 'port-specialization-cancel-btn' }));
+      throw new Error(localize('error.elementNotFound', { id: 'port-specialization-cancel-btn' }));
     }
     if (!confirmBtnEl) {
-      throw new Error(t('error.elementNotFound', { id: 'port-specialization-confirm-btn' }));
+      throw new Error(localize('error.elementNotFound', { id: 'port-specialization-confirm-btn' }));
     }
 
     this.panel = panelEl;
@@ -160,7 +160,7 @@ export class PortSpecializationPanelView {
       item.className = 'port-specialization-resource-item';
       if (isBlocked) {
         item.classList.add('blocked');
-        item.title = t('port.specialization.blocked');
+        item.title = localize('port.specialization.blocked');
       }
       
       if (this.selectedResource === resourceType) {

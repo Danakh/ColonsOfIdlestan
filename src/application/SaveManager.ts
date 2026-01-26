@@ -1,5 +1,5 @@
 import { MainGame } from './MainGame';
-import { t } from '../i18n';
+import { localize } from '../i18n';
 
 export class SaveManager {
   private readonly AUTOSAVE_KEY = 'colons-of-idlestan-autosave';
@@ -12,7 +12,7 @@ export class SaveManager {
       const serialized = this.game.saveGame();
       localStorage.setItem(this.AUTOSAVE_KEY, serialized);
     } catch (error) {
-      console.error(t('error.autoSaveFailed'), error);
+      console.error(localize('error.autoSaveFailed'), error);
     }
   }
 
@@ -20,22 +20,22 @@ export class SaveManager {
     try {
       const saved = localStorage.getItem(this.AUTOSAVE_KEY);
       if (!saved) {
-        console.log(t('save.noneFound'));
+        console.log(localize('save.noneFound'));
         return false;
       }
 
-      console.log(t('save.loading'));
+      console.log(localize('save.loading'));
       const loaded = this.game.loadGame(saved);
       if (loaded) {
-        console.log(t('save.loaded'));
+        console.log(localize('save.loaded'));
         return true;
       }
 
-      console.warn(t('save.corrupted.warn'));
+      console.warn(localize('save.corrupted.warn'));
       this.offerInvalidSaveDownload(saved, 'locale');
       localStorage.removeItem(this.AUTOSAVE_KEY);
     } catch (error) {
-      console.error(t('error.autoLoadFailed'), error);
+      console.error(localize('error.autoLoadFailed'), error);
       const saved = localStorage.getItem(this.AUTOSAVE_KEY);
       if (saved) {
         this.offerInvalidSaveDownload(saved, 'locale');
@@ -58,8 +58,8 @@ export class SaveManager {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error(t('error.exportFailed'), error);
-      alert(t('alert.exportError'));
+      console.error(localize('error.exportFailed'), error);
+      alert(localize('alert.exportError'));
     }
   }
 
@@ -80,8 +80,8 @@ export class SaveManager {
           this.saveToLocal();
           resolve({ success: true, content });
         } catch (error) {
-          console.error(t('error.importFailed'), error);
-          alert(t('alert.importError'));
+          console.error(localize('error.importFailed'), error);
+          alert(localize('alert.importError'));
           const content = event.target?.result as string | undefined;
           if (content) {
             this.offerInvalidSaveDownload(content, 'importée');
@@ -95,7 +95,7 @@ export class SaveManager {
 
   offerInvalidSaveDownload(serialized: string, context: string): void {
     try {
-      const shouldDownload = window.confirm(t('confirm.saveCorrupted', { context }));
+      const shouldDownload = window.confirm(localize('confirm.saveCorrupted', { context }));
       if (!shouldDownload) {
         return;
       }
@@ -109,7 +109,7 @@ export class SaveManager {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (downloadError) {
-      console.error(t('error.saveDownloadFailed'), downloadError);
+      console.error(localize('error.saveDownloadFailed'), downloadError);
     }
   }
 

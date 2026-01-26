@@ -10,7 +10,7 @@ export function getAll(): Record<string, string> {
   return locale;
 }
 
-export function t(key: string, params?: Record<string, string | number>): string {
+export function localize(key: string, params?: Record<string, string | number>): string {
   let s = locale[key] ?? key;
   if (params) {
     for (const k of Object.keys(params)) {
@@ -20,4 +20,4 @@ export function t(key: string, params?: Record<string, string | number>): string
   return s;
 }
 
-export default { t, setLocale, getAll };
+export default { t: localize, setLocale, getAll };

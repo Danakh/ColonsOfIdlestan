@@ -1,7 +1,7 @@
 import { HexCoord } from './HexCoord';
 import { SecondaryHexDirection } from './SecondaryHexDirection';
 import { Vertex } from './Vertex';
-import { t } from '../../i18n';
+import { localize } from '../../i18n';
 
 /**
  * Représente une arête (edge) entre deux hexagones adjacents.
@@ -21,7 +21,7 @@ export class Edge {
     // Validation: les hexagones doivent être adjacents
     const distance = hex1.distanceTo(hex2);
     if (distance !== 1) {
-      throw new Error(t('edge.distanceNotOne', { distance: String(distance) }));
+      throw new Error(localize('edge.distanceNotOne', { distance: String(distance) }));
     }
   }
 
@@ -85,7 +85,7 @@ export class Edge {
     } else if (this.hex2.equals(hex)) {
       return this.hex1;
     } else {
-      throw new Error(t('edge.hexNotConnected'));
+      throw new Error(localize('edge.hexNotConnected'));
     }
   }
 
@@ -113,7 +113,7 @@ export class Edge {
       verticesH2.some(v2 => v1.equals(v2))
     );
     if (commonVertices.length !== 2) {
-      throw new Error(t('edge.verticesNotShared'));
+      throw new Error(localize('edge.verticesNotShared'));
     }
     // Retourner l'autre vertex
     if (commonVertices[0].equals(vertex)) {
@@ -121,7 +121,7 @@ export class Edge {
     } else if (commonVertices[1].equals(vertex)) {
       return commonVertices[0];
     } else {
-      throw new Error(t('edge.vertexNotConnected'));
+      throw new Error(localize('edge.vertexNotConnected'));
     }
   }
 

@@ -11,7 +11,7 @@ import { ResourceHarvestController } from './ResourceHarvestController';
 import { TradeController } from './TradeController';
 import { BuildingController } from './BuildingController';
 import { SaveManager } from '../application/SaveManager';
-import { t } from '../i18n';
+import { localize } from '../i18n';
 
 export class GameCoordinator {
   constructor(
@@ -37,7 +37,7 @@ export class GameCoordinator {
       this.saveManager?.saveToLocal();
       return { success: true };
     } catch (error) {
-      console.error(t('error.operationFailed', { op: 'buildOutpost' }), error);
+      console.error(localize('error.operationFailed', { op: 'buildOutpost' }), error);
       return { success: false };
     }
   }
@@ -52,7 +52,7 @@ export class GameCoordinator {
       this.saveManager?.saveToLocal();
       return { success: true };
     } catch (error) {
-      console.error(t('error.operationFailed', { op: 'buildRoad' }), error);
+      console.error(localize('error.operationFailed', { op: 'buildRoad' }), error);
       return { success: false };
     }
   }
@@ -71,7 +71,7 @@ export class GameCoordinator {
       }
       return { success: result.success, cityVertex: result.cityVertex! };
     } catch (error) {
-      console.error(t('error.operationFailed', { op: 'harvestHex' }), error);
+      console.error(localize('error.operationFailed', { op: 'harvestHex' }), error);
       return { success: false };
     }
   }
@@ -86,7 +86,7 @@ export class GameCoordinator {
       this.saveManager?.saveToLocal();
       return { success: true };
     } catch (error) {
-      console.error(t('error.operationFailed', { op: 'performBatchTrade' }), error);
+      console.error(localize('error.operationFailed', { op: 'performBatchTrade' }), error);
       return { success: false };
     }
   }
@@ -107,7 +107,7 @@ export class GameCoordinator {
       this.saveManager?.saveToLocal();
       return { success: true };
     } catch (error) {
-      console.error(t('error.operationFailed', { op: 'buildBuilding' }), error);
+      console.error(localize('error.operationFailed', { op: 'buildBuilding' }), error);
       return { success: false };
     }
   }
@@ -122,7 +122,7 @@ export class GameCoordinator {
       this.saveManager?.saveToLocal();
       return { success: true };
     } catch (error) {
-      console.error(t('error.operationFailed', { op: 'upgradeBuilding' }), error);
+      console.error(localize('error.operationFailed', { op: 'upgradeBuilding' }), error);
       return { success: false };
     }
   }

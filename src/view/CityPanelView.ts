@@ -10,7 +10,7 @@ import { BuildingController } from '../controller/BuildingController';
 import { TradeController } from '../controller/TradeController';
 import { HexMapRenderer } from './HexMapRenderer';
 import { Console } from 'console';
-import { t } from '../i18n';
+import { localize } from '../i18n';
 
 /**
  * Callbacks pour les actions du panneau de ville.
@@ -67,11 +67,11 @@ export class CityPanelView {
 
   // Noms des ressources en français pour l'affichage (centralisé)
   private static readonly RESOURCE_NAMES: Record<ResourceType, string> = {
-    [ResourceType.Wood]: t('resource.wood'),
-    [ResourceType.Brick]: t('resource.brick'),
-    [ResourceType.Wheat]: t('resource.wheat'),
-    [ResourceType.Sheep]: t('resource.sheep'),
-    [ResourceType.Ore]: t('resource.ore'),
+    [ResourceType.Wood]: localize('resource.wood'),
+    [ResourceType.Brick]: localize('resource.brick'),
+    [ResourceType.Wheat]: localize('resource.wheat'),
+    [ResourceType.Sheep]: localize('resource.sheep'),
+    [ResourceType.Ore]: localize('resource.ore'),
   };
 
   constructor(cityPanelId: string = 'city-panel') {
@@ -83,16 +83,16 @@ export class CityPanelView {
     const automationBtn = document.getElementById('city-automation-btn') as HTMLButtonElement;
 
     if (!panel) {
-      throw new Error(t('error.elementNotFound', { id: cityPanelId }));
+      throw new Error(localize('error.elementNotFound', { id: cityPanelId }));
     }
     if (!title) {
-      throw new Error(t('error.elementNotFound', { id: 'city-panel-title' }));
+      throw new Error(localize('error.elementNotFound', { id: 'city-panel-title' }));
     }
     if (!buildingsList) {
-      throw new Error(t('error.elementNotFound', { id: 'city-buildings-list' }));
+      throw new Error(localize('error.elementNotFound', { id: 'city-buildings-list' }));
     }
     if (!buildingsTitle) {
-      throw new Error(t('error.elementNotFound', { id: 'city-buildings-section' }));
+      throw new Error(localize('error.elementNotFound', { id: 'city-buildings-section' }));
     }
 
     this.cityPanel = panel;
@@ -360,8 +360,8 @@ export class CityPanelView {
     this.automationBtn.hidden = !canAutomate;
     this.automationBtn.disabled = !canAutomate;
     if (canAutomate) {
-      this.automationBtn.textContent = t('buildingAction.automation');
-      this.automationBtn.title = t('automation.hint');
+      this.automationBtn.textContent = localize('buildingAction.automation');
+      this.automationBtn.title = localize('automation.hint');
     }
     
     if (automationKey === this.lastAutomationKey) {
@@ -430,13 +430,13 @@ export class CityPanelView {
       }
 
       this.cityPanel.classList.remove('hidden');
-      this.cityPanelTitle.textContent = t('city.noneSelected');
-      this.cityBuildingsTitle.textContent = t('city.buildingsTitle');
+      this.cityPanelTitle.textContent = localize('city.noneSelected');
+      this.cityBuildingsTitle.textContent = localize('city.buildingsTitle');
       this.cityBuildingsList.innerHTML = '';
 
       const emptyItem = document.createElement('li');
       emptyItem.className = 'empty';
-      emptyItem.textContent = t('city.selectPrompt');
+      emptyItem.textContent = localize('city.selectPrompt');
       this.cityBuildingsList.appendChild(emptyItem);
 
       // Réinitialiser le cache lié à une ville
@@ -499,7 +499,7 @@ export class CityPanelView {
     this.cityPanel.classList.remove('hidden');
 
     // Obtenir le nom du niveau depuis les traductions
-    const levelName = getCityLevelName(city.level) || t('city.levelFallback', { level: String(city.level) });
+    const levelName = getCityLevelName(city.level) || localize('city.levelFallback', { level: String(city.level) });
 
     // Vider le titre
     this.cityPanelTitle.innerHTML = '';
@@ -659,7 +659,7 @@ export class CityPanelView {
         if (buildableStatus) {
             const buildBtn = document.createElement('button');
             buildBtn.className = 'build-btn';
-            buildBtn.textContent = t('button.build');
+            buildBtn.textContent = localize('button.build');
           // Stocker le buildingType dans le bouton pour le gestionnaire d'événement
           buildBtn.dataset.buildingType = buildingType;
 
@@ -679,7 +679,7 @@ export class CityPanelView {
     // Titre avec le nombre de bâtiments construits / maximum
     const buildingCount = city.getBuildingCount();
     const maxBuildings = city.getMaxBuildings();
-    this.cityBuildingsTitle.textContent = t('city.buildingsTitle', { count: String(buildingCount), max: String(maxBuildings) });
+    this.cityBuildingsTitle.textContent = localize('city.buildingsTitle', { count: String(buildingCount), max: String(maxBuildings) });
 
     const builtBuildings = new Set(city.getBuildings());
     const buildableBuildings = BuildingController.getBuildableBuildingsWithStatus(city, islandMap, vertex, playerResources);
@@ -709,7 +709,7 @@ export class CityPanelView {
               const resourceNames = CityPanelView.RESOURCE_NAMES;
               // Afficher le niveau si le port est niveau 3, sinon seulement la spécialisation
               if (lvl === 3) {
-                name = `${getBuildingTypeName(buildingType)} (${resourceNames[specialization]}) ${t('label.levelShort')} ${lvl}`;
+                name = `${getBuildingTypeName(buildingType)} (${resourceNames[specialization]}) ${localize('label.levelShort')} ${lvl}`;
               } else {
                 name = `${getBuildingTypeName(buildingType)} (${resourceNames[specialization]})`;
               }

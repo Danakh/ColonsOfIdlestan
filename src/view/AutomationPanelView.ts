@@ -3,7 +3,7 @@ import { City } from '../model/city/City';
 import { Civilization } from '../model/map/Civilization';
 import { Building } from '../model/city/Building';
 import { IslandMap } from '../model/map/IslandMap';
-import { t } from '../i18n';
+import { localize } from '../i18n';
 
 /**
  * Callbacks pour les actions du panneau d'automatisation.
@@ -35,10 +35,10 @@ export enum AutomationType {
  * Noms des automatisations en français.
  */
 const AUTOMATION_NAMES: Record<AutomationType, string> = {
-  [AutomationType.RoadConstruction]: t('automation.name.road'),
-  [AutomationType.OutpostConstruction]: t('automation.name.outpost'),
-  [AutomationType.CityUpgrade]: t('automation.name.cityUpgrade'),
-  [AutomationType.ProductionBuildingConstruction]: t('automation.name.production'),
+  [AutomationType.RoadConstruction]: localize('automation.name.road'),
+  [AutomationType.OutpostConstruction]: localize('automation.name.outpost'),
+  [AutomationType.CityUpgrade]: localize('automation.name.cityUpgrade'),
+  [AutomationType.ProductionBuildingConstruction]: localize('automation.name.production'),
 };
 
 /**
@@ -89,13 +89,13 @@ export class AutomationPanelView {
     const automationBtnEl = document.getElementById(automationBtnId) as HTMLButtonElement;
 
     if (!panelEl) {
-      throw new Error(t('error.elementNotFound', { id: panelId }));
+      throw new Error(localize('error.elementNotFound', { id: panelId }));
     }
     if (!automationListEl) {
-      throw new Error(t('error.elementNotFound', { id: 'automation-list' }));
+      throw new Error(localize('error.elementNotFound', { id: 'automation-list' }));
     }
     if (!closeBtnEl) {
-      throw new Error(t('error.elementNotFound', { id: 'automation-close-btn' }));
+      throw new Error(localize('error.elementNotFound', { id: 'automation-close-btn' }));
     }
 
     this.panel = panelEl;
@@ -199,8 +199,8 @@ export class AutomationPanelView {
           // Sauvegarder le jeu
           dependencies.autoSave();
         } catch (error) {
-          console.error(t('error.automationModifyFailed'), error);
-          alert(t('error.automationModifyFailedDetail', { detail: error instanceof Error ? error.message : String(error) }));
+          console.error(localize('error.automationModifyFailed'), error);
+          alert(localize('error.automationModifyFailedDetail', { detail: error instanceof Error ? error.message : String(error) }));
         }
       },
       onClose: () => {
@@ -252,7 +252,7 @@ export class AutomationPanelView {
   show(city: City, civilization: Civilization): void {
     const buildersGuild = city.getBuilding(BuildingType.BuildersGuild);
     if (!buildersGuild) {
-      throw new Error(t('automation.error.noBuildersGuild'));
+      throw new Error(localize('automation.error.noBuildersGuild'));
     }
 
     this.currentCity = city;
@@ -293,8 +293,8 @@ export class AutomationPanelView {
     this.automationBtn.hidden = !hasBuildersGuild;
     this.automationBtn.disabled = !hasBuildersGuild;
     if (hasBuildersGuild) {
-      this.automationBtn.textContent = t('buildingAction.automation');
-      this.automationBtn.title = t('automation.openPanelTitle');
+      this.automationBtn.textContent = localize('buildingAction.automation');
+      this.automationBtn.title = localize('automation.openPanelTitle');
     }
   }
 

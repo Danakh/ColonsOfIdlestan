@@ -7,7 +7,7 @@ import { IslandMap } from '../model/map/IslandMap';
 import { HexType } from '../model/map/HexType';
 import { CivilizationId } from '../model/map/CivilizationId';
 import { SeededRNG } from './util/SeededRNG';
-import { t } from '../i18n';
+import { localize } from '../i18n';
 
 /**
  * Configuration pour la génération d'une carte.
@@ -76,25 +76,25 @@ export class MapGenerator {
    */
   private validateConfig(config: MapGeneratorConfig): void {
     if (!config.civilizations || config.civilizations.length === 0) {
-      throw new Error(t('mapGenerator.error.atLeastOneCiv'));
+      throw new Error(localize('mapGenerator.error.atLeastOneCiv'));
     }
 
     // Calculer le nombre total d'hexagones requis
     let totalHexes = 0;
     for (const count of config.resourceDistribution.values()) {
       if (count < 0) {
-        throw new Error(t('mapGenerator.error.negativeResourceDistribution'));
+        throw new Error(localize('mapGenerator.error.negativeResourceDistribution'));
       }
       totalHexes += count;
     }
 
     if (totalHexes === 0) {
-      throw new Error(t('mapGenerator.error.atLeastOneHex'));
+      throw new Error(localize('mapGenerator.error.atLeastOneHex'));
     }
 
     // Vérifier que le seed est valide (n'importe quel nombre est valide)
     if (typeof config.seed !== 'number' || !isFinite(config.seed)) {
-      throw new Error(t('mapGenerator.error.seedMustBeFinite'));
+      throw new Error(localize('mapGenerator.error.seedMustBeFinite'));
     }
   }
 
@@ -126,7 +126,7 @@ export class MapGenerator {
         // Si aucun placement valide n'est trouvé, cela peut arriver si la distribution
         // demande plus d'hexagones que possible avec les règles données
         throw new Error(
-          t('mapGenerator.error.cannotPlaceAllHexes', { placed: String(hexes.length), total: String(totalHexes) })
+          localize('mapGenerator.error.cannotPlaceAllHexes', { placed: String(hexes.length), total: String(totalHexes) })
         );
       }
 
@@ -139,7 +139,7 @@ export class MapGenerator {
     // qui n'est pas encore dans les hexagones terrestres (sera l'eau)
     const borderVertex = this.findBorderVertex(placedCoords, rng);
     if (!borderVertex) {
-      throw new Error(t('mapGenerator.error.cannotFindBorderVertex'));
+      throw new Error(localize('mapGenerator.error.cannotFindBorderVertex'));
     }
 
     const { woodCoord, brickCoord } = borderVertex;
@@ -461,6 +461,6 @@ export class MapGenerator {
     }
 
     // Si on arrive ici, la ville n'a pas pu être créée
-    console.error(t('mapGenerator.error.initialCityFailed', { woodQ: String(woodCoord.q), woodR: String(woodCoord.r), brickQ: String(brickCoord.q), brickR: String(brickCoord.r) }));
+    console.error(localize('mapGenerator.error.initialCityFailed', { woodQ: String(woodCoord.q), woodR: String(woodCoord.r), brickQ: String(brickCoord.q), brickR: String(brickCoord.r) }));
   }
 }

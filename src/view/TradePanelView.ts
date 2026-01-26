@@ -8,7 +8,7 @@ import { BuildingType } from '../model/city/BuildingType';
 import { City } from '../model/city/City';
 import { Vertex } from '../model/hex/Vertex';
 import { Building } from '../model/city/Building';
-import { t } from '../i18n';
+import { localize } from '../i18n';
 
 /**
  * Callbacks pour les actions du panneau de commerce.
@@ -46,11 +46,11 @@ export class TradePanelView {
 
   // Noms des ressources en français
   private readonly resourceNames: Record<ResourceType, string> = {
-    [ResourceType.Wood]: t('resource.wood'),
-    [ResourceType.Brick]: t('resource.brick'),
-    [ResourceType.Wheat]: t('resource.wheat'),
-    [ResourceType.Sheep]: t('resource.sheep'),
-    [ResourceType.Ore]: t('resource.ore'),
+    [ResourceType.Wood]: localize('resource.wood'),
+    [ResourceType.Brick]: localize('resource.brick'),
+    [ResourceType.Wheat]: localize('resource.wheat'),
+    [ResourceType.Sheep]: localize('resource.sheep'),
+    [ResourceType.Ore]: localize('resource.ore'),
   };
 
   // Ordre d'affichage des ressources
@@ -73,28 +73,28 @@ export class TradePanelView {
     const requestedTitleEl = document.querySelector('.trade-column:last-child h3') as HTMLElement;
 
     if (!panel) {
-      throw new Error(t('error.elementNotFound', { id: tradePanelId }));
+      throw new Error(localize('error.elementNotFound', { id: tradePanelId }));
     }
     if (!offeredListEl) {
-      throw new Error(t('error.elementNotFound', { id: 'trade-offered-list' }));
+      throw new Error(localize('error.elementNotFound', { id: 'trade-offered-list' }));
     }
     if (!requestedListEl) {
-      throw new Error(t('error.elementNotFound', { id: 'trade-requested-list' }));
+      throw new Error(localize('error.elementNotFound', { id: 'trade-requested-list' }));
     }
     if (!portsListEl) {
-      throw new Error(t('error.elementNotFound', { id: 'trade-ports-list' }));
+      throw new Error(localize('error.elementNotFound', { id: 'trade-ports-list' }));
     }
     if (!cancelBtnEl) {
-      throw new Error(t('error.elementNotFound', { id: 'trade-cancel-btn' }));
+      throw new Error(localize('error.elementNotFound', { id: 'trade-cancel-btn' }));
     }
     if (!confirmBtnEl) {
-      throw new Error(t('error.elementNotFound', { id: 'trade-confirm-btn' }));
+      throw new Error(localize('error.elementNotFound', { id: 'trade-confirm-btn' }));
     }
     if (!offeredTitleEl) {
-      throw new Error(t('error.elementNotFound', { id: 'trade-offered-title' }));
+      throw new Error(localize('error.elementNotFound', { id: 'trade-offered-title' }));
     }
     if (!requestedTitleEl) {
-      throw new Error(t('error.elementNotFound', { id: 'trade-requested-title' }));
+      throw new Error(localize('error.elementNotFound', { id: 'trade-requested-title' }));
     }
 
     this.tradePanel = panel;
@@ -457,12 +457,12 @@ export class TradePanelView {
     const requestedBatches = this.getRequestedBatches();
 
     this.offeredTitle.textContent = offeredBatches > 0 
-      ? `${t('trade.title.offered')} (${offeredBatches})`
-      : t('trade.title.offered');
+      ? `${localize('trade.title.offered')} (${offeredBatches})`
+      : localize('trade.title.offered');
     
     this.requestedTitle.textContent = requestedBatches > 0
-      ? `${t('trade.title.requested')} (${requestedBatches})`
-      : t('trade.title.requested');
+      ? `${localize('trade.title.requested')} (${requestedBatches})`
+      : localize('trade.title.requested');
   }
 
   /**
