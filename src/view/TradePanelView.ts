@@ -44,14 +44,22 @@ export class TradePanelView {
   private islandMap: IslandMap | null = null;
   private civId: CivilizationId | null = null;
 
-  // Noms des ressources en français
-  private readonly resourceNames: Record<ResourceType, string> = {
-    [ResourceType.Wood]: localize('resource.wood'),
-    [ResourceType.Brick]: localize('resource.brick'),
-    [ResourceType.Wheat]: localize('resource.wheat'),
-    [ResourceType.Sheep]: localize('resource.sheep'),
-    [ResourceType.Ore]: localize('resource.ore'),
-  };
+  private getResourceName(resource: ResourceType): string {
+    switch (resource) {
+      case ResourceType.Wood:
+        return localize('resource.wood');
+      case ResourceType.Brick:
+        return localize('resource.brick');
+      case ResourceType.Wheat:
+        return localize('resource.wheat');
+      case ResourceType.Sheep:
+        return localize('resource.sheep');
+      case ResourceType.Ore:
+        return localize('resource.ore');
+      default:
+        return String(resource);
+    }
+  }
 
   // Ordre d'affichage des ressources
   private readonly resourceOrder: ResourceType[] = [
@@ -256,7 +264,7 @@ export class TradePanelView {
           const spriteImg = document.createElement('img');
           spriteImg.src = sprite.src;
           spriteImg.className = 'trade-resource-sprite';
-          spriteImg.alt = this.resourceNames[resourceType];
+          spriteImg.alt = this.getResourceName(resourceType);
           spriteImg.style.width = '32px';
           spriteImg.style.height = '32px';
           spriteImg.style.objectFit = 'contain';
@@ -280,7 +288,7 @@ export class TradePanelView {
       // Nom de la ressource
       const nameSpan = document.createElement('span');
       nameSpan.className = 'trade-resource-name';
-      nameSpan.textContent = this.resourceNames[resourceType];
+      nameSpan.textContent = this.getResourceName(resourceType);
       resourceInfo.appendChild(nameSpan);
 
       item.appendChild(resourceInfo);

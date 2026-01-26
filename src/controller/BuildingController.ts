@@ -341,17 +341,10 @@ export class BuildingController {
    * @returns Une chaîne formatée (ex: "3 Bois, 2 Brique")
    */
   private static formatCost(cost: Map<ResourceType, number>): string {
-    const resourceNames: Record<ResourceType, string> = {
-      [ResourceType.Wood]: 'Bois',
-      [ResourceType.Brick]: 'Brique',
-      [ResourceType.Wheat]: 'Blé',
-      [ResourceType.Sheep]: 'Mouton',
-      [ResourceType.Ore]: 'Minerai',
-    };
-
     const parts: string[] = [];
     for (const [resource, amount] of cost.entries()) {
-      parts.push(`${amount} ${resourceNames[resource]}`);
+      const key = `resource.${String(resource).toLowerCase()}`;
+      parts.push(`${amount} ${localize(key)}`);
     }
     return parts.join(', ');
   }

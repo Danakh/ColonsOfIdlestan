@@ -14,14 +14,22 @@ export class InventoryView {
   private resourcesListElement: HTMLElement;
   private resourceSprites: ResourceSprites;
 
-  // Noms des ressources (i18n)
-  private static readonly RESOURCE_NAMES: Record<ResourceType, string> = {
-    [ResourceType.Wood]: localize('resource.wood'),
-    [ResourceType.Brick]: localize('resource.brick'),
-    [ResourceType.Wheat]: localize('resource.wheat'),
-    [ResourceType.Sheep]: localize('resource.sheep'),
-    [ResourceType.Ore]: localize('resource.ore'),
-  };
+  private static getResourceName(resource: ResourceType): string {
+    switch (resource) {
+      case ResourceType.Wood:
+        return localize('resource.wood');
+      case ResourceType.Brick:
+        return localize('resource.brick');
+      case ResourceType.Wheat:
+        return localize('resource.wheat');
+      case ResourceType.Sheep:
+        return localize('resource.sheep');
+      case ResourceType.Ore:
+        return localize('resource.ore');
+      default:
+        return String(resource);
+    }
+  }
 
   // Ordre d'affichage des ressources
   private static readonly RESOURCE_ORDER: ResourceType[] = [
@@ -132,7 +140,7 @@ export class InventoryView {
       const spriteImg = document.createElement('img');
       spriteImg.src = sprite.src;
       spriteImg.className = 'resource-sprite';
-      spriteImg.alt = InventoryView.RESOURCE_NAMES[resourceType];
+      spriteImg.alt = InventoryView.getResourceName(resourceType);
       spriteImg.style.width = '24px';
       spriteImg.style.height = '24px';
       spriteImg.style.objectFit = 'contain';
@@ -147,7 +155,7 @@ export class InventoryView {
 
     const name = document.createElement('span');
     name.className = 'resource-name';
-    name.textContent = InventoryView.RESOURCE_NAMES[resourceType];
+    name.textContent = InventoryView.getResourceName(resourceType);
 
     const countEl = document.createElement('span');
     countEl.className = 'resource-count';

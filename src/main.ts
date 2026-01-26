@@ -193,7 +193,7 @@ function main(): void {
   const coordinator = new GameCoordinator(game, renderer, saveManager);
 
   // Boucle principale d'animation encapsulée
-  const gameLoop = new GameLoop(game, renderer, cityPanelView, coordinator);
+  const gameLoop = new GameLoop(game, renderer, cityPanelView, coordinator, updateResourcesDisplay);
 
   function setActiveTab(mode: 'classic' | 'prestige'): void {
     if (mode === 'classic') {

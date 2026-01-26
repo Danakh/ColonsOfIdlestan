@@ -1,6 +1,6 @@
 import { City } from '../model/city/City';
 import { CityLevel, getCityLevelName } from '../model/city/CityLevel';
-import { BuildingType, getBuildingTypeName, getBuildingAction, BUILDING_ACTION_NAMES, BuildingAction, getAllBuildingTypes } from '../model/city/BuildingType';
+import { BuildingType, getBuildingTypeName, getBuildingAction, getBuildingActionName, BuildingAction, getAllBuildingTypes } from '../model/city/BuildingType';
 import { ResourceType } from '../model/map/ResourceType';
 import { Vertex } from '../model/hex/Vertex';
 import { IslandMap } from '../model/map/IslandMap';
@@ -65,14 +65,22 @@ export class CityPanelView {
   /** Niveaux des bâtiments construits (dynamique) */
   private lastCityBuildingLevelsKey: string | null = null;
 
-  // Noms des ressources en français pour l'affichage (centralisé)
-  private static readonly RESOURCE_NAMES: Record<ResourceType, string> = {
-    [ResourceType.Wood]: localize('resource.wood'),
-    [ResourceType.Brick]: localize('resource.brick'),
-    [ResourceType.Wheat]: localize('resource.wheat'),
-    [ResourceType.Sheep]: localize('resource.sheep'),
-    [ResourceType.Ore]: localize('resource.ore'),
-  };
+  private static getResourceName(resource: ResourceType): string {
+    switch (resource) {
+      case ResourceType.Wood:
+        return localize('resource.wood');
+      case ResourceType.Brick:
+        return localize('resource.brick');
+      case ResourceType.Wheat:
+        return localize('resource.wheat');
+      case ResourceType.Sheep:
+        return localize('resource.sheep');
+      case ResourceType.Ore:
+        return localize('resource.ore');
+      default:
+        return String(resource);
+    }
+  }
 
   constructor(cityPanelId: string = 'city-panel') {
     const panel = document.getElementById(cityPanelId);
@@ -592,7 +600,7 @@ export class CityPanelView {
         costSpan.dataset.role = 'cost-build';
         const costParts: string[] = [];
         for (const [resource, amount] of buildableStatus.cost.entries()) {
-          costParts.push(`${amount} ${CityPanelView.RESOURCE_NAMES[resource]}`);
+          costParts.push(`${amount} ${CityPanelView.getResourceName(resource)}`);
         }
         costSpan.textContent = costParts.join(', ');
         infoContainer.appendChild(costSpan);
@@ -614,7 +622,7 @@ export class CityPanelView {
         if (buildingAction === BuildingAction.Trade) {
           const actionBtn = document.createElement('button');
           actionBtn.className = 'building-action-btn';
-          actionBtn.textContent = BUILDING_ACTION_NAMES[buildingAction];
+          actionBtn.textContent = getBuildingActionName(buildingAction);
           actionBtn.disabled = false;
           actionBtn.dataset.buildingAction = buildingAction;
           actionBtn.dataset.buildingType = buildingType;
@@ -625,10 +633,10 @@ export class CityPanelView {
         const building = city.getBuilding(buildingType);
         if (buildingType === BuildingType.Seaport && building && building.level >= 2) {
           const specialization = building.getSpecialization();
-          if (specialization === undefined) {
+            if (specialization === undefined) {
             const specializationBtn = document.createElement('button');
             specializationBtn.className = 'building-action-btn';
-            specializationBtn.textContent = BUILDING_ACTION_NAMES[BuildingAction.Specialization];
+            specializationBtn.textContent = getBuildingActionName(BuildingAction.Specialization);
             specializationBtn.disabled = false;
             specializationBtn.dataset.buildingAction = BuildingAction.Specialization;
             specializationBtn.dataset.buildingType = buildingType;
@@ -640,7 +648,7 @@ export class CityPanelView {
         if (buildingType === BuildingType.Seaport && building && building.level === 4) {
           const prestigeBtn = document.createElement('button');
           prestigeBtn.className = 'building-action-btn';
-          prestigeBtn.textContent = BUILDING_ACTION_NAMES[BuildingAction.Prestige];
+          prestigeBtn.textContent = getBuildingActionName(BuildingAction.Prestige);
           prestigeBtn.disabled = false;
           prestigeBtn.dataset.buildingAction = BuildingAction.Prestige;
           prestigeBtn.dataset.buildingType = buildingType;
@@ -650,7 +658,7 @@ export class CityPanelView {
         // Bouton Améliorer (placeholder stable pour ne pas casser les hovers)
         const upgradeBtn = document.createElement('button');
         upgradeBtn.className = 'building-action-btn';
-        upgradeBtn.textContent = BUILDING_ACTION_NAMES[BuildingAction.Upgrade];
+        upgradeBtn.textContent = getBuildingActionName(BuildingAction.Upgrade);
         upgradeBtn.dataset.buildingAction = BuildingAction.Upgrade;
         upgradeBtn.dataset.buildingType = buildingType;
         item.appendChild(upgradeBtn);
@@ -706,12 +714,12 @@ export class CityPanelView {
           if (buildingType === BuildingType.Seaport && building) {
             const specialization = building.getSpecialization();
             if (specialization !== undefined) {
-              const resourceNames = CityPanelView.RESOURCE_NAMES;
-              // Afficher le niveau si le port est niveau 3, sinon seulement la spécialisation
+              // Afficher la spécialisation (nom de ressource localisé)
+              const resName = CityPanelView.getResourceName(specialization);
               if (lvl === 3) {
-                name = `${getBuildingTypeName(buildingType)} (${resourceNames[specialization]}) ${localize('label.levelShort')} ${lvl}`;
+                name = `${getBuildingTypeName(buildingType)} (${resName}) ${localize('label.levelShort')} ${lvl}`;
               } else {
-                name = `${getBuildingTypeName(buildingType)} (${resourceNames[specialization]})`;
+                name = `${getBuildingTypeName(buildingType)} (${resName})`;
               }
             }
           }
@@ -748,7 +756,7 @@ export class CityPanelView {
           const upgradeCost = building.getUpgradeCost();
           const costParts: string[] = [];
           for (const [resource, amount] of upgradeCost.entries()) {
-            costParts.push(`${amount} ${CityPanelView.RESOURCE_NAMES[resource]}`);
+            costParts.push(`${amount} ${CityPanelView.getResourceName(resource)}`);
           }
           upgradeCostEl.textContent = costParts.join(', ');
           upgradeCostEl.hidden = false;
@@ -779,7 +787,7 @@ export class CityPanelView {
           if (!specializationBtn) {
             specializationBtn = document.createElement('button');
             specializationBtn.className = 'building-action-btn';
-            specializationBtn.textContent = BUILDING_ACTION_NAMES[BuildingAction.Specialization];
+            specializationBtn.textContent = getBuildingActionName(BuildingAction.Specialization);
             specializationBtn.disabled = false;
             specializationBtn.dataset.buildingAction = BuildingAction.Specialization;
             specializationBtn.dataset.buildingType = buildingType;
@@ -812,7 +820,7 @@ export class CityPanelView {
         if (!prestigeBtn) {
           prestigeBtn = document.createElement('button');
           prestigeBtn.className = 'building-action-btn';
-          prestigeBtn.textContent = BUILDING_ACTION_NAMES[BuildingAction.Prestige];
+          prestigeBtn.textContent = getBuildingActionName(BuildingAction.Prestige);
           prestigeBtn.disabled = false;
           prestigeBtn.dataset.buildingAction = BuildingAction.Prestige;
           prestigeBtn.dataset.buildingType = buildingType;

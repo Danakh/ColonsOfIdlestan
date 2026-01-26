@@ -35,23 +35,41 @@ export enum BuildingType {
 }
 
 /**
- * Noms des bâtiments en français.
+ * Retourne le nom localisé d'un type de bâtiment au moment de l'affichage.
+ * Cela garantit que le nom suit la locale courante (après changement de langue).
  */
-export const BUILDING_TYPE_NAMES: Record<BuildingType, string> = {
-  [BuildingType.Seaport]: localize('building.seaport'),
-  [BuildingType.Market]: localize('building.market'),
-  [BuildingType.TownHall]: localize('building.townHall'),
-  [BuildingType.Sawmill]: localize('building.sawmill'),
-  [BuildingType.Brickworks]: localize('building.brickworks'),
-  [BuildingType.Mill]: localize('building.mill'),
-  [BuildingType.Sheepfold]: localize('building.sheepfold'),
-  [BuildingType.Mine]: localize('building.mine'),
-  [BuildingType.Warehouse]: localize('building.warehouse'),
-  [BuildingType.Forge]: localize('building.forge'),
-  [BuildingType.Library]: localize('building.library'),
-  [BuildingType.Temple]: localize('building.temple'),
-  [BuildingType.BuildersGuild]: localize('building.buildersGuild'),
-};
+export function getBuildingTypeName(buildingType: BuildingType): string {
+  switch (buildingType) {
+    case BuildingType.Seaport:
+      return localize('building.seaport');
+    case BuildingType.Market:
+      return localize('building.market');
+    case BuildingType.TownHall:
+      return localize('building.townHall');
+    case BuildingType.Sawmill:
+      return localize('building.sawmill');
+    case BuildingType.Brickworks:
+      return localize('building.brickworks');
+    case BuildingType.Mill:
+      return localize('building.mill');
+    case BuildingType.Sheepfold:
+      return localize('building.sheepfold');
+    case BuildingType.Mine:
+      return localize('building.mine');
+    case BuildingType.Warehouse:
+      return localize('building.warehouse');
+    case BuildingType.Forge:
+      return localize('building.forge');
+    case BuildingType.Library:
+      return localize('building.library');
+    case BuildingType.Temple:
+      return localize('building.temple');
+    case BuildingType.BuildersGuild:
+      return localize('building.buildersGuild');
+    default:
+      return String(buildingType);
+  }
+}
 
 /**
  * Coûts de construction des bâtiments.
@@ -212,9 +230,7 @@ export function getBuildingUpgradeCost(buildingType: BuildingType, currentLevel:
  * @param buildingType - Le type de bâtiment
  * @returns Le nom en français
  */
-export function getBuildingTypeName(buildingType: BuildingType): string {
-  return BUILDING_TYPE_NAMES[buildingType];
-}
+// getBuildingTypeName is defined above and returns the localized string at runtime.
 
 /**
  * Retourne tous les types de bâtiments disponibles.
@@ -302,13 +318,23 @@ export function getBuildingAction(buildingType: BuildingType): BuildingAction | 
 }
 
 /**
- * Noms des actions en français.
+ * Retourne le nom localisé d'une action de bâtiment au runtime.
  */
-export const BUILDING_ACTION_NAMES: Record<BuildingAction, string> = {
-  [BuildingAction.Trade]: localize('buildingAction.trade'),
-  [BuildingAction.Upgrade]: localize('buildingAction.upgrade'),
-  [BuildingAction.Specialization]: localize('buildingAction.specialization'),
-  [BuildingAction.Auto]: localize('buildingAction.auto'),
-  [BuildingAction.Prestige]: localize('buildingAction.prestige'),
-  [BuildingAction.Automation]: localize('buildingAction.automation'),
-};
+export function getBuildingActionName(action: BuildingAction): string {
+  switch (action) {
+    case BuildingAction.Trade:
+      return localize('buildingAction.trade');
+    case BuildingAction.Upgrade:
+      return localize('buildingAction.upgrade');
+    case BuildingAction.Specialization:
+      return localize('buildingAction.specialization');
+    case BuildingAction.Auto:
+      return localize('buildingAction.auto');
+    case BuildingAction.Prestige:
+      return localize('buildingAction.prestige');
+    case BuildingAction.Automation:
+      return localize('buildingAction.automation');
+    default:
+      return String(action);
+  }
+}

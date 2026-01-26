@@ -14,6 +14,7 @@ export class GameLoop {
     private renderer: HexMapRenderer,
     private cityPanelView: CityPanelView,
     private coordinator: GameCoordinator,
+    private updateResourcesDisplay: () => void,
   ) {}
 
   private processAutomaticBuildingProduction(): void {
@@ -41,8 +42,13 @@ export class GameLoop {
           this.renderer.triggerResourceHarvestAnimation(result.hexCoord, result.resourceType, result.cityVertex);
         }
       }
-
       this.cityPanelView.scheduleRefresh();
+      // Mettre à jour l'affichage des ressources (inventaire)
+      try {
+        this.updateResourcesDisplay();
+      } catch (e) {
+        // silent
+      }
     }
   }
 
@@ -67,6 +73,13 @@ export class GameLoop {
       const playerResources = this.game.getPlayerResources();
       const civilization = this.game.getIslandState().getCivilization(civId);
       AutomationController.processAllAutomations(civId, civilization, currentIslandMap, playerResources, this.coordinator);
+
+      // Mettre à jour l'UI dépendante des ressources
+      try {
+        this.updateResourcesDisplay();
+      } catch (e) {
+        // silent
+      }
 
       this.cityPanelView.scheduleRefresh();
       this.renderer.render(currentIslandMap, civId);
