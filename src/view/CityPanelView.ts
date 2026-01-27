@@ -670,6 +670,16 @@ export class CityPanelView {
             buildBtn.textContent = localize('button.build');
           // Stocker le buildingType dans le bouton pour le gestionnaire d'événement
           buildBtn.dataset.buildingType = buildingType;
+          // Désactiver le bouton si la construction n'est pas possible (ex: ressources insuffisantes ou limite)
+          buildBtn.disabled = !buildableStatus.canBuild || Boolean(buildableStatus.blockedByBuildingLimit);
+          // Indiquer la raison au survol
+          if (buildBtn.disabled) {
+            if (buildableStatus.blockedByBuildingLimit) {
+              buildBtn.title = localize('building.error.limitReached');
+            } else if (!buildableStatus.canBuild) {
+              buildBtn.title = localize('building.error.insufficientResources');
+            }
+          }
 
           item.appendChild(buildBtn);
         }
@@ -734,8 +744,18 @@ export class CityPanelView {
         const status = buildableBuildingsMap.get(buildingType);
         const buildBtn = li.querySelector('button.build-btn') as HTMLButtonElement | null;
         if (buildBtn) {
-          // Désactiver uniquement si bloqué par la limite de bâtiments (pour garder un comportement stable)
-          buildBtn.disabled = Boolean(status?.blockedByBuildingLimit);
+          // Désactiver si on ne peut pas construire (ressources insuffisantes, niveau, ou limite)
+          const disabled = !(status?.canBuild ?? false) || Boolean(status?.blockedByBuildingLimit);
+          buildBtn.disabled = disabled;
+          if (disabled) {
+            if (status?.blockedByBuildingLimit) {
+              buildBtn.title = localize('building.error.limitReached');
+            } else {
+              buildBtn.title = localize('building.error.insufficientResources');
+            }
+          } else {
+            buildBtn.title = '';
+          }
         }
         continue;
       }
