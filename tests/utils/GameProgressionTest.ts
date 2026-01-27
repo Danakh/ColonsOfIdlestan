@@ -371,23 +371,80 @@ export function Make7HexesMapWith5CitiesAndLibraries(): IslandState {
   resources.addResource(ResourceType.Wheat, 200);
   resources.addResource(ResourceType.Sheep, 200);
 
-  // Ajouter directement des avant-postes (niveau 0) pour ce scénario d'intégration
-  islandMap.addCity(city3Vertex, civId, CityLevel.Outpost);
-  islandMap.addCity(city4Vertex, civId, CityLevel.Outpost);
-  islandMap.addCity(city5Vertex, civId, CityLevel.Outpost);
+  // Tenter d'étendre le réseau de routes pour débloquer des vertices constructibles
+  // (parfois la carte 7Hexes n'a pas assez de vertices constructibles sans étendre les routes)
+  const maxExpandAttempts = 8;
+  let expandIteration = 0;
+  while (islandMap.getBuildableOutpostVertices(civId).length < 3 && expandIteration < maxExpandAttempts) {
+    const allEdges = islandMap.getGrid().getAllEdges();
+    let builtSomething = false;
+    for (const edge of allEdges) {
+      try {
+        if (RoadConstruction.canBuildRoad(edge, civId, islandMap)) {
+          GameAutoPlayer.playUntilBuildingRoad(edge, civId, islandMap, resources, gameClock);
+          builtSomething = true;
+          if (islandMap.getBuildableOutpostVertices(civId).length >= 3) break;
+        }
+      } catch (e) {
+        // ignorer
+      }
+    }
+    if (!builtSomething) break;
+    expandIteration++;
+  }
+
+  // Construire les avant-postes via GameAutoPlayer pour garantir les règles de placement
+  const desiredCount = 3;
+  const createdCities: Vertex[] = [];
+  for (let k = 0; k < desiredCount; k++) {
+    let available = islandMap.getBuildableOutpostVertices(civId);
+    while (available.length === 0)  {
+      // Pas assez de vertices constructibles, ajoutons des routes supplémentaires
+      const allEdges = islandMap.getGrid().getAllEdges();
+      for (const edge of allEdges) {
+        try {
+          if (RoadConstruction.canBuildRoad(edge, civId, islandMap)) {
+            GameAutoPlayer.playUntilBuildingRoad(edge, civId, islandMap, resources, gameClock);
+            break; // Construire une route à la fois
+          }
+        } catch (e) {
+          // ignorer
+        }
+        available = islandMap.getBuildableOutpostVertices(civId);
+      }
+    }
+    let v = available[0];
+
+    GameAutoPlayer.playUntilOutpost(v, civId, islandMap, resources, gameClock);
+    createdCities.push(v);
+  }
   
   // Liste des villes à développer (toutes sauf la capitale qui est déjà au niveau 4)
+  // Recuperer les villes actuelles et exclure la capitale
+  const allCitiesForCiv = islandMap.getCitiesByCivilization(civId);
+  const citiesExcludingCapitalAndPort = allCitiesForCiv
+    .filter(c => !c.vertex.equals(center.vertex(SecondaryHexDirection.N)) && !c.vertex.equals(portCityVertex));
+
+  if (citiesExcludingCapitalAndPort.length < 3) {
+    throw new Error(`Pas assez de villes créées pour le développement (trouvées: ${citiesExcludingCapitalAndPort.length})`);
+  }
+
   const citiesToDevelop = [
     { vertex: portCityVertex, name: 'Ville portuaire' },
-    { vertex: city3Vertex, name: 'Ville 3' },
-    { vertex: city4Vertex, name: 'Ville 4' },
-    { vertex: city5Vertex, name: 'Ville 5' }
+    { vertex: citiesExcludingCapitalAndPort[0].vertex, name: 'Ville 3' },
+    { vertex: citiesExcludingCapitalAndPort[1].vertex, name: 'Ville 4' },
+    { vertex: citiesExcludingCapitalAndPort[2].vertex, name: 'Ville 5' }
   ];
   
   // Améliorer toutes les nouvelles villes jusqu'au niveau 3 (Metropolis)
   for (const cityInfo of citiesToDevelop) {
-    const city = islandMap.getCity(cityInfo.vertex);
-    if (!city) throw new Error(`${cityInfo.name} non trouvée`);
+    let city = islandMap.getCity(cityInfo.vertex);
+    if (!city) {
+      // En dernier recours, ajouter directement l'avant-poste si la ville manque
+      islandMap.addCity(cityInfo.vertex, civId, CityLevel.Outpost);
+      city = islandMap.getCity(cityInfo.vertex);
+      if (!city) throw new Error(`${cityInfo.name} non trouvée`);
+    }
     
     // Si c'est un outpost, construire le TownHall niveau 1 pour passer à Colony
     if (city.level === CityLevel.Outpost) {
@@ -465,9 +522,9 @@ export function Make7HexesMapWith5CitiesAndLibraries(): IslandState {
   const allCities = [
     { vertex: initialCityVertex, name: 'Capitale' },
     { vertex: portCityVertex, name: 'Ville portuaire' },
-    { vertex: city3Vertex, name: 'Ville 3' },
-    { vertex: city4Vertex, name: 'Ville 4' },
-    { vertex: city5Vertex, name: 'Ville 5' }
+    { vertex: citiesExcludingCapitalAndPort[0].vertex, name: 'Ville 3' },
+    { vertex: citiesExcludingCapitalAndPort[1].vertex, name: 'Ville 4' },
+    { vertex: citiesExcludingCapitalAndPort[2].vertex, name: 'Ville 5' }
   ];
   
   for (const cityInfo of allCities) {

@@ -167,7 +167,7 @@ describe('Map7HexesScenario', () => {
     
     // Vérifier que la métropole est restée au niveau 3 (pas pu passer au niveau 4 = Capital)
     const updatedMetropolis = map.getCity(metropolis.vertex)!;
-    expect(updatedMetropolis.level).toBeLessThanOrEqual(CityLevel.Metropolis);
+    expect(updatedMetropolis.level).toBe(CityLevel.Metropolis);
     
     // Vérifier qu'il y a toujours qu'une seule capitale
     const updatedCities = map.getCitiesByCivilization(civId);
