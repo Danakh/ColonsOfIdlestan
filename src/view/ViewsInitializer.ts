@@ -5,7 +5,6 @@ import { TradePanelView } from './TradePanelView';
 import { PortSpecializationPanelView } from './PortSpecializationPanelView';
 import { AutomationPanelView } from './AutomationPanelView';
 import { PrestigeConfirmationPanel } from './PrestigePanelView';
-import { CivilizationUpgradePanelView } from './CivilizationUpgradePanelView';
 import { ResourceLoader } from './ResourceLoader';
 
 export interface ViewsCollection {
@@ -14,7 +13,6 @@ export interface ViewsCollection {
   portSpecializationPanelView: PortSpecializationPanelView;
   automationPanelView: AutomationPanelView;
   prestigeConfirmationPanel: PrestigeConfirmationPanel;
-  civilizationUpgradePanel: CivilizationUpgradePanelView;
   inventoryView: import('./InventoryView').InventoryView;
 }
 
@@ -32,7 +30,6 @@ export function initializeViews(
   const portSpecializationPanelView = new PortSpecializationPanelView('port-specialization-panel');
   const automationPanelView = new AutomationPanelView('automation-panel');
   const prestigeConfirmationPanel = new PrestigeConfirmationPanel('prestige-panel');
-  const civilizationUpgradePanel = new CivilizationUpgradePanelView('civilization-upgrade-panel');
 
   // Bind renderer and game context where appropriate
   cityPanelView.setRenderer(renderer);
@@ -52,7 +49,6 @@ export function initializeViews(
     portSpecializationPanelView,
     automationPanelView,
     prestigeConfirmationPanel,
-    civilizationUpgradePanel,
     inventoryView: resourceLoader.getInventoryView(),
   };
 }

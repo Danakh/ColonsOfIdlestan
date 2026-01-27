@@ -5,7 +5,6 @@ import { TradePanelView } from './view/TradePanelView';
 import { PortSpecializationPanelView } from './view/PortSpecializationPanelView';
 import { AutomationPanelView, AutomationType } from './view/AutomationPanelView';
 import { PrestigeConfirmationPanel } from './view/PrestigePanelView';
-import { CivilizationUpgradePanelView, CivilizationUpgrade } from './view/CivilizationUpgradePanelView';
 import { ResourceSprites } from './view/ResourceSprites';
 import { InventoryView } from './view/InventoryView';
 import { ResourceLoader } from './view/ResourceLoader';
@@ -50,7 +49,6 @@ function main(): void {
 
   // Variable pour stocker le gain de prestige en attente de confirmation
   let pendingPrestigeGain: number = 0;
-  let currentUpgradePanelMode: 'prestige' | 'consultation' | null = null;
 
   // Récupérer les éléments DOM
   const canvas = document.getElementById('map-canvas') as HTMLCanvasElement;
@@ -134,7 +132,7 @@ function main(): void {
   const portSpecializationPanelView = views.portSpecializationPanelView;
   const automationPanelView = views.automationPanelView;
   const prestigeConfirmationPanel = views.prestigeConfirmationPanel;
-  const civilizationUpgradePanel = views.civilizationUpgradePanel;
+  // civilization upgrade panel removed; purchases handled elsewhere
   const inventoryView = views.inventoryView;
 
   // Donner la civilisation du joueur au panneau (bouton Commerce global)
@@ -219,101 +217,7 @@ function main(): void {
     updatePrestigeTabsVisibility();
   }
 
-  function buildPrestigeUpgrades(): CivilizationUpgrade[] {
-    const civId = game.getPlayerCivilizationId();
-    const civ = game.getIslandState().getCivilization(civId);
-    return [
-      {
-        id: 'resource-harvest-x1.5',
-        label: localize('prestige.upgrade.harvest.label'),
-        description: localize('prestige.upgrade.harvest.description'),
-        cost: 5,
-        onPurchase: () => {
-          const current = civ.getResourceGainLevel();
-          civ.setResourceGainLevel(current + 5);
-        },
-      },
-      {
-        id: 'civilization-points-x1.25',
-        label: localize('prestige.upgrade.civPoints.label'),
-        description: localize('prestige.upgrade.civPoints.description'),
-        cost: 7,
-        onPurchase: () => {
-          const current = civ.getCivPointGainLevel();
-          civ.setCivPointGainLevel(current + 3);
-        },
-      },
-      {
-        id: 'builders-guild-unlock',
-        label: localize('prestige.upgrade.buildersGuild.label'),
-        description: localize('prestige.upgrade.buildersGuild.description'),
-        cost: 10,
-        onPurchase: () => {
-          console.log(localize('prestige.upgrade.buildersGuild.unlockedLog'));
-        },
-      },
-    ];
-  }
-
-  const handleUpgradePurchased = (upgradeId: string, remainingPoints: number): void => {
-    console.log(`Amélioration achetée: ${upgradeId}, Points restants: ${remainingPoints}`);
-  };
-
-  const closePrestigeUpgradePanel = (): void => {
-    civilizationUpgradePanel.hide();
-    currentUpgradePanelMode = null;
-    setActiveTab('classic');
-
-    game.newGame();
-    gameLoop.resetStartTime();
-
-    saveManager.saveToLocal();
-
-    cityPanelView.setPlayerCivilizationId(game.getPlayerCivilizationId());
-
-    const newIslandMap = game.getIslandMap();
-    if (newIslandMap) {
-      const civId = game.getPlayerCivilizationId();
-      renderer.render(newIslandMap, civId);
-      updateResourcesDisplay();
-      cityPanelView.refreshNow();
-      cityPanelView.updateFooter();
-    }
-
-    updatePrestigeTabsVisibility();
-  };
-
-  const closeConsultationPanel = (): void => {
-    civilizationUpgradePanel.hide();
-    currentUpgradePanelMode = null;
-    setActiveTab('classic');
-  };
-
-  const showPrestigeUpgradePanel = (
-    mode: 'prestige' | 'consultation',
-    availablePoints: number,
-    subtitle?: string,
-  ): void => {
-    currentUpgradePanelMode = mode;
-    civilizationUpgradePanel.setUpgrades(buildPrestigeUpgrades());
-    const civState = game.getController().getCivilizationState();
-    civilizationUpgradePanel.setCallbacks({
-      onClose: mode === 'prestige' ? closePrestigeUpgradePanel : closeConsultationPanel,
-      onUpgradePurchased: handleUpgradePurchased,
-    });
-    civilizationUpgradePanel.show(availablePoints, {
-      totalPrestigePoints: civState.getPrestigePointsTotal(),
-      readOnly: mode === 'consultation',
-      closeLabel: mode === 'prestige' ? localize('button.closeAndRestart') : localize('button.close'),
-      subtitle,
-    });
-    setActiveTab('prestige');
-  };
-
-  const openPrestigeConsultationPanel = (): void => {
-    const subtitle = localize('hint.noPendingPrestige');
-    showPrestigeUpgradePanel('consultation', 0, subtitle);
-  };
+  // Civilization upgrade UI removed: upgrades are applied elsewhere on prestige activation.
 
   // Charger automatiquement la sauvegarde si elle existe, sinon créer une nouvelle partie
   const loaded = saveManager.loadFromLocal();
@@ -348,22 +252,14 @@ function main(): void {
   updatePrestigeTabsVisibility();
 
   classicTabBtn.addEventListener('click', () => {
-    if (currentUpgradePanelMode === 'prestige') {
-      closePrestigeUpgradePanel();
-      return;
-    }
-    if (currentUpgradePanelMode === 'consultation') {
-      closeConsultationPanel();
-    } else {
-      setActiveTab('classic');
-    }
+    setActiveTab('classic');
   });
 
   prestigeTabBtn.addEventListener('click', () => {
     if (prestigeTabBtn.disabled) {
       return;
     }
-    openPrestigeConsultationPanel();
+    setActiveTab('prestige');
   });
 
   // Configurer les callbacks du panneau de ville
@@ -586,11 +482,28 @@ function main(): void {
         const civState = game.getController().getCivilizationState();
         // Activer réellement le prestige (ajoute les points et détruit l'IslandState)
         const result = PrestigeController.activatePrestige(civState);
-        
+
         if (result.success) {
           updatePrestigeTabsVisibility();
-          showPrestigeUpgradePanel('prestige', pendingPrestigeGain);
+
+          // Démarrer directement une nouvelle partie après activation du prestige
+          game.newGame();
+          gameLoop.resetStartTime();
+          saveManager.saveToLocal();
+
+          cityPanelView.setPlayerCivilizationId(game.getPlayerCivilizationId());
+
+          const newIslandMap = game.getIslandMap();
+          if (newIslandMap) {
+            const civId = game.getPlayerCivilizationId();
+            renderer.render(newIslandMap, civId);
+            updateResourcesDisplay();
+            cityPanelView.refreshNow();
+            cityPanelView.updateFooter();
+          }
+
           pendingPrestigeGain = 0;
+          setActiveTab('classic');
         } else {
           // En cas d'erreur, annuler
           alert(result.message);
@@ -607,12 +520,6 @@ function main(): void {
       }
       setActiveTab('classic');
     },
-  });
-
-  // Configurer les callbacks du panneau d'amélioration de civilisation (par défaut)
-  civilizationUpgradePanel.setCallbacks({
-    onClose: closePrestigeUpgradePanel,
-    onUpgradePurchased: handleUpgradePurchased,
   });
 
 
@@ -801,8 +708,6 @@ function main(): void {
 
     // Réinitialiser les variables UI liées au prestige / panneaux
     pendingPrestigeGain = 0;
-    currentUpgradePanelMode = null;
-    civilizationUpgradePanel.hide();
     prestigeConfirmationPanel.hide();
     setActiveTab('classic');
     updatePrestigeTabsVisibility();
