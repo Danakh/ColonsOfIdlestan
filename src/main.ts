@@ -213,10 +213,8 @@ function main(): void {
   }
 
   function setActiveTab(mode: 'classic' | 'prestige'): void {
-    console.log('[UI] setActiveTab()', mode);
     currentViewMode = mode;
     if (mode === 'classic') {
-      console.log('[UI] switching to classic tab');
       // Update renderer flag
       (renderer as any).isPrestigeMode = false;
       classicTabBtn!.classList.add('active');
@@ -228,11 +226,9 @@ function main(): void {
       const islandMap = game.getIslandMap();
       if (islandMap) {
         const civId = game.getPlayerCivilizationId();
-        console.log('[UI] rendering classic map for civ', civId);
         safeRender(islandMap, civId);
       }
     } else {
-      console.log('[UI] switching to prestige tab');
       // Update renderer flag
       (renderer as any).isPrestigeMode = true;
       prestigeTabBtn!.classList.add('active');
@@ -243,11 +239,9 @@ function main(): void {
       canvas.classList.add('prestige');
       const civState = game.getController().getCivilizationState();
       const prestigeMap = civState.getPrestigeMap();
-      console.log('[UI] prestigeMap present?', !!prestigeMap);
       if (prestigeMap) {
         // Afficher la mini-carte Prestige (renderer dédié)
         // @ts-ignore - renderPrestige ajouté à HexMapRenderer
-        console.log('[UI] calling renderer.renderPrestige()');
         (renderer as any).renderPrestige(prestigeMap);
       } else {
         // Si pas de PrestigeMap, vider le canvas
@@ -259,7 +253,6 @@ function main(): void {
 
   function updatePrestigeTabsVisibility(): void {
     const unlocked = game.getController().getCivilizationState().hasPrestige();
-    console.log('[UI] updatePrestigeTabsVisibility() unlocked=', unlocked);
     gameTabs!.classList.toggle('hidden', !unlocked);
     prestigeTabBtn!.disabled = !unlocked;
   }
@@ -303,14 +296,11 @@ function main(): void {
   updatePrestigeTabsVisibility();
 
   classicTabBtn.addEventListener('click', () => {
-    console.log('[UI] classicTab clicked');
     setActiveTab('classic');
   });
 
   prestigeTabBtn.addEventListener('click', () => {
-    console.log('[UI] prestigeTab clicked disabled=', prestigeTabBtn.disabled);
     if (prestigeTabBtn.disabled) {
-      console.log('[UI] prestigeTab click ignored because disabled');
       return;
     }
     setActiveTab('prestige');

@@ -278,7 +278,6 @@ export class HexMapRenderer {
    * @param civId - Optionnel: la civilisation pour laquelle dessiner les routes constructibles
    */
   render(islandMap: IslandMap, civId?: CivilizationId): void {
-    console.log('[Render] render() called, civId=', civId, 'islandMap present=', !!islandMap);
     // Stocker la civilisation actuelle pour la détection de survol
     this.currentCivilizationId = civId || null;
     // Effacer le canvas
@@ -373,7 +372,6 @@ export class HexMapRenderer {
    * Rend la mini-carte Prestige. Affiche uniquement la grille et les villes/bonus Prestige.
    */
   renderPrestige(prestigeMap: PrestigeMap): void {
-    console.log('[Render] renderPrestige() called, prestigeMap present=', !!prestigeMap);
     // Effacer le canvas
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
@@ -445,8 +443,6 @@ export class HexMapRenderer {
       this.ctx.lineWidth = 2;
       this.ctx.stroke();
     }
-
-    console.log('[Render] renderPrestige() finished drawing', prestigeMap.cities.size, 'cities');
 
     // Dessiner les bonus (petits marqueurs)
     for (const bonus of prestigeMap.bonuses.values()) {
