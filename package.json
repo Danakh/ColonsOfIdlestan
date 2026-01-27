@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "test": "vitest",
-    "test:run": "vitest run",
+    "test": "cross-env CI=true vitest run",
+    "test:watch": "vitest",
     "build": "node build.js",
     "dev": "node build.js --watch",
     "serve": "node serve.js",
@@ -14,6 +14,7 @@
     "@types/node": "^20.0.0",
     "esbuild": "^0.27.2",
     "typescript": "^5.0.0",
-    "vitest": "^1.0.0"
+    "vitest": "^1.0.0",
+    "cross-env": "^7.0.3"
   }
 }
