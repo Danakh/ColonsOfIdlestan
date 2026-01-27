@@ -14,6 +14,7 @@ import { BuildingProductionController } from '../controller/BuildingProductionCo
 import { RoadConstruction } from '../model/game/RoadConstruction';
 import { OutpostController } from '../controller/OutpostController';
 import { localize } from '../i18n';
+import { PrestigeMap } from '../model/prestige/PrestigeMap';
 
 /**
  * Configuration pour le rendu des hexagones.
@@ -70,6 +71,8 @@ const HEX_TYPE_COLORS: Record<HexType, string> = {
 export class HexMapRenderer {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
+  // Indique si le renderer est en mode 'prestige' (empêche le rendu classique)
+  public isPrestigeMode: boolean = false;
   private showCoordinates: boolean = false;
   private currentConfig: RenderConfig | null = null;
   private currentIslandMap: IslandMap | null = null;
@@ -275,6 +278,7 @@ export class HexMapRenderer {
    * @param civId - Optionnel: la civilisation pour laquelle dessiner les routes constructibles
    */
   render(islandMap: IslandMap, civId?: CivilizationId): void {
+    console.log('[Render] render() called, civId=', civId, 'islandMap present=', !!islandMap);
     // Stocker la civilisation actuelle pour la détection de survol
     this.currentCivilizationId = civId || null;
     // Effacer le canvas
@@ -363,6 +367,95 @@ export class HexMapRenderer {
     
     // Vérifier s'il y a des cooldowns actifs et programmer un nouveau rendu si nécessaire
     this.scheduleCooldownAnimation(islandMap);
+  }
+
+  /**
+   * Rend la mini-carte Prestige. Affiche uniquement la grille et les villes/bonus Prestige.
+   */
+  renderPrestige(prestigeMap: PrestigeMap): void {
+    console.log('[Render] renderPrestige() called, prestigeMap present=', !!prestigeMap);
+    // Effacer le canvas
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    const grid = prestigeMap.grid;
+    const allHexes = grid.getAllHexes();
+    if (allHexes.length === 0) return;
+
+    // Calculer les limites
+    let minQ = Infinity;
+    let maxQ = -Infinity;
+    let minR = Infinity;
+    let maxR = -Infinity;
+    for (const hex of allHexes) {
+      minQ = Math.min(minQ, hex.coord.q);
+      maxQ = Math.max(maxQ, hex.coord.q);
+      minR = Math.min(minR, hex.coord.r);
+      maxR = Math.max(maxR, hex.coord.r);
+    }
+
+    const hexSize = this.calculateHexSize(minQ, maxQ, minR, maxR);
+    const centerQ = (minQ + maxQ) / 2;
+    const centerR = (minR + maxR) / 2;
+    const offsetX = this.canvas.width / 2 - Math.sqrt(3) * (centerQ + centerR / 2) * hexSize;
+    const offsetY = this.canvas.height / 2 - (3 / 2) * centerR * hexSize;
+
+    const config: RenderConfig = { hexSize, offsetX, offsetY };
+
+    // Dessiner chaque hexagone (simple remplissage, pas de textures)
+    for (const hex of allHexes) {
+      const coord = hex.coord;
+      const x = offsetX + Math.sqrt(3) * (coord.q + coord.r / 2) * hexSize;
+      const y = offsetY + (3 / 2) * coord.r * hexSize;
+
+      this.ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const angle = (Math.PI / 3) * i + Math.PI / 6;
+        const hx = x + hexSize * Math.cos(angle);
+        const hy = y + hexSize * Math.sin(angle);
+        if (i === 0) this.ctx.moveTo(hx, hy);
+        else this.ctx.lineTo(hx, hy);
+      }
+      this.ctx.closePath();
+
+      // Fond neutre pour la carte Prestige
+      this.ctx.fillStyle = '#f3fff3';
+      this.ctx.fill();
+
+      // Contour discret
+      this.ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+      this.ctx.lineWidth = 1;
+      this.ctx.stroke();
+    }
+
+    // Dessiner les villes Prestige
+    for (const city of prestigeMap.cities.values()) {
+      const vertex = city.vertex;
+      // Le vertex contient trois hex coords, utiliser le premier pour positionner
+      const coord = vertex.getHexes()[0];
+      const cx = offsetX + Math.sqrt(3) * (coord.q + coord.r / 2) * hexSize;
+      const cy = offsetY + (3 / 2) * coord.r * hexSize;
+
+      // Cercle représentant la ville
+      const radius = Math.max(6, hexSize * 0.35);
+      this.ctx.beginPath();
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.strokeStyle = '#4caf50';
+      this.ctx.lineWidth = 2;
+      this.ctx.stroke();
+    }
+
+    console.log('[Render] renderPrestige() finished drawing', prestigeMap.cities.size, 'cities');
+
+    // Dessiner les bonus (petits marqueurs)
+    for (const bonus of prestigeMap.bonuses.values()) {
+      // bonus may contain a label and is mapped by hex hash; try to find corresponding hex
+      // We iterate over hexes and match by proximity to draw a small marker when label exists
+      if (!bonus.label) continue;
+      // find first hex that contains this bonus key by searching grid hexes matching label string (best-effort)
+      // fallback: draw nothing if uncertain
+    }
   }
 
   /**

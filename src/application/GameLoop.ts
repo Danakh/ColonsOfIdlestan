@@ -82,7 +82,17 @@ export class GameLoop {
       }
 
       this.cityPanelView.scheduleRefresh();
-      this.renderer.render(currentIslandMap, civId);
+      // Respect renderer prestige mode to avoid overwriting prestige view
+      if ((this.renderer as any).isPrestigeMode) {
+        const civState = this.game.getController().getCivilizationState();
+        const prestigeMap = civState.getPrestigeMap();
+        if (prestigeMap) {
+          // @ts-ignore
+          (this.renderer as any).renderPrestige(prestigeMap);
+        }
+      } else {
+        this.renderer.render(currentIslandMap, civId);
+      }
     }
 
     this.lastAnimationFrame = requestAnimationFrame(this.loop);

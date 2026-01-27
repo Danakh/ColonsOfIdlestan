@@ -225,6 +225,11 @@ main {
     box-sizing: border-box; /* Inclure la bordure dans les dimensions */
 }
 
+/* Variante pour l'affichage Prestige: pourtour vert */
+#map-canvas.prestige {
+    border-color: #4caf50;
+}
+
 .city-panel {
     background: rgba(255, 255, 255, 0.95);
     border-radius: 10px;

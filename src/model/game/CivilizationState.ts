@@ -5,6 +5,13 @@ import { CivilizationId } from '../map/CivilizationId';
 import { calculateCivilizationPoints } from './CivilizationPoints';
 import { IslandMap } from '../map/IslandMap';
 import { PrestigeMap } from '../prestige/PrestigeMap';
+import { Hex } from '../hex/Hex';
+import { HexCoord } from '../hex/HexCoord';
+import { HexGrid } from '../hex/HexGrid';
+import { SecondaryHexDirection } from '../hex/SecondaryHexDirection';
+import { PrestigeBonusType } from '../prestige/types';
+import { PrestigeCity } from '../prestige/PrestigeCity';
+import { CityLevel } from '../city/CityLevel';
 
 /**
  * État d'une civilisation : contient IslandState, horloge de jeu et points de civilisation.
@@ -38,7 +45,37 @@ export class CivilizationState {
     const playerResources = new PlayerResources();
     const gameClock = new GameClock();
     const islandState = new IslandState(playerResources, playerCivilizationId, gameClock);
-    return new CivilizationState(islandState, gameClock);
+    const civState = new CivilizationState(islandState, gameClock);
+
+    // Générer une mini-carte Prestige minimale immédiatement pour permettre l'accès à l'onglet
+    try {
+      const center = new Hex(new HexCoord(0, 0));
+      const east = new Hex(new HexCoord(1, 0));
+      const west = new Hex(new HexCoord(-1, 0));
+
+      const grid = new HexGrid([center, east, west]);
+      const bonuses = new Map<string, any>();
+      bonuses.set(center.coord.hashCode(), { type: PrestigeBonusType.Production, value: 2, label: '+2 production' });
+      bonuses.set(east.coord.hashCode(), { type: PrestigeBonusType.CivilizationPoint, value: 5, label: '+5 civ points' });
+      bonuses.set(west.coord.hashCode(), { type: PrestigeBonusType.CostReduction, value: 0.1, label: '10% cost reduction' });
+
+      const cities = new Map<string, PrestigeCity>();
+      const northVertex = center.getVertexBySecondaryDirection(SecondaryHexDirection.N);
+      if (northVertex) {
+        const city = new PrestigeCity(northVertex, CityLevel.Colony);
+        cities.set(northVertex.hashCode(), city);
+      }
+
+      const roads = new Set<string>();
+      const prestigeMap = new PrestigeMap(grid, bonuses, cities, roads);
+      civState.setPrestigeMap(prestigeMap);
+    } catch (e) {
+      // ignore if any error occurs during prestige map init
+      // controller generator can be used later when needed
+      console.warn('Failed to initialize prestige map on createNew:', e);
+    }
+
+    return civState;
   }
 
   /** Accès à l'état du jeu. */

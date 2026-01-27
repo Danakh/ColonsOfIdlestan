@@ -43,23 +43,23 @@ export class Hex {
   /**
    * Retourne les coordonnées du voisin dans la direction principale spécifiée.
    */
-  neighborMain(direction: MainHexDirection): HexCoord {
-    return this.coord.neighborMain(direction);
+  neighbor(direction: HexDirection): HexCoord {
+    return this.coord.neighbor(direction);
   }
 
   /**
    * Retourne tous les voisins de cet hexagone en utilisant les directions principales.
    */
-  neighborsMain(): HexCoord[] {
-    return this.coord.neighborsMain();
+  neighbors(): HexCoord[] {
+    return this.coord.neighbors();
   }
 
   /**
    * Retourne l'edge correspondant à une direction principale.
    * L'edge est formé par cet hexagone et son voisin dans la direction principale spécifiée.
    */
-  getEdgeByMainDirection(direction: MainHexDirection): Edge {
-    const neighborCoord = this.neighborMain(direction);
+  getEdgeByMainDirection(direction: HexDirection): Edge {
+    const neighborCoord = this.neighbor(direction);
     return Edge.create(this.coord, neighborCoord);
   }
 
@@ -77,8 +77,8 @@ export class Hex {
    */
   getVertexBySecondaryDirection(direction: SecondaryHexDirection): Vertex {
     const [dir1, dir2] = SECONDARY_TO_MAIN_DIRECTION_PAIRS[direction];
-    const neighbor1 = this.neighborMain(dir1);
-    const neighbor2 = this.neighborMain(dir2);
+    const neighbor1 = this.neighbor(dir1);
+    const neighbor2 = this.neighbor(dir2);
 
     return Vertex.create(this.coord, neighbor1, neighbor2);
   }

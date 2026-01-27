@@ -149,7 +149,7 @@ function main(): void {
     const islandMap = game.getIslandMap();
     if (islandMap) {
       const civId = game.getPlayerCivilizationId();
-      renderer.render(islandMap, civId);
+      safeRender(islandMap, civId);
     }
   });
   
@@ -193,22 +193,73 @@ function main(): void {
   // Boucle principale d'animation encapsulée
   const gameLoop = new GameLoop(game, renderer, cityPanelView, coordinator, updateResourcesDisplay);
 
+  // Mode d'affichage courant (affecte le comportement du render callback)
+  let currentViewMode: 'classic' | 'prestige' = 'classic';
+
+  // Helper pour rendre en respectant le mode courant
+  function safeRender(islandMap: IslandMap | null, civId?: any): void {
+    if (!islandMap) return;
+    if (currentViewMode === 'classic') {
+            // Appel direct au renderer classique (éviter la récursion)
+            renderer.render(islandMap, civId);
+    } else {
+      const civState = game.getController().getCivilizationState();
+      const prestigeMap = civState.getPrestigeMap();
+      if (prestigeMap) {
+        // @ts-ignore
+        (renderer as any).renderPrestige(prestigeMap);
+      }
+    }
+  }
+
   function setActiveTab(mode: 'classic' | 'prestige'): void {
+    console.log('[UI] setActiveTab()', mode);
+    currentViewMode = mode;
     if (mode === 'classic') {
+      console.log('[UI] switching to classic tab');
+      // Update renderer flag
+      (renderer as any).isPrestigeMode = false;
       classicTabBtn!.classList.add('active');
       classicTabBtn!.setAttribute('aria-pressed', 'true');
       prestigeTabBtn!.classList.remove('active');
       prestigeTabBtn!.setAttribute('aria-pressed', 'false');
+      // Retirer la classe prestige sur le canvas et rendre la carte classique
+      canvas.classList.remove('prestige');
+      const islandMap = game.getIslandMap();
+      if (islandMap) {
+        const civId = game.getPlayerCivilizationId();
+        console.log('[UI] rendering classic map for civ', civId);
+        safeRender(islandMap, civId);
+      }
     } else {
+      console.log('[UI] switching to prestige tab');
+      // Update renderer flag
+      (renderer as any).isPrestigeMode = true;
       prestigeTabBtn!.classList.add('active');
       prestigeTabBtn!.setAttribute('aria-pressed', 'true');
       classicTabBtn!.classList.remove('active');
       classicTabBtn!.setAttribute('aria-pressed', 'false');
+      // Ajouter la classe prestige pour changer le pourtour et afficher la mini-carte Prestige
+      canvas.classList.add('prestige');
+      const civState = game.getController().getCivilizationState();
+      const prestigeMap = civState.getPrestigeMap();
+      console.log('[UI] prestigeMap present?', !!prestigeMap);
+      if (prestigeMap) {
+        // Afficher la mini-carte Prestige (renderer dédié)
+        // @ts-ignore - renderPrestige ajouté à HexMapRenderer
+        console.log('[UI] calling renderer.renderPrestige()');
+        (renderer as any).renderPrestige(prestigeMap);
+      } else {
+        // Si pas de PrestigeMap, vider le canvas
+        const ctx = canvas.getContext('2d');
+        if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
     }
   }
 
   function updatePrestigeTabsVisibility(): void {
     const unlocked = game.getController().getCivilizationState().hasPrestige();
+    console.log('[UI] updatePrestigeTabsVisibility() unlocked=', unlocked);
     gameTabs!.classList.toggle('hidden', !unlocked);
     prestigeTabBtn!.disabled = !unlocked;
   }
@@ -237,10 +288,10 @@ function main(): void {
   }
   
   const islandMap = game.getIslandMap();
-  if (islandMap) {
-    const civId = game.getPlayerCivilizationId();
-    renderer.render(islandMap, civId);
-  }
+      if (islandMap) {
+        const civId = game.getPlayerCivilizationId();
+        safeRender(islandMap, civId);
+      }
   
   // Mettre à jour l'affichage après le chargement
   updateResourcesDisplay();
@@ -252,11 +303,14 @@ function main(): void {
   updatePrestigeTabsVisibility();
 
   classicTabBtn.addEventListener('click', () => {
+    console.log('[UI] classicTab clicked');
     setActiveTab('classic');
   });
 
   prestigeTabBtn.addEventListener('click', () => {
+    console.log('[UI] prestigeTab clicked disabled=', prestigeTabBtn.disabled);
     if (prestigeTabBtn.disabled) {
+      console.log('[UI] prestigeTab click ignored because disabled');
       return;
     }
     setActiveTab('prestige');
@@ -275,7 +329,7 @@ function main(): void {
           updateResourcesDisplay();
           cityPanelView.refreshNow();
           const civId = game.getPlayerCivilizationId();
-          renderer.render(islandMap, civId);
+            safeRender(islandMap, civId);
         }
       } catch (error) {
         console.error(localize('error.buildingConstructionFailed'), error);
@@ -294,7 +348,7 @@ function main(): void {
             updateResourcesDisplay();
             cityPanelView.refreshNow();
             const civId = game.getPlayerCivilizationId();
-            renderer.render(currentIslandMap, civId);
+            safeRender(currentIslandMap, civId);
           }
         } else if (action === BuildingAction.Trade) {
           // Mettre à jour le contexte de jeu pour le panneau de commerce
@@ -364,7 +418,7 @@ function main(): void {
         const currentIslandMap = game.getIslandMap();
         if (currentIslandMap) {
           const civId = game.getPlayerCivilizationId();
-          renderer.render(currentIslandMap, civId);
+          safeRender(currentIslandMap, civId);
         }
       } catch (error) {
         console.error(localize('error.actionFailed', { action }), error);
@@ -402,7 +456,7 @@ function main(): void {
         // Mettre à jour l'affichage et sauvegarder
         updateResourcesDisplay();
         cityPanelView.refreshNow();
-        renderer.render(currentIslandMap, civId);
+        safeRender(currentIslandMap, civId);
         saveManager.saveToLocal();
       } catch (error) {
         console.error(localize('error.actionFailed', { action: 'autoTrade' }), error);
@@ -440,11 +494,11 @@ function main(): void {
 
           // Mettre à jour l'affichage
           updateResourcesDisplay();
-          cityPanelView.refreshNow();
+            cityPanelView.refreshNow();
 
-          // Re-rendre la carte
-          const civId = game.getPlayerCivilizationId();
-          renderer.render(currentIslandMap, civId);
+            // Re-rendre la carte
+            const civId = game.getPlayerCivilizationId();
+            safeRender(currentIslandMap, civId);
 
           // Sauvegarder le jeu via SaveManager
           saveManager.saveToLocal();
@@ -471,7 +525,7 @@ function main(): void {
     updateResourcesDisplay: () => updateResourcesDisplay(),
     refreshCityPanel: () => cityPanelView.refreshNow(),
     getCurrentCity: () => cityPanelView.getCurrentCity(),
-    renderMap: (islandMap, civId) => renderer.render(islandMap, civId),
+    renderMap: (islandMap, civId) => safeRender(islandMap, civId),
     autoSave: () => saveManager.saveToLocal(),
   });
 
@@ -496,7 +550,7 @@ function main(): void {
           const newIslandMap = game.getIslandMap();
           if (newIslandMap) {
             const civId = game.getPlayerCivilizationId();
-            renderer.render(newIslandMap, civId);
+            safeRender(newIslandMap, civId);
             updateResourcesDisplay();
             cityPanelView.refreshNow();
             cityPanelView.updateFooter();
@@ -516,7 +570,7 @@ function main(): void {
       const currentIslandMap = game.getIslandMap();
       const civId = game.getPlayerCivilizationId();
       if (currentIslandMap && civId) {
-        renderer.render(currentIslandMap, civId);
+        safeRender(currentIslandMap, civId);
       }
       setActiveTab('classic');
     },
@@ -575,7 +629,7 @@ function main(): void {
           const civId = game.getPlayerCivilizationId();
           updateResourcesDisplay();
           cityPanelView.refreshNow();
-          renderer.render(currentIslandMap, civId);
+          safeRender(currentIslandMap, civId);
           saveManager.saveToLocal();
         }
       } catch (error) {
@@ -589,10 +643,20 @@ function main(): void {
 
   // Configurer le callback de rendu pour la surbrillance au survol et la mise à jour du panneau
   renderer.setRenderCallback(() => {
-    const currentIslandMap = game.getIslandMap();
-    if (currentIslandMap) {
-      const civId = game.getPlayerCivilizationId();
-      renderer.render(currentIslandMap, civId);
+    // Respecter le mode d'affichage courant pour éviter d'écraser la vue Prestige
+    if (currentViewMode === 'classic') {
+      const currentIslandMap = game.getIslandMap();
+      if (currentIslandMap) {
+            const civId = game.getPlayerCivilizationId();
+            safeRender(currentIslandMap, civId);
+      }
+    } else {
+      const civState = game.getController().getCivilizationState();
+      const prestigeMap = civState.getPrestigeMap();
+      if (prestigeMap) {
+        // @ts-ignore - renderPrestige exists on renderer
+        (renderer as any).renderPrestige(prestigeMap);
+      }
     }
   });
 
@@ -610,7 +674,7 @@ function main(): void {
       updateResourcesDisplay();
       cityPanelView.scheduleRefresh();
       const civId = game.getPlayerCivilizationId();
-      renderer.render(currentIslandMap, civId);
+      safeRender(currentIslandMap, civId);
       cityPanelView.refreshNow();
     }
   });
@@ -626,7 +690,7 @@ function main(): void {
       updateResourcesDisplay();
       cityPanelView.scheduleRefresh();
       const civId = game.getPlayerCivilizationId();
-      renderer.render(currentIslandMap, civId);
+      safeRender(currentIslandMap, civId);
     }
   });
 
@@ -684,7 +748,7 @@ function main(): void {
     const newIslandMap = game.getIslandMap();
     if (newIslandMap) {
       const civId = game.getPlayerCivilizationId();
-      renderer.render(newIslandMap, civId);
+      safeRender(newIslandMap, civId);
       updateResourcesDisplay(); // Réinitialiser l'affichage des ressources
       cityPanelView.refreshNow(); // Mettre à jour le panneau de la ville
     }
@@ -715,9 +779,9 @@ function main(): void {
     // Mettre à jour l'UI générale
     cityPanelView.setPlayerCivilizationId(game.getPlayerCivilizationId());
     const newIslandMap2 = game.getIslandMap();
-    if (newIslandMap2) {
+      if (newIslandMap2) {
       const civId = game.getPlayerCivilizationId();
-      renderer.render(newIslandMap2, civId);
+      safeRender(newIslandMap2, civId);
       updateResourcesDisplay();
       cityPanelView.refreshNow();
       cityPanelView.updateFooter();
@@ -760,7 +824,7 @@ function main(): void {
       const newIslandMap = game.getIslandMap();
       if (newIslandMap) {
         const civId = game.getPlayerCivilizationId();
-        renderer.render(newIslandMap, civId);
+        safeRender(newIslandMap, civId);
         updateResourcesDisplay();
         cityPanelView.refreshNow();
         // Mettre à jour les boutons du footer avec la civilisation chargée
@@ -806,7 +870,7 @@ function main(): void {
     const islandMap = game.getIslandMap();
     if (islandMap) {
       const civId = game.getPlayerCivilizationId();
-      renderer.render(islandMap, civId);
+      safeRender(islandMap, civId);
     }
     
     // Fermer le menu après l'action
@@ -827,7 +891,7 @@ function main(): void {
     const currentIslandMap = game.getIslandMap();
     if (currentIslandMap) {
       const civId = game.getPlayerCivilizationId();
-      renderer.render(currentIslandMap, civId);
+      safeRender(currentIslandMap, civId);
     }
 
     // Persister la préférence de langue dans la sauvegarde et forcer un autosave immédiat
