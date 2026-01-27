@@ -49,17 +49,19 @@ export class CivilizationState {
 
     // Générer une mini-carte Prestige minimale immédiatement pour permettre l'accès à l'onglet
     try {
+      // Use triangular layout: center (0,0), (-1,1), (0,1)
       const center = new Hex(new HexCoord(0, 0));
-      const east = new Hex(new HexCoord(1, 0));
-      const west = new Hex(new HexCoord(-1, 0));
+      const hexA = new Hex(new HexCoord(-1, 1));
+      const hexB = new Hex(new HexCoord(0, 1));
 
-      const grid = new HexGrid([center, east, west]);
+      const grid = new HexGrid([center, hexA, hexB]);
       const bonuses = new Map<string, any>();
       bonuses.set(center.coord.hashCode(), { type: PrestigeBonusType.Production, value: 2, label: '+2 production' });
-      bonuses.set(east.coord.hashCode(), { type: PrestigeBonusType.CivilizationPoint, value: 5, label: '+5 civ points' });
-      bonuses.set(west.coord.hashCode(), { type: PrestigeBonusType.CostReduction, value: 0.1, label: '10% cost reduction' });
+      bonuses.set(hexA.coord.hashCode(), { type: PrestigeBonusType.CivilizationPoint, value: 5, label: '+5 civ points' });
+      bonuses.set(hexB.coord.hashCode(), { type: PrestigeBonusType.CostReduction, value: 0.1, label: '10% cost reduction' });
 
       const cities = new Map<string, PrestigeCity>();
+      // Place city at the north vertex of the center hex
       const northVertex = center.getVertexBySecondaryDirection(SecondaryHexDirection.N);
       if (northVertex) {
         const city = new PrestigeCity(northVertex, CityLevel.Colony);

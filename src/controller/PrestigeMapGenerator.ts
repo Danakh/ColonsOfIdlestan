@@ -15,20 +15,22 @@ import { CityLevel } from "../model/city/CityLevel";
 export class PrestigeMapGenerator {
   /** Génère et attache un PrestigeMap à la CivilizationState du joueur. */
   static generate(civState: CivilizationState): PrestigeMap {
+    // Triangular layout: center (0,0), (-1,1), (0,1)
     const center = new Hex(new HexCoord(0, 0));
-    const east = new Hex(new HexCoord(1, 0));
-    const west = new Hex(new HexCoord(-1, 0));
+    const a = new Hex(new HexCoord(-1, 1));
+    const b = new Hex(new HexCoord(0, 1));
 
-    const grid = new HexGrid([center, east, west]);
+    const grid = new HexGrid([center, a, b]);
     // Set visual hex types
     // Note: grid.hexes are Hex objects; HexGrid will manage them
     const bonuses = new Map<string, PrestigeBonus>();
     bonuses.set(center.coord.hashCode(), { type: PrestigeBonusType.Production, value: 2, label: "+2 production" });
-    bonuses.set(east.coord.hashCode(), { type: PrestigeBonusType.CivilizationPoint, value: 5, label: "+5 civ points" });
-    bonuses.set(west.coord.hashCode(), { type: PrestigeBonusType.CostReduction, value: 0.1, label: "10% cost reduction" });
+    bonuses.set(a.coord.hashCode(), { type: PrestigeBonusType.CivilizationPoint, value: 5, label: "+5 civ points" });
+    bonuses.set(b.coord.hashCode(), { type: PrestigeBonusType.CostReduction, value: 0.1, label: "10% cost reduction" });
 
     // Build cities map and place initial city at north vertex of center
     const cities = new Map<string, PrestigeCity>();
+    // City placed at north vertex of center
     const northVertex = center.getVertexBySecondaryDirection(SecondaryHexDirection.N);
     if (northVertex) {
       const city = new PrestigeCity(northVertex, CityLevel.Colony);
@@ -65,9 +67,9 @@ export class PrestigeMapGenerator {
     const prestigeMap = civState.getPrestigeMap();
     if (!prestigeMap) throw new Error('Prestige map not initialized');
 
-    // Verify both hexes exist in grid
+    // Verify the edge touches the prestige grid: at least one of the two hexes must exist
     const [h1, h2] = edge.getHexes();
-    if (!prestigeMap.grid.hasHex(h1) || !prestigeMap.grid.hasHex(h2)) {
+    if (!prestigeMap.grid.hasHex(h1) && !prestigeMap.grid.hasHex(h2)) {
       throw new Error('Edge hexes do not exist in prestige grid');
     }
     prestigeMap.roads.add(edge.hashCode());
