@@ -4,6 +4,7 @@ import { PlayerResources } from './PlayerResources';
 import { CivilizationId } from '../map/CivilizationId';
 import { calculateCivilizationPoints } from './CivilizationPoints';
 import { IslandMap } from '../map/IslandMap';
+import { PrestigeMap } from '../prestige/PrestigeMap';
 
 /**
  * État d'une civilisation : contient IslandState, horloge de jeu et points de civilisation.
@@ -23,6 +24,7 @@ import { IslandMap } from '../map/IslandMap';
 export class CivilizationState {
   private civilizationPoints: number = 0;
   private prestigePointsTotal: number = 0;
+  private prestigeMap?: PrestigeMap;
 
   constructor(
     private readonly islandState: IslandState,
@@ -84,6 +86,16 @@ export class CivilizationState {
     this.prestigePointsTotal = points;
   }
 
+  /** Accès au PrestigeMap (écran Prestige). */
+  getPrestigeMap(): PrestigeMap | undefined {
+    return this.prestigeMap;
+  }
+
+  /** Définit le PrestigeMap pour cette civilisation. */
+  setPrestigeMap(map: PrestigeMap | undefined): void {
+    this.prestigeMap = map;
+  }
+
   /** Vérifie si la civilisation a obtenu du prestige (a plus de 0 points de prestige). */
   hasPrestige(): boolean {
     return this.prestigePointsTotal > 0;
@@ -111,6 +123,7 @@ export class CivilizationState {
       islandState: this.islandState.serialize(),
       civilizationPoints: this.civilizationPoints,
       prestigePointsTotal: this.prestigePointsTotal,
+      prestigeMap: this.prestigeMap ? this.prestigeMap.serialize() : undefined,
     };
     return JSON.stringify(obj);
   }
@@ -132,6 +145,13 @@ export class CivilizationState {
     // Restaurer les points de prestige s'ils existent
     if (obj.prestigePointsTotal !== undefined) {
       civState.setPrestigePointsTotal(obj.prestigePointsTotal);
+    }
+    if (obj.prestigeMap !== undefined && obj.prestigeMap !== null) {
+      try {
+        civState.setPrestigeMap(PrestigeMap.deserialize(obj.prestigeMap));
+      } catch (e) {
+        // ignore invalid prestige map data
+      }
     }
     
     return civState;
