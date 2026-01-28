@@ -1,6 +1,6 @@
 import { City } from '../model/city/City';
 import { CityLevel, getCityLevelName } from '../model/city/CityLevel';
-import { BuildingType, getBuildingTypeName, getBuildingAction, getBuildingActionName, BuildingAction, getAllBuildingTypes } from '../model/city/BuildingType';
+import { BuildingType, getBuildingTypeName, getBuildingAction, getBuildingActionName, BuildingAction, getAllBuildingTypes, getBuildingDescription } from '../model/city/BuildingType';
 import { ResourceType } from '../model/map/ResourceType';
 import { Vertex } from '../model/hex/Vertex';
 import { IslandMap } from '../model/map/IslandMap';
@@ -661,24 +661,33 @@ export class CityPanelView {
         upgradeBtn.textContent = getBuildingActionName(BuildingAction.Upgrade);
         upgradeBtn.dataset.buildingAction = BuildingAction.Upgrade;
         upgradeBtn.dataset.buildingType = buildingType;
+        // Tooltip initial: description + generic upgrade hint (cost will be set dynamiquement)
+        upgradeBtn.title = `${getBuildingDescription(buildingType)}`;
         item.appendChild(upgradeBtn);
       } else {
         // Si le bâtiment n'est pas construit, afficher le bouton de construction s'il est constructible
         if (buildableStatus) {
-            const buildBtn = document.createElement('button');
-            buildBtn.className = 'build-btn';
-            buildBtn.textContent = localize('button.build');
+          const buildBtn = document.createElement('button');
+          buildBtn.className = 'build-btn';
+          buildBtn.textContent = localize('button.build');
           // Stocker le buildingType dans le bouton pour le gestionnaire d'événement
           buildBtn.dataset.buildingType = buildingType;
           // Désactiver le bouton si la construction n'est pas possible (ex: ressources insuffisantes ou limite)
           buildBtn.disabled = !buildableStatus.canBuild || Boolean(buildableStatus.blockedByBuildingLimit);
-          // Indiquer la raison au survol
+          // Tooltip: description générale + indication du coût si applicable
+          const desc = getBuildingDescription(buildingType);
           if (buildBtn.disabled) {
             if (buildableStatus.blockedByBuildingLimit) {
-              buildBtn.title = localize('building.error.limitReached');
+              buildBtn.title = `${desc} — ${localize('building.error.limitReached')}`;
             } else if (!buildableStatus.canBuild) {
-              buildBtn.title = localize('building.error.insufficientResources');
+              buildBtn.title = `${desc} — ${localize('building.error.insufficientResources')}`;
+            } else {
+              // Afficher le coût dans la tooltip si constructible
+              buildBtn.title = `${desc}`;
             }
+          } else {
+            // Afficher le coût dans la tooltip si constructible
+            buildBtn.title = `${desc}`;
           }
 
           item.appendChild(buildBtn);
@@ -754,7 +763,8 @@ export class CityPanelView {
               buildBtn.title = localize('building.error.insufficientResources');
             }
           } else {
-            buildBtn.title = '';
+            // Quand le bouton est activé, conserver la description du bâtiment en tooltip
+            buildBtn.title = getBuildingDescription(buildingType);
           }
         }
         continue;
@@ -791,6 +801,7 @@ export class CityPanelView {
       if (upgradeBtn) {
         // Garder le bouton en place pour ne pas casser les hovers
         upgradeBtn.hidden = !canUpgrade;
+          upgradeBtn.title = `${getBuildingDescription(buildingType)}`;
         if (!canUpgrade) {
           upgradeBtn.disabled = true;
         } else {

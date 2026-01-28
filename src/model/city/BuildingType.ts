@@ -338,3 +338,39 @@ export function getBuildingActionName(action: BuildingAction): string {
       return String(action);
   }
 }
+
+/**
+ * Retourne une description localisée d'un bâtiment (utilisée pour les tooltips).
+ */
+export function getBuildingDescription(buildingType: BuildingType): string {
+  switch (buildingType) {
+    case BuildingType.TownHall:
+      return localize('building.desc.townHall');
+    case BuildingType.Market:
+      return localize('building.desc.market');
+    case BuildingType.Sawmill:
+      return localize('building.desc.sawmill');
+    case BuildingType.Brickworks:
+      return localize('building.desc.brickworks');
+    case BuildingType.Mill:
+      return localize('building.desc.mill');
+    case BuildingType.Sheepfold:
+      return localize('building.desc.sheepfold');
+    case BuildingType.Mine:
+      return localize('building.desc.mine');
+    case BuildingType.Seaport:
+      return localize('building.desc.seaport');
+    case BuildingType.Warehouse:
+      return localize('building.desc.warehouse');
+    case BuildingType.Forge:
+      return localize('building.desc.forge');
+    case BuildingType.Library:
+      return localize('building.desc.library');
+    case BuildingType.Temple:
+      return localize('building.desc.temple');
+    case BuildingType.BuildersGuild:
+      return localize('building.desc.buildersGuild');
+    default:
+      return String(buildingType);
+  }
+}
