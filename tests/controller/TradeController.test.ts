@@ -38,8 +38,8 @@ describe('TradeController (Map7HexesScenario)', () => {
     const city = map!.getCity(cityVertex);
     expect(city).toBeTruthy();
 
-    // Construire un Market (coût : 5 Wood) pour débloquer le commerce
-    resources.addResource(ResourceType.Wood, 5);
+    // Construire un Market (coût : 6 Wood) pour débloquer le commerce
+    resources.addResource(ResourceType.Wood, 6);
     BuildingController.buildBuilding(BuildingType.Market, city!, map!, cityVertex, resources);
 
     expect(city!.hasBuilding(BuildingType.Market)).toBe(true);

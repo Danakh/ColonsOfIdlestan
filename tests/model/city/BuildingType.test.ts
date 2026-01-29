@@ -12,25 +12,25 @@ describe('BuildingType - Coûts d\'amélioration', () => {
     it('devrait retourner le coût de base pour une amélioration niveau 1 -> 2', () => {
       const cost = getBuildingUpgradeCost(BuildingType.Sawmill, 1);
       
-      // Coût de base pour Sawmill: Wood: 2, Brick: 3
-      expect(cost.get(ResourceType.Wood)).toBe(2);
-      expect(cost.get(ResourceType.Brick)).toBe(3);
+      // Coût de base pour Sawmill (actuel): Wood: 10, Brick: 10
+      expect(cost.get(ResourceType.Wood)).toBe(10);
+      expect(cost.get(ResourceType.Brick)).toBe(10);
     });
 
     it('devrait multiplier le coût par le niveau actuel pour niveau 2 -> 3', () => {
       const cost = getBuildingUpgradeCost(BuildingType.Sawmill, 2);
       
-      // Coût de base * 2 pour Sawmill: Wood: 4, Brick: 6
-      expect(cost.get(ResourceType.Wood)).toBe(4);
-      expect(cost.get(ResourceType.Brick)).toBe(6);
+      // Coût de base * 2 pour Sawmill: Wood: 20, Brick: 20
+      expect(cost.get(ResourceType.Wood)).toBe(20);
+      expect(cost.get(ResourceType.Brick)).toBe(20);
     });
 
     it('devrait multiplier le coût par le niveau actuel pour niveau 4 -> 5', () => {
       const cost = getBuildingUpgradeCost(BuildingType.Sawmill, 4);
       
-      // Coût de base * 4 pour Sawmill: Wood: 8, Brick: 12
-      expect(cost.get(ResourceType.Wood)).toBe(8);
-      expect(cost.get(ResourceType.Brick)).toBe(12);
+      // Coût de base * 4 pour Sawmill: Wood: 40, Brick: 40
+      expect(cost.get(ResourceType.Wood)).toBe(40);
+      expect(cost.get(ResourceType.Brick)).toBe(40);
     });
 
     it('devrait avoir des coûts d\'amélioration distincts des coûts de construction', () => {
@@ -38,12 +38,12 @@ describe('BuildingType - Coûts d\'amélioration', () => {
       const upgradeCost = getBuildingUpgradeCost(BuildingType.Sawmill, 1);
       
       // Les coûts de construction et d'amélioration sont différents
-      // Construction: Wood: 3, Brick: 4
-      // Amélioration: Wood: 2, Brick: 3
+      // Construction (actuel): Wood: 3, Brick: 5
+      // Amélioration (actuel): Wood: 10, Brick: 10
       expect(buildCost.get(ResourceType.Wood)).toBe(3);
-      expect(upgradeCost.get(ResourceType.Wood)).toBe(2);
-      expect(buildCost.get(ResourceType.Brick)).toBe(4);
-      expect(upgradeCost.get(ResourceType.Brick)).toBe(3);
+      expect(upgradeCost.get(ResourceType.Wood)).toBe(10);
+      expect(buildCost.get(ResourceType.Brick)).toBe(5);
+      expect(upgradeCost.get(ResourceType.Brick)).toBe(10);
     });
 
     it('devrait avoir des coûts d\'amélioration pour tous les bâtiments de production', () => {
@@ -58,33 +58,33 @@ describe('BuildingType - Coûts d\'amélioration', () => {
     it('devrait avoir des coûts d\'amélioration pour la Mine', () => {
       const cost = getBuildingUpgradeCost(BuildingType.Mine, 1);
       
-      // Coût de base pour Mine: Wood: 2, Ore: 2
-      expect(cost.get(ResourceType.Wood)).toBe(2);
-      expect(cost.get(ResourceType.Ore)).toBe(2);
+      // Coût de base pour Mine (actuel): Wood: 10, Ore: 10
+      expect(cost.get(ResourceType.Wood)).toBe(10);
+      expect(cost.get(ResourceType.Ore)).toBe(10);
     });
 
     it('devrait avoir des coûts d\'amélioration pour le Moulin', () => {
       const cost = getBuildingUpgradeCost(BuildingType.Mill, 1);
       
-      // Coût de base pour Mill: Wood: 2, Brick: 4
-      expect(cost.get(ResourceType.Wood)).toBe(2);
-      expect(cost.get(ResourceType.Brick)).toBe(4);
+      // Coût de base pour Mill (actuel): Wood: 10, Brick: 10
+      expect(cost.get(ResourceType.Wood)).toBe(10);
+      expect(cost.get(ResourceType.Brick)).toBe(10);
     });
 
     it('devrait avoir des coûts d\'amélioration pour la Bergerie', () => {
       const cost = getBuildingUpgradeCost(BuildingType.Sheepfold, 1);
       
-      // Coût de base pour Sheepfold: Wood: 4, Brick: 2
-      expect(cost.get(ResourceType.Wood)).toBe(4);
-      expect(cost.get(ResourceType.Brick)).toBe(2);
+      // Coût de base pour Sheepfold (actuel): Wood: 10, Brick: 10
+      expect(cost.get(ResourceType.Wood)).toBe(10);
+      expect(cost.get(ResourceType.Brick)).toBe(10);
     });
 
     it('devrait avoir des coûts d\'amélioration pour la Briqueterie', () => {
       const cost = getBuildingUpgradeCost(BuildingType.Brickworks, 1);
       
-      // Coût de base pour Brickworks: Ore: 1, Brick: 4
-      expect(cost.get(ResourceType.Ore)).toBe(1);
-      expect(cost.get(ResourceType.Brick)).toBe(4);
+      // Coût de base pour Brickworks (actuel): Ore: 10, Brick: 10
+      expect(cost.get(ResourceType.Ore)).toBe(10);
+      expect(cost.get(ResourceType.Brick)).toBe(10);
     });
   });
 });

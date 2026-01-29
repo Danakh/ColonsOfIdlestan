@@ -37,7 +37,7 @@ export class BuildingProductionController {
   /**
    * Intervalle de base entre deux productions pour un bâtiment (en secondes).
    */
-  private static readonly BASE_PRODUCTION_INTERVAL_SECONDS = 1.0;
+  private static readonly BASE_PRODUCTION_INTERVAL_SECONDS = 2.0;
 
   /**
    * Facteur de réduction du temps de production par niveau (0.8 = -20% par niveau).

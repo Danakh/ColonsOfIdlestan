@@ -76,12 +76,12 @@ export function getBuildingTypeName(buildingType: BuildingType): string {
  */
 export const BUILDING_COSTS: Record<BuildingType, Map<ResourceType, number>> = {
   [BuildingType.Seaport]: new Map([
-    [ResourceType.Ore, 10],
-    [ResourceType.Wood, 15],
+    [ResourceType.Ore, 20],
+    [ResourceType.Wood, 30],
     [ResourceType.Brick, 10],
   ]),
   [BuildingType.Market]: new Map([
-    [ResourceType.Wood, 5],
+    [ResourceType.Wood, 6],
   ]),
   [BuildingType.TownHall]: new Map([
     [ResourceType.Wood, 5],
@@ -90,7 +90,7 @@ export const BUILDING_COSTS: Record<BuildingType, Map<ResourceType, number>> = {
   ]),
   [BuildingType.Sawmill]: new Map([
     [ResourceType.Wood, 3],
-    [ResourceType.Brick, 4],
+    [ResourceType.Brick, 5],
   ]),
   [BuildingType.Brickworks]: new Map([
     [ResourceType.Ore, 1],
@@ -102,35 +102,38 @@ export const BUILDING_COSTS: Record<BuildingType, Map<ResourceType, number>> = {
   ]),
   [BuildingType.Sheepfold]: new Map([
     [ResourceType.Wood, 5],
-    [ResourceType.Brick, 2],
+    [ResourceType.Wheat, 2],
   ]),
   [BuildingType.Mine]: new Map([
-    [ResourceType.Wood, 3],
-    [ResourceType.Ore, 2],
+    [ResourceType.Wood, 4],
+    [ResourceType.Sheep, 2],
   ]),
   [BuildingType.Warehouse]: new Map([
     [ResourceType.Wood, 10],
     [ResourceType.Brick, 10],
+    [ResourceType.Ore, 5],
   ]),
   [BuildingType.Forge]: new Map([
     [ResourceType.Wood, 5],
     [ResourceType.Brick, 12],
-    [ResourceType.Ore, 5],
+    [ResourceType.Ore, 20],
   ]),
   [BuildingType.Library]: new Map([
     [ResourceType.Wood, 6],
     [ResourceType.Brick, 4],
-    [ResourceType.Sheep, 6],
+    [ResourceType.Sheep, 10],
   ]),
   [BuildingType.Temple]: new Map([
     [ResourceType.Wood, 8],
     [ResourceType.Brick, 10],
-    [ResourceType.Ore, 3],
+    [ResourceType.Ore, 5],
+    [ResourceType.Wheat, 10],
   ]),
   [BuildingType.BuildersGuild]: new Map([
-    [ResourceType.Wood, 15],
     [ResourceType.Brick, 15],
-    [ResourceType.Ore, 10],
+    [ResourceType.Ore, 15],
+    [ResourceType.Sheep, 10],
+    [ResourceType.Wheat, 10],
   ]),
 };
 
@@ -149,63 +152,76 @@ export function getBuildingCost(buildingType: BuildingType): Map<ResourceType, n
  */
 export const BUILDING_UPGRADE_COSTS: Record<BuildingType, Map<ResourceType, number>> = {
   [BuildingType.Seaport]: new Map([
-    [ResourceType.Ore, 12],
-    [ResourceType.Wood, 16],
-    [ResourceType.Brick, 12],
-    [ResourceType.Sheep, 4],
+    [ResourceType.Ore, 20],
+    [ResourceType.Wood, 20],
+    [ResourceType.Brick, 10],
+    [ResourceType.Sheep, 10],
   ]),
   [BuildingType.Market]: new Map([
-    [ResourceType.Wood, 4],
-    [ResourceType.Brick, 2],
+    [ResourceType.Wood, 5],
+    [ResourceType.Brick, 5],
+    [ResourceType.Sheep, 10],
+    [ResourceType.Wheat, 10],
   ]),
   [BuildingType.TownHall]: new Map([
     [ResourceType.Wood, 4],
     [ResourceType.Brick, 4],
     [ResourceType.Ore, 2],
+    [ResourceType.Wheat, 2],
   ]),
   [BuildingType.Sawmill]: new Map([
-    [ResourceType.Wood, 2],
-    [ResourceType.Brick, 3],
+    [ResourceType.Wood, 10],
+    [ResourceType.Brick, 10],
+    [ResourceType.Wheat, 10],
   ]),
   [BuildingType.Brickworks]: new Map([
-    [ResourceType.Ore, 1],
-    [ResourceType.Brick, 4],
+    [ResourceType.Ore, 10],
+    [ResourceType.Brick, 10],
+    [ResourceType.Wheat, 10],
   ]),
   [BuildingType.Mill]: new Map([
-    [ResourceType.Wood, 2],
-    [ResourceType.Brick, 4],
+    [ResourceType.Wood, 10],
+    [ResourceType.Brick, 10],
+    [ResourceType.Sheep, 10],
   ]),
   [BuildingType.Sheepfold]: new Map([
-    [ResourceType.Wood, 4],
-    [ResourceType.Brick, 2],
+    [ResourceType.Wood, 10],
+    [ResourceType.Brick, 10],
+    [ResourceType.Wheat, 10],
   ]),
   [BuildingType.Mine]: new Map([
-    [ResourceType.Wood, 2],
-    [ResourceType.Ore, 2],
+    [ResourceType.Wood, 10],
+    [ResourceType.Ore, 10],
+    [ResourceType.Sheep, 10],
   ]),
   [BuildingType.Warehouse]: new Map([
-    [ResourceType.Wood, 8],
-    [ResourceType.Brick, 8],
+    [ResourceType.Wood, 10],
+    [ResourceType.Brick, 10],
+    [ResourceType.Ore, 20],
+    [ResourceType.Sheep, 10],
   ]),
   [BuildingType.Forge]: new Map([
-    [ResourceType.Wood, 4],
+    [ResourceType.Wood, 20],
     [ResourceType.Brick, 10],
-    [ResourceType.Ore, 4],
+    [ResourceType.Ore, 50],
   ]),
   [BuildingType.Library]: new Map([
-    [ResourceType.Wood, 5],
-    [ResourceType.Brick, 3],
-    [ResourceType.Sheep, 5],
+    [ResourceType.Wood, 20],
+    [ResourceType.Brick, 5],
+    [ResourceType.Sheep, 30],
   ]),
   [BuildingType.Temple]: new Map([
-    [ResourceType.Wood, 6],
-    [ResourceType.Brick, 8],
-    [ResourceType.Ore, 2],
+    [ResourceType.Wood, 10],
+    [ResourceType.Brick, 10],
+    [ResourceType.Ore, 10],
+    [ResourceType.Wheat, 50],
+    [ResourceType.Sheep, 50],
   ]),
   [BuildingType.BuildersGuild]: new Map([
-    [ResourceType.Wood, 12],
-    [ResourceType.Brick, 12],
-    [ResourceType.Ore, 8],
+    [ResourceType.Brick, 10],
+    [ResourceType.Ore, 10],
+    [ResourceType.Sheep, 10],
+    [ResourceType.Wheat, 10],
   ]),
 };
 

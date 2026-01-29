@@ -19,27 +19,27 @@ describe('BuildingProductionController', () => {
   describe('getProductionInterval', () => {
     it('devrait retourner 1.0 seconde pour un bâtiment niveau 1', () => {
       const interval = BuildingProductionController.getProductionInterval(1);
-      expect(interval).toBe(1.0);
+      expect(interval).toBe(2.0);
     });
 
     it('devrait retourner 0.8 seconde pour un bâtiment niveau 2 (1.0 * 0.8)', () => {
       const interval = BuildingProductionController.getProductionInterval(2);
-      expect(interval).toBeCloseTo(0.8, 5);
+      expect(interval).toBeCloseTo(1.6, 5);
     });
 
     it('devrait retourner 0.64 seconde pour un bâtiment niveau 3 (1.0 * 0.8^2)', () => {
       const interval = BuildingProductionController.getProductionInterval(3);
-      expect(interval).toBeCloseTo(0.64, 5);
+      expect(interval).toBeCloseTo(1.28, 5);
     });
 
     it('devrait retourner 0.512 seconde pour un bâtiment niveau 4 (1.0 * 0.8^3)', () => {
       const interval = BuildingProductionController.getProductionInterval(4);
-      expect(interval).toBeCloseTo(0.512, 5);
+      expect(interval).toBeCloseTo(1.024, 5);
     });
 
     it('devrait retourner environ 0.107 seconde pour un bâtiment niveau 10 (1.0 * 0.8^9)', () => {
       const interval = BuildingProductionController.getProductionInterval(10);
-      expect(interval).toBeCloseTo(Math.pow(0.8, 9), 5);
+      expect(interval).toBeCloseTo(2 * Math.pow(0.8, 9), 5);
     });
   });
 
@@ -330,7 +330,7 @@ describe('BuildingProductionController', () => {
       const city2 = map.getCity(vertex2)!;
       
       // Définir un temps de production dans le passé pour que les deux villes soient prêtes
-      gameClock.updateTime(2.0);
+      gameClock.updateTime(3.0);
       city1.getBuilding(BuildingType.Sawmill)!.setProductionTimeSeconds(0.5);
       city2.getBuilding(BuildingType.Sawmill)!.setProductionTimeSeconds(0.5);
 
@@ -362,7 +362,7 @@ describe('BuildingProductionController', () => {
       const city1 = map.getCity(vertex1)!;
       const city2 = map.getCity(vertex2)!;
       
-      // Améliorer le bâtiment au niveau 2 (intervalle = 0.8s au lieu de 1.0s)
+      // Améliorer le bâtiment au niveau 2 (intervalle = 1.6s au lieu de 2.0s)
       city1.upgradeBuilding(BuildingType.Sawmill);
       expect(city1.getBuildingLevel(BuildingType.Sawmill)).toBe(2);
       
@@ -382,8 +382,8 @@ describe('BuildingProductionController', () => {
       );
       expect(results.length).toBe(0);
       
-      // À t=0.8s, le bâtiment niveau 2 devrait produire (city1 uniquement)
-      gameClock.updateTime(0.8);
+      // À t=1.6s, le bâtiment niveau 2 devrait produire (city1 uniquement)
+      gameClock.updateTime(1.6);
       results = BuildingProductionController.processAutomaticProduction(
         civId,
         map,
@@ -399,7 +399,7 @@ describe('BuildingProductionController', () => {
       const city1 = map.getCity(vertex1)!;
       const city2 = map.getCity(vertex2)!;
       
-      // Améliorer le bâtiment au niveau 3 (intervalle = 0.64s)
+      // Améliorer le bâtiment au niveau 3 (intervalle = 1.28s)
       city1.upgradeBuilding(BuildingType.Sawmill); // niveau 2
       city1.upgradeBuilding(BuildingType.Sawmill); // niveau 3
       expect(city1.getBuildingLevel(BuildingType.Sawmill)).toBe(3);
@@ -410,8 +410,8 @@ describe('BuildingProductionController', () => {
       // City2 reste au niveau 1 (intervalle 1.0s), donc ne produira pas à t=0.65s
       city2.getBuilding(BuildingType.Sawmill)!.setProductionTimeSeconds(0.0);
       
-      // À t=0.65s (> 0.64s), le bâtiment niveau 3 devrait produire (city1 uniquement)
-      gameClock.updateTime(0.65);
+      // À t=1.29s (> 1.28s), le bâtiment niveau 3 devrait produire (city1 uniquement)
+      gameClock.updateTime(1.29);
       const results = BuildingProductionController.processAutomaticProduction(
         civId,
         map,
@@ -427,10 +427,10 @@ describe('BuildingProductionController', () => {
       const city1 = map.getCity(vertex1)!;
       const city2 = map.getCity(vertex2)!;
       
-      // Première ville prête à t=1.0
-      gameClock.updateTime(1.0);
+      // Première ville prête à t=2.0
+      gameClock.updateTime(2.0);
       city1.getBuilding(BuildingType.Sawmill)!.setProductionTimeSeconds(0.0);
-      city2.getBuilding(BuildingType.Sawmill)!.setProductionTimeSeconds(0.5); // Pas encore prête
+      city2.getBuilding(BuildingType.Sawmill)!.setProductionTimeSeconds(1.0); // Pas encore prête
 
       // Première récolte
       let results = BuildingProductionController.processAutomaticProduction(
@@ -444,8 +444,8 @@ describe('BuildingProductionController', () => {
       expect(results[0].cityVertex.equals(vertex1)).toBe(true);
       expect(resources.getResource(ResourceType.Wood)).toBe(1);
 
-      // Deuxième ville prête à t=1.5
-      gameClock.updateTime(1.5);
+      // Deuxième ville prête à t=3.0
+      gameClock.updateTime(3.0);
       results = BuildingProductionController.processAutomaticProduction(
         civId,
         map,
@@ -488,7 +488,7 @@ describe('BuildingProductionController', () => {
       const gameClock = new GameClock();
 
       // Bâtiment prêt à produire
-      gameClock.updateTime(2.0);
+      gameClock.updateTime(2.5);
       city.getBuilding(BuildingType.Sawmill)!.setProductionTimeSeconds(0.5);
 
       const results = BuildingProductionController.processAutomaticProduction(

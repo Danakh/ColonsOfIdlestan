@@ -144,6 +144,7 @@ describe('InventoryCapacity', () => {
       const resources = new PlayerResources();
       resources.addResource(ResourceType.Wood, 10);
       resources.addResource(ResourceType.Brick, 10);
+      resources.addResource(ResourceType.Ore, 5);
       BuildingController.buildBuilding(BuildingType.Warehouse, city!, map, vertex, resources);
 
       const capacity = calculateInventoryCapacity(map, civId);
@@ -180,9 +181,11 @@ describe('InventoryCapacity', () => {
       const resources = new PlayerResources();
       resources.addResource(ResourceType.Wood, 20);
       resources.addResource(ResourceType.Brick, 20);
+      resources.addResource(ResourceType.Ore, 10);
       BuildingController.buildBuilding(BuildingType.Warehouse, city1!, map, vertex1, resources);
       resources.addResource(ResourceType.Wood, 10);
       resources.addResource(ResourceType.Brick, 10);
+      resources.addResource(ResourceType.Ore, 5);
       BuildingController.buildBuilding(BuildingType.Warehouse, city2!, map, vertex2, resources);
 
       const capacity = calculateInventoryCapacity(map, civId);

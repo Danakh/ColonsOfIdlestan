@@ -204,27 +204,27 @@ describe('Building', () => {
       const building = new Building(BuildingType.Sawmill);
       const cost = building.getUpgradeCost();
       
-      // Coût de base pour Sawmill: Wood: 2, Brick: 3
-      expect(cost.get(ResourceType.Wood)).toBe(2);
-      expect(cost.get(ResourceType.Brick)).toBe(3);
+      // Coût de base pour Sawmill (actuel): Wood: 10, Brick: 10
+      expect(cost.get(ResourceType.Wood)).toBe(10);
+      expect(cost.get(ResourceType.Brick)).toBe(10);
     });
 
     it('devrait retourner le coût multiplié par le niveau pour un bâtiment niveau 2', () => {
       const building = new Building(BuildingType.Sawmill, 2);
       const cost = building.getUpgradeCost();
       
-      // Coût de base * 2 pour Sawmill: Wood: 4, Brick: 6
-      expect(cost.get(ResourceType.Wood)).toBe(4);
-      expect(cost.get(ResourceType.Brick)).toBe(6);
+      // Coût de base * 2 pour Sawmill: Wood: 20, Brick: 20
+      expect(cost.get(ResourceType.Wood)).toBe(20);
+      expect(cost.get(ResourceType.Brick)).toBe(20);
     });
 
     it('devrait retourner le coût multiplié par le niveau pour un bâtiment niveau 4 (upgrade 4 -> 5)', () => {
       const building = new Building(BuildingType.Sawmill, 4);
       const cost = building.getUpgradeCost();
       
-      // Coût de base * 4 pour Sawmill: Wood: 8, Brick: 12
-      expect(cost.get(ResourceType.Wood)).toBe(8);
-      expect(cost.get(ResourceType.Brick)).toBe(12);
+      // Coût de base * 4 pour Sawmill: Wood: 40, Brick: 40
+      expect(cost.get(ResourceType.Wood)).toBe(40);
+      expect(cost.get(ResourceType.Brick)).toBe(40);
     });
 
     it('devrait lever une erreur si le bâtiment est au niveau max', () => {
@@ -236,8 +236,9 @@ describe('Building', () => {
       const building = new Building(BuildingType.Market, 1);
       const cost = building.getUpgradeCost();
       // Coût de base * 1 pour Market: Wood: 4, Brick: 2
-      expect(cost.get(ResourceType.Wood)).toBe(4);
-      expect(cost.get(ResourceType.Brick)).toBe(2);
+      // Coût de base * 1 pour Market (actuel): Wood: 5, Brick: 5
+      expect(cost.get(ResourceType.Wood)).toBe(5);
+      expect(cost.get(ResourceType.Brick)).toBe(5);
     });
 
     it('devrait lever une erreur pour un bâtiment Market niveau 2 (max=2)', () => {
@@ -272,10 +273,11 @@ describe('Building', () => {
       const building = new Building(BuildingType.Seaport, 1);
       const cost = building.getUpgradeCost();
       // Coût de base * 1 pour Seaport: Ore: 12, Wood: 16, Brick: 12, Sheep: 4
-      expect(cost.get(ResourceType.Ore)).toBe(12);
-      expect(cost.get(ResourceType.Wood)).toBe(16);
-      expect(cost.get(ResourceType.Brick)).toBe(12);
-      expect(cost.get(ResourceType.Sheep)).toBe(4);
+      // Coût de base * 1 pour Seaport (actuel): Ore: 20, Wood: 20, Brick: 10, Sheep: 10
+      expect(cost.get(ResourceType.Ore)).toBe(20);
+      expect(cost.get(ResourceType.Wood)).toBe(20);
+      expect(cost.get(ResourceType.Brick)).toBe(10);
+      expect(cost.get(ResourceType.Sheep)).toBe(10);
     });
 
     it('devrait lever une erreur pour un bâtiment Seaport niveau 4 (max=4)', () => {
@@ -287,9 +289,10 @@ describe('Building', () => {
       const building = new Building(BuildingType.BuildersGuild, 1);
       const cost = building.getUpgradeCost();
       // Coût de base * 1 pour BuildersGuild: Wood: 12, Brick: 12, Ore: 8
-      expect(cost.get(ResourceType.Wood)).toBe(12);
-      expect(cost.get(ResourceType.Brick)).toBe(12);
-      expect(cost.get(ResourceType.Ore)).toBe(8);
+      // Coût de base * 1 pour BuildersGuild (actuel): Brick: 10, Ore: 10, Sheep: 10, Wheat: 10
+      expect(cost.get(ResourceType.Brick)).toBe(10);
+      expect(cost.get(ResourceType.Ore)).toBe(10);
+      expect(cost.get(ResourceType.Sheep)).toBe(10);
     });
 
     it('devrait lever une erreur pour un bâtiment BuildersGuild niveau 3 (max=3)', () => {

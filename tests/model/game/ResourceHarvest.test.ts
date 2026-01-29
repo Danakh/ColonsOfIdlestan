@@ -624,6 +624,7 @@ describe('ResourceHarvest', () => {
       const resources = new PlayerResources();
       resources.addResource(ResourceType.Wood, 10);
       resources.addResource(ResourceType.Brick, 10);
+      resources.addResource(ResourceType.Ore, 5);
       BuildingController.buildBuilding(BuildingType.Warehouse, city!, map, vertex, resources);
 
       map.setHexType(center, HexType.Wood);

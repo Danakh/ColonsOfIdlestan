@@ -144,7 +144,7 @@ describe('CivilizationPoints', () => {
       const resources = new PlayerResources();
       resources.addResource(ResourceType.Wood, 6);
       resources.addResource(ResourceType.Brick, 4);
-      resources.addResource(ResourceType.Sheep, 6);
+      resources.addResource(ResourceType.Sheep, 10);
       BuildingController.buildBuilding(BuildingType.Library, city!, map, vertex, resources);
 
       const points = calculateCivilizationPoints(map, civId);
@@ -181,7 +181,7 @@ describe('CivilizationPoints', () => {
       const resources = new PlayerResources();
       resources.addResource(ResourceType.Wood, 12);
       resources.addResource(ResourceType.Brick, 8);
-      resources.addResource(ResourceType.Sheep, 12);
+      resources.addResource(ResourceType.Sheep, 20);
       BuildingController.buildBuilding(BuildingType.Library, city1!, map, vertex1, resources);
       BuildingController.buildBuilding(BuildingType.Library, city2!, map, vertex2, resources);
 
@@ -246,7 +246,7 @@ describe('CivilizationPoints', () => {
       const resources = new PlayerResources();
       resources.addResource(ResourceType.Wood, 6);
       resources.addResource(ResourceType.Brick, 4);
-      resources.addResource(ResourceType.Sheep, 6);
+      resources.addResource(ResourceType.Sheep, 10);
       BuildingController.buildBuilding(BuildingType.Library, city!, map, vertex, resources);
 
       expect(hasLibrary(map, civId)).toBe(true);
@@ -278,7 +278,8 @@ describe('CivilizationPoints', () => {
       const resources = new PlayerResources();
       resources.addResource(ResourceType.Wood, 8);
       resources.addResource(ResourceType.Brick, 10);
-      resources.addResource(ResourceType.Ore, 3);
+      resources.addResource(ResourceType.Ore, 5);
+      resources.addResource(ResourceType.Wheat, 10);
       BuildingController.buildBuilding(BuildingType.Temple, city!, map, vertex, resources);
 
       const points = calculateCivilizationPoints(map, civId);
@@ -308,7 +309,8 @@ describe('CivilizationPoints', () => {
       const resources = new PlayerResources();
       resources.addResource(ResourceType.Wood, 8);
       resources.addResource(ResourceType.Brick, 10);
-      resources.addResource(ResourceType.Ore, 3);
+      resources.addResource(ResourceType.Ore, 5);
+      resources.addResource(ResourceType.Wheat, 10);
 
       expect(() => {
         BuildingController.buildBuilding(BuildingType.Temple, city1!, map, vertex1, resources);
@@ -357,14 +359,15 @@ describe('CivilizationPoints', () => {
       let resources = new PlayerResources();
       resources.addResource(ResourceType.Wood, 6);
       resources.addResource(ResourceType.Brick, 4);
-      resources.addResource(ResourceType.Sheep, 6);
+      resources.addResource(ResourceType.Sheep, 10);
       BuildingController.buildBuilding(BuildingType.Library, city!, map, vertex, resources);
 
       // Construire un temple
       resources = new PlayerResources();
       resources.addResource(ResourceType.Wood, 8);
       resources.addResource(ResourceType.Brick, 10);
-      resources.addResource(ResourceType.Ore, 3);
+      resources.addResource(ResourceType.Ore, 5);
+      resources.addResource(ResourceType.Wheat, 10);
       BuildingController.buildBuilding(BuildingType.Temple, city!, map, vertex, resources);
 
       const points = calculateCivilizationPoints(map, civId);
