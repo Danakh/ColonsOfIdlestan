@@ -1,6 +1,49 @@
 import { ResourceType } from '../map/ResourceType';
 import { HexType } from '../map/HexType';
 import { localize } from '../../i18n';
+import { SawmillSpec } from './building/Sawmill';
+import { BrickworksSpec } from './building/Brickworks';
+import { MillSpec } from './building/Mill';
+import { SheepfoldSpec } from './building/Sheepfold';
+import { MineSpec } from './building/Mine';
+import { SeaportSpec } from './building/Seaport';
+import { MarketSpec } from './building/Market';
+import { TownHallSpec } from './building/TownHall';
+import { WarehouseSpec } from './building/Warehouse';
+import { ForgeSpec } from './building/Forge';
+import { LibrarySpec } from './building/Library';
+import { TempleSpec } from './building/Temple';
+import { BuildersGuildSpec } from './building/BuildersGuild';
+
+function getFactory(): any {
+  return function createBuildingSpec(buildingType: string) {
+    switch (buildingType) {
+      case 'Sawmill': return new SawmillSpec();
+      case 'Brickworks': return new BrickworksSpec();
+      case 'Mill': return new MillSpec();
+      case 'Sheepfold': return new SheepfoldSpec();
+      case 'Mine': return new MineSpec();
+      case 'Seaport': return new SeaportSpec();
+      case 'Market': return new MarketSpec();
+      case 'TownHall': return new TownHallSpec();
+      case 'Warehouse': return new WarehouseSpec();
+      case 'Forge': return new ForgeSpec();
+      case 'Library': return new LibrarySpec();
+      case 'Temple': return new TempleSpec();
+      case 'BuildersGuild': return new BuildersGuildSpec();
+      default:
+        return new (class {
+          getBuildCost() { return new Map(); }
+          getUpgradeCost(_: number) { return new Map(); }
+          getName(s: string) { return String(s); }
+          getRequiredHexType() { return null; }
+          getAction() { return null; }
+          getActionName(a: string) { return String(a); }
+          getDescription(s: string) { return String(s); }
+        })();
+    }
+  };
+}
 
 /**
  * Types de bâtiments constructibles dans les villes.
@@ -39,206 +82,39 @@ export enum BuildingType {
  * Cela garantit que le nom suit la locale courante (après changement de langue).
  */
 export function getBuildingTypeName(buildingType: BuildingType): string {
-  switch (buildingType) {
-    case BuildingType.Seaport:
-      return localize('building.seaport');
-    case BuildingType.Market:
-      return localize('building.market');
-    case BuildingType.TownHall:
-      return localize('building.townHall');
-    case BuildingType.Sawmill:
-      return localize('building.sawmill');
-    case BuildingType.Brickworks:
-      return localize('building.brickworks');
-    case BuildingType.Mill:
-      return localize('building.mill');
-    case BuildingType.Sheepfold:
-      return localize('building.sheepfold');
-    case BuildingType.Mine:
-      return localize('building.mine');
-    case BuildingType.Warehouse:
-      return localize('building.warehouse');
-    case BuildingType.Forge:
-      return localize('building.forge');
-    case BuildingType.Library:
-      return localize('building.library');
-    case BuildingType.Temple:
-      return localize('building.temple');
-    case BuildingType.BuildersGuild:
-      return localize('building.buildersGuild');
-    default:
-      return String(buildingType);
-  }
+  const factory = getFactory();
+  if (!factory) throw new Error('createBuildingSpec factory unavailable');
+  const spec = factory(buildingType as unknown as string);
+  return spec.getName(buildingType as unknown as string);
 }
 
 /**
  * Coûts de construction des bâtiments.
  */
-export const BUILDING_COSTS: Record<BuildingType, Map<ResourceType, number>> = {
-  [BuildingType.Seaport]: new Map([
-    [ResourceType.Ore, 20],
-    [ResourceType.Wood, 30],
-    [ResourceType.Brick, 10],
-  ]),
-  [BuildingType.Market]: new Map([
-    [ResourceType.Wood, 6],
-  ]),
-  [BuildingType.TownHall]: new Map([
-    [ResourceType.Wood, 5],
-    [ResourceType.Brick, 5],
-    [ResourceType.Ore, 1],
-  ]),
-  [BuildingType.Sawmill]: new Map([
-    [ResourceType.Wood, 3],
-    [ResourceType.Brick, 5],
-  ]),
-  [BuildingType.Brickworks]: new Map([
-    [ResourceType.Ore, 1],
-    [ResourceType.Brick, 5],
-  ]),
-  [BuildingType.Mill]: new Map([
-    [ResourceType.Wood, 2],
-    [ResourceType.Brick, 5],
-  ]),
-  [BuildingType.Sheepfold]: new Map([
-    [ResourceType.Wood, 5],
-    [ResourceType.Wheat, 2],
-  ]),
-  [BuildingType.Mine]: new Map([
-    [ResourceType.Wood, 4],
-    [ResourceType.Sheep, 2],
-  ]),
-  [BuildingType.Warehouse]: new Map([
-    [ResourceType.Wood, 10],
-    [ResourceType.Brick, 10],
-    [ResourceType.Ore, 5],
-  ]),
-  [BuildingType.Forge]: new Map([
-    [ResourceType.Wood, 5],
-    [ResourceType.Brick, 12],
-    [ResourceType.Ore, 20],
-  ]),
-  [BuildingType.Library]: new Map([
-    [ResourceType.Wood, 6],
-    [ResourceType.Brick, 4],
-    [ResourceType.Sheep, 10],
-  ]),
-  [BuildingType.Temple]: new Map([
-    [ResourceType.Wood, 8],
-    [ResourceType.Brick, 10],
-    [ResourceType.Ore, 5],
-    [ResourceType.Wheat, 10],
-  ]),
-  [BuildingType.BuildersGuild]: new Map([
-    [ResourceType.Brick, 15],
-    [ResourceType.Ore, 15],
-    [ResourceType.Sheep, 10],
-    [ResourceType.Wheat, 10],
-  ]),
-};
-
 /**
- * Retourne le coût de construction d'un bâtiment.
- * @param buildingType - Le type de bâtiment
- * @returns Le coût sous forme de Map
+ * Retourne le coût de construction d'un bâtiment en délégant
+ * à la classe spécification du bâtiment.
  */
 export function getBuildingCost(buildingType: BuildingType): Map<ResourceType, number> {
-  return new Map(BUILDING_COSTS[buildingType]);
+  const factory = getFactory();
+  if (!factory) throw new Error('createBuildingSpec factory unavailable');
+  const spec = factory(buildingType as unknown as string);
+  return spec.getBuildCost();
 }
 
 /**
  * Coûts d'amélioration des bâtiments (par niveau).
  * Le coût est multiplié par le niveau actuel pour obtenir le coût d'amélioration au niveau suivant.
  */
-export const BUILDING_UPGRADE_COSTS: Record<BuildingType, Map<ResourceType, number>> = {
-  [BuildingType.Seaport]: new Map([
-    [ResourceType.Ore, 20],
-    [ResourceType.Wood, 20],
-    [ResourceType.Brick, 10],
-    [ResourceType.Sheep, 10],
-  ]),
-  [BuildingType.Market]: new Map([
-    [ResourceType.Wood, 5],
-    [ResourceType.Brick, 5],
-    [ResourceType.Sheep, 10],
-    [ResourceType.Wheat, 10],
-  ]),
-  [BuildingType.TownHall]: new Map([
-    [ResourceType.Wood, 4],
-    [ResourceType.Brick, 4],
-    [ResourceType.Ore, 2],
-    [ResourceType.Wheat, 2],
-  ]),
-  [BuildingType.Sawmill]: new Map([
-    [ResourceType.Wood, 10],
-    [ResourceType.Brick, 10],
-    [ResourceType.Wheat, 10],
-  ]),
-  [BuildingType.Brickworks]: new Map([
-    [ResourceType.Ore, 10],
-    [ResourceType.Brick, 10],
-    [ResourceType.Wheat, 10],
-  ]),
-  [BuildingType.Mill]: new Map([
-    [ResourceType.Wood, 10],
-    [ResourceType.Brick, 10],
-    [ResourceType.Sheep, 10],
-  ]),
-  [BuildingType.Sheepfold]: new Map([
-    [ResourceType.Wood, 10],
-    [ResourceType.Brick, 10],
-    [ResourceType.Wheat, 10],
-  ]),
-  [BuildingType.Mine]: new Map([
-    [ResourceType.Wood, 10],
-    [ResourceType.Ore, 10],
-    [ResourceType.Sheep, 10],
-  ]),
-  [BuildingType.Warehouse]: new Map([
-    [ResourceType.Wood, 10],
-    [ResourceType.Brick, 10],
-    [ResourceType.Ore, 20],
-    [ResourceType.Sheep, 10],
-  ]),
-  [BuildingType.Forge]: new Map([
-    [ResourceType.Wood, 20],
-    [ResourceType.Brick, 10],
-    [ResourceType.Ore, 50],
-  ]),
-  [BuildingType.Library]: new Map([
-    [ResourceType.Wood, 20],
-    [ResourceType.Brick, 5],
-    [ResourceType.Sheep, 30],
-  ]),
-  [BuildingType.Temple]: new Map([
-    [ResourceType.Wood, 10],
-    [ResourceType.Brick, 10],
-    [ResourceType.Ore, 10],
-    [ResourceType.Wheat, 50],
-    [ResourceType.Sheep, 50],
-  ]),
-  [BuildingType.BuildersGuild]: new Map([
-    [ResourceType.Brick, 10],
-    [ResourceType.Ore, 10],
-    [ResourceType.Sheep, 10],
-    [ResourceType.Wheat, 10],
-  ]),
-};
-
 /**
- * Retourne le coût d'amélioration d'un bâtiment pour passer au niveau suivant.
- * Le coût de base est multiplié par le niveau actuel.
- * @param buildingType - Le type de bâtiment
- * @param currentLevel - Le niveau actuel du bâtiment (1 = niveau de base)
- * @returns Le coût sous forme de Map
+ * Retourne le coût d'amélioration d'un bâtiment pour passer au niveau suivant
+ * en délégant à la spécification de bâtiment.
  */
 export function getBuildingUpgradeCost(buildingType: BuildingType, currentLevel: number): Map<ResourceType, number> {
-  const baseCost = BUILDING_UPGRADE_COSTS[buildingType];
-  const result = new Map<ResourceType, number>();
-  for (const [resource, cost] of baseCost) {
-    result.set(resource, cost * currentLevel);
-  }
-  return result;
+  const factory = getFactory();
+  if (!factory) throw new Error('createBuildingSpec factory unavailable');
+  const spec = factory(buildingType as unknown as string);
+  return spec.getUpgradeCost(currentLevel);
 }
 
 /**
@@ -296,7 +172,10 @@ export const BUILDING_REQUIRED_HEX_TYPE: Record<BuildingType, HexType | null> = 
  * @returns Le type d'hex requis, ou null si aucun
  */
 export function getRequiredHexType(buildingType: BuildingType): HexType | null {
-  return BUILDING_REQUIRED_HEX_TYPE[buildingType] ?? null;
+  const factory = getFactory();
+  if (!factory) throw new Error('createBuildingSpec factory unavailable');
+  const spec = factory(buildingType as unknown as string);
+  return spec.getRequiredHexType(buildingType as unknown as string);
 }
 
 /**
@@ -323,70 +202,29 @@ export enum BuildingAction {
  * @returns L'action associée, ou null
  */
 export function getBuildingAction(buildingType: BuildingType): BuildingAction | null {
-  switch (buildingType) {
-    case BuildingType.TownHall:
-      return BuildingAction.Upgrade;
-    case BuildingType.BuildersGuild:
-      return BuildingAction.Automation;
-    default:
-      return null;
-  }
+  const factory = getFactory();
+  if (!factory) throw new Error('createBuildingSpec factory unavailable');
+  const spec = factory(buildingType as unknown as string);
+  const actionStr = spec.getAction(buildingType as unknown as string);
+  return actionStr ? (actionStr as unknown as BuildingAction) : null;
 }
 
 /**
  * Retourne le nom localisé d'une action de bâtiment au runtime.
  */
 export function getBuildingActionName(action: BuildingAction): string {
-  switch (action) {
-    case BuildingAction.Trade:
-      return localize('buildingAction.trade');
-    case BuildingAction.Upgrade:
-      return localize('buildingAction.upgrade');
-    case BuildingAction.Specialization:
-      return localize('buildingAction.specialization');
-    case BuildingAction.Auto:
-      return localize('buildingAction.auto');
-    case BuildingAction.Prestige:
-      return localize('buildingAction.prestige');
-    case BuildingAction.Automation:
-      return localize('buildingAction.automation');
-    default:
-      return String(action);
-  }
+  const factory = getFactory();
+  if (!factory) throw new Error('createBuildingSpec factory unavailable');
+  const spec = factory('');
+  return spec.getActionName(action as unknown as string);
 }
 
 /**
  * Retourne une description localisée d'un bâtiment (utilisée pour les tooltips).
  */
 export function getBuildingDescription(buildingType: BuildingType): string {
-  switch (buildingType) {
-    case BuildingType.TownHall:
-      return localize('building.desc.townHall');
-    case BuildingType.Market:
-      return localize('building.desc.market');
-    case BuildingType.Sawmill:
-      return localize('building.desc.sawmill');
-    case BuildingType.Brickworks:
-      return localize('building.desc.brickworks');
-    case BuildingType.Mill:
-      return localize('building.desc.mill');
-    case BuildingType.Sheepfold:
-      return localize('building.desc.sheepfold');
-    case BuildingType.Mine:
-      return localize('building.desc.mine');
-    case BuildingType.Seaport:
-      return localize('building.desc.seaport');
-    case BuildingType.Warehouse:
-      return localize('building.desc.warehouse');
-    case BuildingType.Forge:
-      return localize('building.desc.forge');
-    case BuildingType.Library:
-      return localize('building.desc.library');
-    case BuildingType.Temple:
-      return localize('building.desc.temple');
-    case BuildingType.BuildersGuild:
-      return localize('building.desc.buildersGuild');
-    default:
-      return String(buildingType);
-  }
+  const factory = getFactory();
+  if (!factory) throw new Error('createBuildingSpec factory unavailable');
+  const spec = factory(buildingType as unknown as string);
+  return spec.getDescription(buildingType as unknown as string);
 }
